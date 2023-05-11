@@ -1,0 +1,3 @@
+[[languages]]
+name = "rust"
+auto-format = true

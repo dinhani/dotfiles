@@ -1,0 +1,22 @@
+theme = "monokai_pro"
+
+[editor]
+bufferline = "always"
+true-color = true
+text-width = 120
+
+[editor.statusline]
+left = ["mode", "spinner"]
+center = ["file-name", "diagnostics"]
+right = ["selections", "position", "file-encoding", "file-line-ending", "file-type"]
+
+[editor.cursor-shape]
+insert = "block"
+normal = "hidden"
+select = "hidden"
+
+[editor.file-picker]
+hidden = false
+
+[editor.whitespace.render]
+tab = "all"
