@@ -10,12 +10,17 @@ set cursorline
 set list
 set listchars=tab:>.,trail:.
 
-"edit
+"edit / keys
 set expandtab
 
 "search
 set hlsearch
 set incsearch
 
-"syntax
+"theme
 syntax on
+
+"files
+set nobackup
+set nowritebackup
+set noswapfile
