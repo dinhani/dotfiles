@@ -29,6 +29,7 @@ def sync(file):
 # Main execution
 # ------------------------------------------------------------------------------
 print("Remote: {}@{}".format(user(), host()))
+sync(".alias.sh")
 sync(".vimrc")
 sync(".config/helix/config.toml")
 sync(".config/helix/languages.toml")
