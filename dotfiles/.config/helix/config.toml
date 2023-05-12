@@ -8,7 +8,7 @@ text-width = 120
 [editor.statusline]
 left = ["mode", "spinner"]
 center = ["file-name", "diagnostics"]
-right = ["selections", "position", "file-encoding", "file-line-ending", "file-type"]
+right = ["version-control", "selections", "position", "total-line-numbers", "file-encoding", "file-line-ending", "file-type"]
 
 [editor.cursor-shape]
 insert = "block"
@@ -20,3 +20,33 @@ hidden = false
 
 [editor.whitespace.render]
 tab = "all"
+
+[keys.normal]
+C-b     = "buffer_picker"        # open buffer picker
+C-p     = "file_picker"          # open file picker
+C-s     = ":write"               # save file 
+C-w     = ":buffer-close"        # close file
+A-left  = "goto_previous_buffer" # tab right
+A-right = "goto_next_buffer"     # tab left
+C-z     = "undo"                 # undo last edit
+A-f     = ":format"              # format code 
+
+[keys.insert]
+C-b     = "buffer_picker"        # open buffer picker
+C-p     = "file_picker"          # open file picker
+C-s     = ":write"               # save file 
+C-w     = ":buffer-close"        # close file
+A-left  = "goto_previous_buffer" # tab right
+A-right = "goto_next_buffer"     # tab left
+C-z     = "undo"                 # undo last edit
+A-f     = ":format"              # format code 
+
+[keys.select]
+C-b     = "buffer_picker"        # open buffer picker
+C-p     = "file_picker"          # open file picker
+C-s     = ":write"               # save file 
+C-w     = ":buffer-close"        # close file
+A-left  = "goto_previous_buffer" # tab right
+A-right = "goto_next_buffer"     # tab left
+C-z     = "undo"                 # undo last edit
+A-f     = ":format"              # format code 

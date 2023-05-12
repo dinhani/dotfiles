@@ -2,6 +2,7 @@
 # Libs
 # ------------------------------------------------------------------------------
 import os
+import shutil
 
 # ------------------------------------------------------------------------------
 # Functions
@@ -29,9 +30,15 @@ def sync(file):
 # Main execution
 # ------------------------------------------------------------------------------
 print("Remote: {}@{}".format(user(), host()))
-sync(".alias.sh")
+
+# remove synced files
+shutil.rmtree("dotfiles")
+
+# sync files
+sync("scripts/alias.sh")
 sync(".vimrc")
 sync(".config/helix/config.toml")
 sync(".config/helix/languages.toml")
 
+# remove temp files created
 os.remove("out")
