@@ -22,31 +22,43 @@ hidden = false
 tab = "all"
 
 [keys.normal]
+# buffer
 C-b     = "buffer_picker"        # open buffer picker
 C-p     = "file_picker"          # open file picker
-C-s     = ":write"               # save file 
-C-w     = ":buffer-close"        # close file
-A-left  = "goto_previous_buffer" # tab right
-A-right = "goto_next_buffer"     # tab left
-C-z     = "undo"                 # undo last edit
-A-f     = ":format"              # format code 
+C-s     = ":write"               # save buffer 
+C-w     = ":buffer-close"        # close buffer
+A-left  = "goto_previous_buffer" # buffer left
+A-right = "goto_next_buffer"     # buffer right
+# code
+C-z     = "undo"                 # undo last code edit
+A-f     = ":format"              # format code
+"C-/"   = "toggle_comments"      # comment selected line
+"A-/"   = "toggle_comments"      # comment selected line
 
 [keys.insert]
+# buffer
 C-b     = "buffer_picker"        # open buffer picker
 C-p     = "file_picker"          # open file picker
-C-s     = ":write"               # save file 
-C-w     = ":buffer-close"        # close file
-A-left  = "goto_previous_buffer" # tab right
-A-right = "goto_next_buffer"     # tab left
-C-z     = "undo"                 # undo last edit
-A-f     = ":format"              # format code 
+C-s     = ":write"               # save buffer 
+C-w     = ":buffer-close"        # close buffer
+A-left  = "goto_previous_buffer" # buffer left
+A-right = "goto_next_buffer"     # buffer right
+# code
+C-z     = "undo"                 # undo last code edit
+A-f     = ":format"              # format code
+"C-/"   = "toggle_comments"      # comment selected line
+"A-/"   = "toggle_comments"      # comment selected line
 
 [keys.select]
+# buffer
 C-b     = "buffer_picker"        # open buffer picker
 C-p     = "file_picker"          # open file picker
-C-s     = ":write"               # save file 
-C-w     = ":buffer-close"        # close file
-A-left  = "goto_previous_buffer" # tab right
-A-right = "goto_next_buffer"     # tab left
-C-z     = "undo"                 # undo last edit
-A-f     = ":format"              # format code 
+C-s     = ":write"               # save buffer 
+C-w     = ":buffer-close"        # close buffer
+A-left  = "goto_previous_buffer" # buffer left
+A-right = "goto_next_buffer"     # buffer right
+# code
+C-z     = "undo"                 # undo last code edit
+A-f     = ":format"              # format code
+"C-/"   = "toggle_comments"      # comment selected line
+"A-/"   = "toggle_comments"      # comment selected line
