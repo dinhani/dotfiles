@@ -13,8 +13,8 @@ def user():
 def host():
     return os.environ["REMOTE_HOST"]
 
-def sync(file):
-    print("Sync: {}".format(file))
+def sync_remote(file):
+    print("Sync Remote: {}".format(file))
 
     # create folder if necessary
     file_dirname = "dotfiles/" + os.path.dirname(file)
@@ -26,6 +26,12 @@ def sync(file):
     command = "scp {}@{}:~/{} {}/{} > out".format(user(), host(), file, file_dirname, file_basename)
     os.system(command)
 
+def sync_local(source, target):
+    print("Sync Local: {}".format(target))
+    if not os.path.exists(target):
+        os.makedirs(target)
+    shutil.copytree(source, target, dirs_exist_ok=True)
+
 # ------------------------------------------------------------------------------
 # Main execution
 # ------------------------------------------------------------------------------
@@ -34,11 +40,14 @@ print("Remote: {}@{}".format(user(), host()))
 # remove synced files
 shutil.rmtree("dotfiles")
 
-# sync files
-sync("scripts/alias.sh")
-sync(".vimrc")
-sync(".config/helix/config.toml")
-sync(".config/helix/languages.toml")
+# sync remote
+sync_remote("scripts/alias.sh")
+sync_remote(".vimrc")
+sync_remote(".config/helix/config.toml")
+sync_remote(".config/helix/languages.toml")
+
+# sync local
+sync_local("dotfiles/.config/helix", os.environ["APPDATA"] + "/helix")
 
 # remove temp files created
 os.remove("out")
