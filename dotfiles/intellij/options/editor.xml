@@ -1,0 +1,42 @@
+<application>
+  <component name="CodeInsightSettings">
+    <option name="SHOW_PARAMETER_NAME_HINTS_ON_COMPLETION" value="true" />
+  </component>
+  <component name="CodeVisionSettings">
+    <option name="codeVisionGroupToPosition">
+      <map>
+        <entry key="inheritors" value="Default" />
+        <entry key="problems" value="Default" />
+        <entry key="references" value="Default" />
+        <entry key="vcs.code.vision" value="Default" />
+      </map>
+    </option>
+  </component>
+  <component name="InlayHintsSettings">
+    <option name="disabledHintProviderIds">
+      <set>
+        <option value="Rust.rust.type.hints" />
+      </set>
+    </option>
+    <option name="enabled" value="false" />
+    <option name="lastViewedProviderKeyId" value="Rust.parameter.hints.old" />
+    <settingsMapElement>
+      <kotlin.kotlin.references.types.hints>
+        <Settings>
+          <option name="functionReturnType" value="true" />
+          <option name="localVariableType" value="true" />
+          <option name="parameterType" value="true" />
+          <option name="propertyType" value="true" />
+        </Settings>
+      </kotlin.kotlin.references.types.hints>
+      <Rust.rust.type.hints>
+        <Settings>
+          <option name="showForIterators" value="false" />
+          <option name="showForLambdas" value="false" />
+          <option name="showForPlaceholders" value="false" />
+          <option name="showForVariables" value="false" />
+        </Settings>
+      </Rust.rust.type.hints>
+    </settingsMapElement>
+  </component>
+</application>
