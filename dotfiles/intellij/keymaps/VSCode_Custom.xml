@@ -1,0 +1,12 @@
+<keymap version="1" name="VSCode_Custom" parent="VSCode">
+  <action id="FileStructurePopup">
+    <keyboard-shortcut first-keystroke="ctrl alt p" />
+  </action>
+  <action id="GotoSymbol">
+    <keyboard-shortcut first-keystroke="alt p" />
+  </action>
+  <action id="IntroduceParameter" />
+  <action id="ServiceView.GroupByServiceGroups" />
+  <action id="UsageGrouping.Directory" />
+  <action id="UsageGrouping.Package" />
+</keymap>

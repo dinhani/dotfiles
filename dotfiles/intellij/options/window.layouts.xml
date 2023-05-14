@@ -1,0 +1,243 @@
+<application>
+  <component name="ToolWindowLayout"><![CDATA[{
+  "activeLayoutName": "Rust",
+  "layouts": {
+    "Custom": {
+      "v2": [
+        {
+          "id": "Project",
+          "order": 0,
+          "contentUiType": "COMBO",
+          "isActiveOnStart": true,
+          "isVisible": true,
+          "weight": 0.14914107
+        },
+        {
+          "id": "Commit",
+          "order": 1,
+          "weight": 0.25
+        },
+        {
+          "id": "Version Control",
+          "order": 0,
+          "anchor": "BOTTOM"
+        },
+        {
+          "id": "Problems",
+          "order": 1,
+          "anchor": "BOTTOM"
+        },
+        {
+          "id": "Terminal",
+          "order": 3,
+          "anchor": "BOTTOM"
+        },
+        {
+          "id": "Services",
+          "order": 4,
+          "anchor": "BOTTOM"
+        },
+        {
+          "id": "Build",
+          "order": 4,
+          "anchor": "BOTTOM",
+          "isShowStripeButton": false
+        },
+        {
+          "id": "Notifications",
+          "order": 0,
+          "anchor": "RIGHT",
+          "contentUiType": "COMBO",
+          "weight": 0.25
+        },
+        {
+          "id": "Database",
+          "order": 1,
+          "anchor": "RIGHT",
+          "weight": 0.25
+        },
+        {
+          "id": "Gradle",
+          "order": 2,
+          "anchor": "RIGHT",
+          "weight": 0.25
+        },
+        {
+          "id": "Maven",
+          "order": 3,
+          "anchor": "RIGHT",
+          "weight": 0.25
+        },
+        {
+          "id": "Structure",
+          "order": 4,
+          "anchor": "RIGHT",
+          "isVisible": true,
+          "weight": 0.18505986,
+          "sideWeight": 0.5005263
+        },
+        {
+          "id": "Cargo",
+          "order": 5,
+          "anchor": "RIGHT",
+          "isShowStripeButton": false
+        },
+        {
+          "id": "Web Inspector",
+          "order": 5,
+          "anchor": "RIGHT",
+          "weight": 0.25
+        },
+        {
+          "id": "make",
+          "order": 5,
+          "anchor": "RIGHT",
+          "isShowStripeButton": false,
+          "isSplit": true
+        },
+        {
+          "id": "github.copilotToolWindow",
+          "order": 6,
+          "anchor": "RIGHT",
+          "isShowStripeButton": false,
+          "isSplit": true
+        },
+        {
+          "id": "Problems View",
+          "order": 7,
+          "anchor": "RIGHT",
+          "isVisible": true,
+          "weight": 0.18505986,
+          "sideWeight": 0.4994737,
+          "isSplit": true
+        }
+      ],
+      "unifiedWeights": {
+        "top": 0.33,
+        "left": 0.14914107,
+        "bottom": 0.32962245,
+        "right": 0.18505986
+      }
+    },
+    "Rust": {
+      "v2": [
+        {
+          "id": "Project",
+          "order": 0,
+          "contentUiType": "COMBO",
+          "isActiveOnStart": true,
+          "isVisible": true,
+          "weight": 0.14914107
+        },
+        {
+          "id": "Commit",
+          "order": 1,
+          "weight": 0.25
+        },
+        {
+          "id": "Version Control",
+          "order": 0,
+          "anchor": "BOTTOM"
+        },
+        {
+          "id": "Problems",
+          "order": 1,
+          "anchor": "BOTTOM"
+        },
+        {
+          "id": "Terminal",
+          "order": 2,
+          "anchor": "BOTTOM"
+        },
+        {
+          "id": "Services",
+          "order": 3,
+          "anchor": "BOTTOM"
+        },
+        {
+          "id": "Build",
+          "order": 4,
+          "anchor": "BOTTOM",
+          "isShowStripeButton": false
+        },
+        {
+          "id": "Notifications",
+          "order": 0,
+          "anchor": "RIGHT",
+          "contentUiType": "COMBO",
+          "weight": 0.25
+        },
+        {
+          "id": "Database",
+          "order": 1,
+          "anchor": "RIGHT",
+          "weight": 0.25
+        },
+        {
+          "id": "Gradle",
+          "order": 2,
+          "anchor": "RIGHT",
+          "weight": 0.25
+        },
+        {
+          "id": "Maven",
+          "order": 3,
+          "anchor": "RIGHT",
+          "weight": 0.25
+        },
+        {
+          "id": "Structure",
+          "order": 4,
+          "anchor": "RIGHT",
+          "isVisible": true,
+          "weight": 0.18505986,
+          "sideWeight": 0.51
+        },
+        {
+          "id": "Cargo",
+          "order": 5,
+          "anchor": "RIGHT",
+          "isShowStripeButton": false
+        },
+        {
+          "id": "Web Inspector",
+          "order": 6,
+          "anchor": "RIGHT",
+          "weight": 0.25
+        },
+        {
+          "id": "make",
+          "order": 7,
+          "anchor": "RIGHT",
+          "isShowStripeButton": false,
+          "isSplit": true
+        },
+        {
+          "id": "github.copilotToolWindow",
+          "order": 8,
+          "anchor": "RIGHT",
+          "weight": 0.18505986,
+          "sideWeight": 0.4994737,
+          "isSplit": true
+        },
+        {
+          "id": "Problems View",
+          "order": 9,
+          "anchor": "RIGHT",
+          "isActiveOnStart": true,
+          "isVisible": true,
+          "weight": 0.18505986,
+          "sideWeight": 0.49,
+          "isSplit": true
+        }
+      ],
+      "unifiedWeights": {
+        "top": 0.33,
+        "left": 0.14914107,
+        "bottom": 0.32962245,
+        "right": 0.18505986
+      }
+    }
+  }
+}]]></component>
+</application>

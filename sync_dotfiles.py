@@ -74,6 +74,10 @@ sync_remote(".config/helix/languages.toml")
 # sync local
 sync_local_file(appdata() + "/Code/User/keybindings.json", "dotfiles/vscode/keybindings.json")
 sync_local_file(appdata() + "/Code/User/settings.json", "dotfiles/vscode/settings.json")
+sync_local_folder(appdata() + "/JetBrains/IdeaIC2023.1/keymaps", "dotfiles/intellij/keymaps")
+sync_local_file(appdata() + "/JetBrains/IdeaIC2023.1/options/editor.xml", "dotfiles/intellij/options/editor.xml")
+sync_local_file(appdata() + "/JetBrains/IdeaIC2023.1/options/editor-font.xml", "dotfiles/intellij/options/editor-font.xml")
+sync_local_file(appdata() + "/JetBrains/IdeaIC2023.1/options/window.layouts.xml", "dotfiles/intellij/options/window.layouts.xml")
 
 # remote to local
 sync_local_folder("dotfiles/.config/helix", appdata() + "/helix")
