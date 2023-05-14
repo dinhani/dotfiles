@@ -7,14 +7,22 @@ import shutil
 # ------------------------------------------------------------------------------
 # Functions
 # ------------------------------------------------------------------------------
+
+
 def user():
     return os.environ["REMOTE_USER"]
+
 
 def host():
     return os.environ["REMOTE_HOST"]
 
+
+def appdata():
+    return os.environ["APPDATA"]
+
+
 def sync_remote(file):
-    print("Sync Remote: {}".format(file))
+    print("Remote: {}".format(file))
 
     # create folder if necessary
     file_dirname = "dotfiles/" + os.path.dirname(file)
@@ -23,14 +31,31 @@ def sync_remote(file):
         os.makedirs(file_dirname)
 
     # execute sync command
-    command = "scp {}@{}:~/{} {}/{} > out".format(user(), host(), file, file_dirname, file_basename)
+    command = "scp {}@{}:~/{} {}/{} > out".format(
+        user(), host(), file, file_dirname, file_basename)
     os.system(command)
 
-def sync_local(source, target):
-    print("Sync Local: {}".format(target))
+
+def sync_local_folder(source, target):
+    print("Local: {} -> {}".format(source, target))
+
+    # create folder if necessary
     if not os.path.exists(target):
         os.makedirs(target)
+
     shutil.copytree(source, target, dirs_exist_ok=True)
+
+
+def sync_local_file(source, target):
+    print("Local: {} -> {}".format(source, target))
+
+    # create folder if necessary
+    target_dirname = os.path.dirname(target)
+    if not os.path.exists(target_dirname):
+        os.makedirs(target_dirname)
+
+    shutil.copyfile(source, target)
+
 
 # ------------------------------------------------------------------------------
 # Main execution
@@ -47,7 +72,11 @@ sync_remote(".config/helix/config.toml")
 sync_remote(".config/helix/languages.toml")
 
 # sync local
-sync_local("dotfiles/.config/helix", os.environ["APPDATA"] + "/helix")
+sync_local_file(appdata() + "/Code/User/keybindings.json", "dotfiles/vscode/keybindings.json")
+sync_local_file(appdata() + "/Code/User/settings.json", "dotfiles/vscode/settings.json")
+
+# remote to local
+sync_local_folder("dotfiles/.config/helix", appdata() + "/helix")
 
 # remove temp files created
 os.remove("out")
