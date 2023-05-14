@@ -1,0 +1,15 @@
+[
+    {
+        "key": "alt+p",
+        "command": "workbench.action.showAllSymbols"
+    },
+    {
+        "key": "ctrl+alt+p",
+        "command": "workbench.action.gotoSymbol"
+    },
+    {
+        "key": "alt+oem_2",
+        "command": "editor.action.commentLine",
+        "when": "editorTextFocus && !editorReadonly"
+    }
+]

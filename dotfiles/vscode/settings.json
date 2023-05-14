@@ -1,0 +1,26 @@
+{
+  "editor.fontFamily": "JetBrains Mono",
+  "editor.fontLigatures": true,
+  "editor.fontWeight": 400,
+  "editor.inlineSuggest.enabled": true,
+  "editor.renderControlCharacters": true,
+  "editor.renderWhitespace": "all",
+  "editor.unicodeHighlight.allowedCharacters": {
+    "–": true
+  },
+  "files.trimTrailingWhitespace": true,
+  "git.ignoreMissingGitWarning": true,
+  "github.copilot.enable": {
+    "*": true,
+    "markdown": false,
+    "plaintext": true,
+    "yaml": false
+  },
+  "rust-analyzer.inlayHints.parameterHints.enable": false,
+  "rust-analyzer.inlayHints.typeHints.enable": false,
+  "security.workspace.trust.untrustedFiles": "open",
+  "vsicons.dontShowNewVersionMessage": true,
+  "workbench.colorTheme": "Default Light+",
+  "workbench.editor.enablePreview": false,
+  "workbench.iconTheme": "vscode-icons"
+}

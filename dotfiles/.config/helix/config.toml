@@ -25,6 +25,10 @@ tab = "all"
 # buffer
 C-b     = "buffer_picker"        # open buffer picker
 C-p     = "file_picker"          # open file picker
+A-p     = "workspace_symbol_picker"
+"C-A-P"  = "symbol_picker"
+"C-A-p"  = "symbol_picker"
+
 C-s     = ":write"               # save buffer 
 C-w     = ":buffer-close"        # close buffer
 A-left  = "goto_previous_buffer" # buffer left
