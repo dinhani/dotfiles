@@ -8,6 +8,11 @@ alias dclean="docker container prune -f; docker image ls | grep none | awk '{pri
 # docker-compose
 alias dc="docker-compose"
 
+# du
+function duh() {
+  du -h $1  | sort -rh | head -n 20
+}
+
 # fd
 alias fd="fd --exclude .git --exclude target --color=never --hidden"
 
