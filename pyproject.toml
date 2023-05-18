@@ -1,0 +1,9 @@
+[tool.yapf]
+blank_line_before_class_docstring=false
+blank_line_before_module_docstring=false
+blank_line_before_nested_class_or_def=false
+blank_lines_around_top_level_definition=1
+blank_lines_between_top_level_imports_and_variables=1
+column_limit = 999
+indent_width = 4
+indent_blank_lines=false
