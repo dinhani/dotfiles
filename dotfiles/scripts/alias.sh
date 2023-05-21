@@ -1,3 +1,7 @@
+# checks
+is_linux() { [[ "$(uname -s)" == "Linux" ]]; }
+is_mac() { [[ "$(uname -s)" == "Darwin" ]]; }
+
 # folders
 alias cdp="cd ~/Desktop/projects"
 
@@ -48,8 +52,15 @@ alias gs="git status"
 alias xh="hx"
 
 # history
-function h() {  
-  eval $(echo $(history 0 | awk ' {$1=""; print substr($0, 2) }' | sort | uniq | fzf --tac))
+function h() {   
+  if is_mac; then
+    command=$(history 0 | awk ' {$1=""; print substr($0, 2) }' | sort | uniq | fzf --tac)
+  fi
+  if is_linux; then
+    command=$(history | awk ' {$1=""; print substr($0, 2) }' | sort | uniq | fzf --tac)
+  fi
+  echo $command
+  eval $command
 }
 
 # kubernetes
