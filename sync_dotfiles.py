@@ -13,6 +13,10 @@ def appdata():
     """Windows appdata folder."""
     return os.environ["APPDATA"]
 
+def local_appdata():
+    """Windows local appdata folder."""
+    return os.environ["LOCALAPPDATA"]
+
 def sync_remote(file):
     """Syncs a remote file to the local backup."""
     print("Remote: {}".format(file))
@@ -63,10 +67,13 @@ if __name__ == "__main__":
     # sync local
     sync_local_file(appdata() + "/Code/User/keybindings.json", "dotfiles/vscode/keybindings.json")
     sync_local_file(appdata() + "/Code/User/settings.json", "dotfiles/vscode/settings.json")
+
     sync_local_folder(appdata() + "/JetBrains/IdeaIC2023.1/keymaps", "dotfiles/intellij/keymaps")
     sync_local_file(appdata() + "/JetBrains/IdeaIC2023.1/options/editor.xml", "dotfiles/intellij/options/editor.xml")
     sync_local_file(appdata() + "/JetBrains/IdeaIC2023.1/options/editor-font.xml", "dotfiles/intellij/options/editor-font.xml")
     sync_local_file(appdata() + "/JetBrains/IdeaIC2023.1/options/window.layouts.xml", "dotfiles/intellij/options/window.layouts.xml")
+
+    sync_local_file(local_appdata() + "/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json", "dotfiles/windows-terminal/settings.json")
 
     # remote to local
     sync_local_folder("dotfiles/.config/helix", appdata() + "/helix")

@@ -23,46 +23,48 @@ tab = "all"
 
 [keys.normal]
 # buffer
-C-b     = "buffer_picker"        # open buffer picker
-C-p     = "file_picker"          # open file picker
-A-p     = "workspace_symbol_picker"
-"C-A-P"  = "symbol_picker"
-"C-A-p"  = "symbol_picker"
-
-C-s     = ":write"               # save buffer 
-C-w     = ":buffer-close"        # close buffer
-A-left  = "goto_previous_buffer" # buffer left
-A-right = "goto_next_buffer"     # buffer right
+C-b     = "buffer_picker"           # open buffer picker
+C-p     = "file_picker"             # open file picker
+A-p     = "workspace_symbol_picker" # lsp - workspace symbols
+"C-A-p" = "symbol_picker"           # lsp - file symbols
+C-s     = ":write"                  # save buffer 
+C-w     = ":buffer-close"           # close buffer
+C-left  = "goto_previous_buffer"    # buffer left
+C-right = "goto_next_buffer"        # buffer right
 # code
-C-z     = "undo"                 # undo last code edit
-A-f     = ":format"              # format code
-"C-/"   = "toggle_comments"      # comment selected line
-"A-/"   = "toggle_comments"      # comment selected line
+C-z     = "undo"                    # undo last code edit
+A-f     = ":format"                 # format code
+"C-/"   = "toggle_comments"         # comment selected line
+"A-/"   = "toggle_comments"         # comment selected line
 
 [keys.insert]
 # buffer
-C-b     = "buffer_picker"        # open buffer picker
-C-p     = "file_picker"          # open file picker
-C-s     = ":write"               # save buffer 
-C-w     = ":buffer-close"        # close buffer
-A-left  = "goto_previous_buffer" # buffer left
-A-right = "goto_next_buffer"     # buffer right
+C-b     = "buffer_picker"           # open buffer picker
+C-p     = "file_picker"             # open file picker
+A-p     = "workspace_symbol_picker" # lsp - workspace symbols
+"C-A-p" = "symbol_picker"           # lsp - file symbols
+C-s     = ":write"                  # save buffer 
+C-w     = ":buffer-close"           # close buffer
+C-left  = "goto_previous_buffer"    # buffer left
+C-right = "goto_next_buffer"        # buffer right
 # code
-C-z     = "undo"                 # undo last code edit
-A-f     = ":format"              # format code
-"C-/"   = "toggle_comments"      # comment selected line
-"A-/"   = "toggle_comments"      # comment selected line
+C-z     = "undo"                    # undo last code edit
+A-f     = ":format"                 # format code
+"C-/"   = "toggle_comments"         # comment selected line
+"A-/"   = "toggle_comments"         # comment selected line
 
 [keys.select]
 # buffer
-C-b     = "buffer_picker"        # open buffer picker
-C-p     = "file_picker"          # open file picker
-C-s     = ":write"               # save buffer 
-C-w     = ":buffer-close"        # close buffer
-A-left  = "goto_previous_buffer" # buffer left
-A-right = "goto_next_buffer"     # buffer right
+C-b     = "buffer_picker"           # open buffer picker
+C-p     = "file_picker"             # open file picker
+A-p     = "workspace_symbol_picker" # lsp - workspace symbols
+"C-A-p" = "symbol_picker"           # lsp - file symbols
+C-s     = ":write"                  # save buffer 
+C-w     = ":buffer-close"           # close buffer
+C-left  = "goto_previous_buffer"    # buffer left
+C-right = "goto_next_buffer"        # buffer right
 # code
-C-z     = "undo"                 # undo last code edit
-A-f     = ":format"              # format code
-"C-/"   = "toggle_comments"      # comment selected line
-"A-/"   = "toggle_comments"      # comment selected line
+C-z     = "undo"                    # undo last code edit
+A-f     = ":format"                 # format code
+"C-/"   = "toggle_comments"         # comment selected line
+"A-/"   = "toggle_comments"         # comment selected line

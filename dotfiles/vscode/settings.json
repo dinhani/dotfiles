@@ -22,5 +22,8 @@
   "vsicons.dontShowNewVersionMessage": true,
   "workbench.colorTheme": "Default Light+",
   "workbench.editor.enablePreview": false,
-  "workbench.iconTheme": "vscode-icons"
+  "workbench.iconTheme": "vscode-icons",
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
 }
