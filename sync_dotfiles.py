@@ -58,24 +58,22 @@ if __name__ == "__main__":
     # remove synced files
     shutil.rmtree("dotfiles")
 
-    # sync remote
+    # sync remote to local
     sync_remote("scripts/alias.sh")
     sync_remote(".vimrc")
     sync_remote(".config/helix/config.toml")
     sync_remote(".config/helix/languages.toml")
 
-    # sync local
+    # sync local to local
     sync_local_file(appdata() + "/Code/User/keybindings.json", "dotfiles/vscode/keybindings.json")
     sync_local_file(appdata() + "/Code/User/settings.json", "dotfiles/vscode/settings.json")
-
     sync_local_folder(appdata() + "/JetBrains/IdeaIC2023.1/keymaps", "dotfiles/intellij/keymaps")
     sync_local_file(appdata() + "/JetBrains/IdeaIC2023.1/options/editor.xml", "dotfiles/intellij/options/editor.xml")
     sync_local_file(appdata() + "/JetBrains/IdeaIC2023.1/options/editor-font.xml", "dotfiles/intellij/options/editor-font.xml")
     sync_local_file(appdata() + "/JetBrains/IdeaIC2023.1/options/window.layouts.xml", "dotfiles/intellij/options/window.layouts.xml")
-
     sync_local_file(local_appdata() + "/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json", "dotfiles/windows-terminal/settings.json")
 
-    # remote to local
+    # distribute local to local
     sync_local_folder("dotfiles/.config/helix", appdata() + "/helix")
 
     # remove temp files created

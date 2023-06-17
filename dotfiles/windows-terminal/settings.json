@@ -80,7 +80,7 @@
                 "font":
                 {
                     "face": "JetBrains Mono",
-                    "size": 10.0,
+                    "size": 12.0,
                     "weight": "medium"
                 },
                 "guid": "{4b998355-c52b-4673-aa4b-dc53a6481f8d}",
@@ -102,7 +102,7 @@
                 "font":
                 {
                     "face": "JetBrains Mono",
-                    "size": 10.0,
+                    "size": 12.0,
                     "weight": "medium"
                 },
                 "guid": "{840739a4-8763-4f90-ad52-831b8b3643f3}",
@@ -125,7 +125,9 @@
                 "colorScheme": "One Half Dark",
                 "font":
                 {
-                    "face": "JetBrains Mono"
+                    "face": "JetBrains Mono",
+                    "size": 12.0,
+                    "weight": "medium"
                 },
                 "guid": "{2c4de342-38b7-51cf-b940-2309a097f518}",
                 "hidden": false,

@@ -13,8 +13,11 @@ alias dclean="docker container prune -f; docker image ls | grep none | awk '{pri
 alias dc="docker-compose"
 
 # du
+if is_mac; then
+  alias du=gdu
+fi
 function duh() {
-  du -h $1  | sort -rh | head -n 20
+  du -h --exclude=/mnt/* $1 | sort -rh | head -n 20
 }
 
 # fd
@@ -74,4 +77,9 @@ alias mdr="md README.md"
 alias mdc="md CONTRIBUTING.md"
 
 # rg
-alias rgc="rg -B 1 -A 1"
+alias rgc="rg -B 1 -A 1"i
+
+# timeout
+if is_mac; then
+  alias timeout=gtimeout
+fi
