@@ -21,9 +21,13 @@
   "security.workspace.trust.untrustedFiles": "open",
   "vsicons.dontShowNewVersionMessage": true,
   "workbench.colorTheme": "Default Light+",
-  "workbench.editor.enablePreview": false,
   "workbench.iconTheme": "vscode-icons",
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
-  }
+  },
+  "workbench.editor.enablePreview": false,
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "window.zoomLevel": -1
 }
