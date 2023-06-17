@@ -77,7 +77,7 @@ alias mdr="md README.md"
 alias mdc="md CONTRIBUTING.md"
 
 # rg
-alias rgc="rg -B 1 -A 1"i
+alias rgc="rg -B 1 -A 1 --line-number --context-separator ''"
 
 # timeout
 if is_mac; then

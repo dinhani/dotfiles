@@ -1,4 +1,10 @@
 {
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
   "editor.fontFamily": "JetBrains Mono",
   "editor.fontLigatures": true,
   "editor.fontWeight": 400,
@@ -20,14 +26,8 @@
   "rust-analyzer.inlayHints.typeHints.enable": false,
   "security.workspace.trust.untrustedFiles": "open",
   "vsicons.dontShowNewVersionMessage": true,
+  "window.zoomLevel": -1,
   "workbench.colorTheme": "Default Light+",
-  "workbench.iconTheme": "vscode-icons",
-  "[json]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
   "workbench.editor.enablePreview": false,
-  "[javascript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "window.zoomLevel": -1
+  "workbench.iconTheme": "vscode-icons"
 }
