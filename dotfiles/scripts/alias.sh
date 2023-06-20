@@ -17,7 +17,12 @@ if is_mac; then
   alias du=gdu
 fi
 function duh() {
-  du -h --exclude=/mnt/* $1 | sort -rh | head -n 20
+  if is_linux; then
+    du -h --exclude=/mnt/* $1 | sort -rh | head -n 20
+  fi
+  if is_mac; then
+    du -h $1 | sort -rh | head -n 20
+  fi
 }
 
 # fd
