@@ -18,10 +18,10 @@ if is_mac; then
 fi
 function duh() {
   if is_linux; then
-    du -h --exclude=/mnt/* $1 | sort -rh | head -n 20
+    du -ha --exclude=/mnt/* $1 | sort -rh | head -n 40
   fi
   if is_mac; then
-    du -h $1 | sort -rh | head -n 20
+    du -ha $1 | sort -rh | head -n 40
   fi
 }
 
@@ -44,6 +44,7 @@ function lsf() {
 
 # git
 alias ga="git add --all"
+alias gam="git add --all .; git commit -m $1"
 alias gb="git branch"
 alias gbkill="git branch | grep -vE 'main|master' | xargs -p -I{} git branch -D {}"
 alias gc="git checkout"
