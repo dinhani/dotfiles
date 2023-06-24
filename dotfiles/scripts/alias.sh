@@ -17,16 +17,18 @@ if is_mac; then
   alias du=gdu
 fi
 function duh() {
-  if is_linux; then
-    du -ha --exclude=/mnt/* $1 | sort -rh | head -n 40
+  du -xh $1 | sort -rh | head -n 40
+}
+function duhf() {
+  search_path=$1
+  if [ -z "$search_path" ]; then
+    search_path=.
   fi
-  if is_mac; then
-    du -ha $1 | sort -rh | head -n 40
-  fi
+  fd --search-path $search_path --exclude /mnt --type file --exec du -hx | sort -rh | head -n 40
 }
 
 # fd
-alias fd="fd --exclude .git --exclude target --color=never --hidden"
+alias fd="fd --exclude .git --exclude target --exclude /mnt --color=never --hidden"
 
 # fzf
 function cdf() {
@@ -44,7 +46,7 @@ function lsf() {
 
 # git
 alias ga="git add --all"
-alias gam="git add --all .; git commit -m $1"
+alias gam="git add --all .; git commit -m"
 alias gb="git branch"
 alias gbkill="git branch | grep -vE 'main|master' | xargs -p -I{} git branch -D {}"
 alias gc="git checkout"
