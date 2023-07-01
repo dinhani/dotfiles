@@ -29,9 +29,9 @@ def dotfiles(path = None):
     else:
         return base + "/" + path
 
-def copy_remote_file(file, target):
+def copy_remote_file(source, target):
     """Copies a remote file to a local target."""
-    print("Remote: {}".format(file))
+    print("{:<12}: {} -> {}".format("Remote", source, target))
 
     # create folder if necessary
     target_dirname = os.path.dirname(target)
@@ -40,12 +40,12 @@ def copy_remote_file(file, target):
         os.makedirs(target_dirname)
 
     # execute sync command
-    command = "scp {}@{}:~/{} {}/{} > out".format(user(), host(), file, target_dirname, target_basename)
+    command = "scp {}@{}:~/{} {}/{} > out".format(user(), host(), source, target_dirname, target_basename)
     os.system(command)
 
 def copy_local_folder(source, target):
     """Copies a local folder to a local target."""
-    print("Local: {} -> {}".format(source, target))
+    print("{:<12}: {} -> {}".format("Local folder", source, target))
 
     # create folder if necessary
     if not os.path.exists(target):
@@ -55,7 +55,7 @@ def copy_local_folder(source, target):
 
 def copy_local_file(source, target):
     """Copies a local file to a local target."""
-    print("Local: {} -> {}".format(source, target))
+    print("{:<12}: {} -> {}".format("Local file", source, target))
 
     # create folder if necessary
     target_dirname = os.path.dirname(target)
@@ -69,7 +69,7 @@ def copy_local_file(source, target):
 # ------------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    print("Remote: {}@{}".format(user(), host()))
+    print("{:<12}: {}@{}".format("Remote user", user(), host()))
 
     # remove synced files
     if os.path.exists(dotfiles()):
