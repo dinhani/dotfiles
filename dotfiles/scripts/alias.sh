@@ -50,7 +50,9 @@ alias gam="git add --all .; git commit -m"
 alias gb="git branch"
 alias gbkill="git branch | grep -vE 'main|master' | xargs -p -I{} git branch -D {}"
 alias gc="git checkout"
-alias gd="git diff | bat"
+function gd() {
+  git diff $1 | bat
+}
 alias gl="git log | bat"
 alias gm="git commit -m"
 alias gma="git commit --amend -m"
@@ -76,6 +78,15 @@ function h() {
 
 # kubernetes
 alias k="kubectl"
+alias kn="kubens"
+
+function kauth() {
+  gcloud container clusters get-credentials $1 --region $2
+}
+
+function kc() {
+  k exec --stdin --tty $1 -- /bin/bash
+}
 
 # markdown
 function md() {
@@ -91,3 +102,6 @@ alias rgc="rg -B 1 -A 1 --line-number --context-separator ''"
 if is_mac; then
   alias timeout=gtimeout
 fi
+
+# tree
+alias tree="~/.cargo/bin/erd -s name --dir-order last -y inverted --disk-usage logical -H"
