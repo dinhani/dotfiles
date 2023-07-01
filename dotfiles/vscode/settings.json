@@ -22,15 +22,15 @@
     "plaintext": true,
     "yaml": false
   },
+  "rust-analyzer.inlayHints.chainingHints.enable": false,
   "rust-analyzer.inlayHints.parameterHints.enable": false,
   "rust-analyzer.inlayHints.typeHints.enable": false,
-  "rust-analyzer.inlayHints.chainingHints.enable": false,
-  "security.workspace.trust.untrustedFiles": "open",
-  "vsicons.dontShowNewVersionMessage": true,
-  "workbench.colorTheme": "Visual Studio Dark",
-  "workbench.editor.enablePreview": false,
-  "workbench.iconTheme": "vscode-icons",
   "security.allowedUNCHosts": [
     "wsl$"
-  ]
+  ],
+  "security.workspace.trust.untrustedFiles": "open",
+  "vsicons.dontShowNewVersionMessage": true,
+  "workbench.colorTheme": "Default Light+",
+  "workbench.editor.enablePreview": false,
+  "workbench.iconTheme": "vscode-icons"
 }
