@@ -21,7 +21,7 @@ def local_appdata(path):
     """Path inside Windows local appdata folder."""
     return os.environ["LOCALAPPDATA"] + "/" + path
 
-def dotfiles(path = None):
+def dotfiles(path=None):
     """Path inside dotfiles folder."""
     base = "./dotfiles"
     if path is None:
