@@ -12,6 +12,9 @@
       </map>
     </option>
   </component>
+  <component name="EditorSettings">
+    <option name="IS_WHEEL_FONTCHANGE_ENABLED" value="true" />
+  </component>
   <component name="InlayHintsSettings">
     <option name="disabledHintProviderIds">
       <set>
