@@ -60,6 +60,7 @@ alias gp="git pull"
 alias gr="git reset"
 alias grb="git rebase -i"
 alias gs="git status"
+alias gsub="git submodule update --init --recursive"
 
 # helix
 alias xh="hx"

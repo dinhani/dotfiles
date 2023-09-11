@@ -3,12 +3,17 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[json]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "vscode.json-language-features"
   },
+  "[typescript]": {
+    "editor.defaultFormatter": "vscode.typescript-language-features"
+  },
+  "diffEditor.ignoreTrimWhitespace": false,
   "editor.fontFamily": "JetBrains Mono",
   "editor.fontLigatures": true,
   "editor.fontWeight": 400,
   "editor.inlineSuggest.enabled": true,
+  "editor.minimap.enabled": false,
   "editor.renderControlCharacters": true,
   "editor.renderWhitespace": "all",
   "editor.unicodeHighlight.allowedCharacters": {
