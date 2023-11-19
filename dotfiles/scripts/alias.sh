@@ -105,4 +105,4 @@ if is_mac; then
 fi
 
 # tree
-alias tree="~/.cargo/bin/erd -s name --dir-order last -y inverted --disk-usage logical -H"
+alias tree="~/.cargo/bin/erd -s name --dir-order first -y inverted --disk-usage logical -H"
