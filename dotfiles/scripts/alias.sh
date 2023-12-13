@@ -53,9 +53,11 @@ alias gc="git checkout"
 function gd() {
   git diff $1 | bat
 }
+alias gdn="git diff --name-only"
 alias gl="git log | bat"
 alias gm="git commit -m"
 alias gma="git commit --amend -m"
+alias gman="git commit --amend --no-edit"
 alias gp="git pull"
 alias gr="git reset"
 alias grb="git rebase -i"
@@ -98,6 +100,9 @@ alias mdc="md CONTRIBUTING.md"
 
 # rg
 alias rgc="rg -B 1 -A 1 --line-number --context-separator ''"
+
+# solc
+alias sc="solc --base-path . --include-path ./node_modules --include-path ../node_modules"
 
 # timeout
 if is_mac; then

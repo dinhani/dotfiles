@@ -1,14 +1,32 @@
 {
     "$help": "https://aka.ms/terminal-documentation",
     "$schema": "https://aka.ms/terminal-profiles-schema",
-    "actions":
+    "actions": 
     [
         {
             "command": "find",
             "keys": "ctrl+shift+f"
         },
         {
-            "command":
+            "command": 
+            {
+                "action": "splitPane",
+                "split": "up",
+                "splitMode": "duplicate"
+            },
+            "keys": "ctrl+shift+up"
+        },
+        {
+            "command": 
+            {
+                "action": "splitPane",
+                "split": "left",
+                "splitMode": "duplicate"
+            },
+            "keys": "ctrl+shift+left"
+        },
+        {
+            "command": 
             {
                 "action": "copy",
                 "singleLine": false
@@ -20,7 +38,7 @@
             "keys": "ctrl+v"
         },
         {
-            "command":
+            "command": 
             {
                 "action": "splitPane",
                 "split": "right",
@@ -29,31 +47,13 @@
             "keys": "ctrl+shift+right"
         },
         {
-            "command":
-            {
-                "action": "splitPane",
-                "split": "up",
-                "splitMode": "duplicate"
-            },
-            "keys": "ctrl+shift+up"
-        },
-        {
-            "command":
+            "command": 
             {
                 "action": "splitPane",
                 "split": "down",
                 "splitMode": "duplicate"
             },
             "keys": "ctrl+shift+down"
-        },
-        {
-            "command":
-            {
-                "action": "splitPane",
-                "split": "left",
-                "splitMode": "duplicate"
-            },
-            "keys": "ctrl+shift+left"
         }
     ],
     "centerOnLaunch": true,
@@ -63,13 +63,19 @@
     "defaultProfile": "{61c54bbd-c2c6-5271-96e7-009a87ff44bf}",
     "focusFollowMouse": false,
     "launchMode": "maximized",
-    "profiles":
+    "newTabMenu": 
+    [
+        {
+            "type": "remainingProfiles"
+        }
+    ],
+    "profiles": 
     {
-        "defaults":
+        "defaults": 
         {
             "useAtlasEngine": true
         },
-        "list":
+        "list": 
         [
             {
                 "antialiasingMode": "cleartype",
@@ -77,7 +83,7 @@
                 "commandline": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
                 "cursorShape": "bar",
                 "experimental.retroTerminalEffect": false,
-                "font":
+                "font": 
                 {
                     "face": "JetBrains Mono",
                     "size": 12.0,
@@ -99,7 +105,7 @@
                 "commandline": "C:\\Program Files\\PowerShell\\7\\pwsh.exe -Command ssh %REMOTE_USER%@%REMOTE_HOST%",
                 "cursorShape": "bar",
                 "experimental.retroTerminalEffect": false,
-                "font":
+                "font": 
                 {
                     "face": "JetBrains Mono",
                     "size": 12.0,
@@ -123,7 +129,7 @@
             },
             {
                 "colorScheme": "One Half Dark",
-                "font":
+                "font": 
                 {
                     "face": "JetBrains Mono",
                     "size": 12.0,
@@ -137,7 +143,7 @@
             }
         ]
     },
-    "schemes":
+    "schemes": 
     [
         {
             "background": "#0C0C0C",

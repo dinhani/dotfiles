@@ -1,7 +1,4 @@
 {
-  "[javascript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
   "[json]": {
     "editor.defaultFormatter": "vscode.json-language-features"
   },
@@ -13,14 +10,78 @@
   "editor.fontLigatures": true,
   "editor.fontWeight": 400,
   "editor.inlineSuggest.enabled": true,
-  "editor.minimap.enabled": false,
   "editor.renderControlCharacters": true,
   "editor.renderWhitespace": "all",
+  // "editor.semanticTokenColorCustomizations": {
+  //   "[*]": {
+  //     "rules": {
+  //       "*": {
+  //         "fontStyle": "",
+  //         "foreground": "#000"
+  //       },
+  //       "*.crateRoot": {
+  //         "fontStyle": "",
+  //         "foreground": "#6c6c6c"
+  //       },
+  //       "*.mutable": {
+  //         "fontStyle": "underline"
+  //       },
+  //       "attribute": {
+  //         "fontStyle": "bold",
+  //         "foreground": "#9E880D"
+  //       },
+  //       "comment": {
+  //         "fontStyle": "",
+  //         "foreground": "#8C8C8C"
+  //       },
+  //       "decorator": {
+  //         "fontStyle": "bold",
+  //         "foreground": "#9E880D"
+  //       },
+  //       "enumMember": {
+  //         "fontStyle": "bold",
+  //         "foreground": "#2980b9"
+  //       },
+  //       "function": {
+  //         "fontStyle": "underline"
+  //       },
+  //       "keyword": {
+  //         "fontStyle": "",
+  //         "foreground": "#0033B3"
+  //       },
+  //       "macro": {
+  //         "fontStyle": "bold",
+  //         "foreground": "#DD6718"
+  //       },
+  //       "parameter": {
+  //         "fontStyle": "",
+  //         "foreground": "#8e44ad"
+  //       },
+  //       "property": {
+  //         "fontStyle": "",
+  //         "foreground": "#8e44ad"
+  //       },
+  //       "string": {
+  //         "fontStyle": "bold italic",
+  //         "foreground": "#067D17"
+  //       },
+  //       "type": {
+  //         "fontStyle": "",
+  //         "foreground": "#0033B3"
+  //       },
+  //       "variable": {
+  //         "fontStyle": "",
+  //         "foreground": "#8e44ad"
+  //       }
+  //     }
+  //   }
+  // },
   "editor.unicodeHighlight.allowedCharacters": {
     "–": true
   },
   "files.trimTrailingWhitespace": true,
   "git.ignoreMissingGitWarning": true,
+  "git.openRepositoryInParentFolders": "never",
   "github.copilot.enable": {
     "*": true,
     "markdown": false,
@@ -37,5 +98,11 @@
   "vsicons.dontShowNewVersionMessage": true,
   "workbench.colorTheme": "Default Light+",
   "workbench.editor.enablePreview": false,
-  "workbench.iconTheme": "vscode-icons"
+  "workbench.iconTheme": "vscode-icons",
+  "files.exclude": {
+    "**/__pycache__": true,
+  },
+  "haskell.manageHLS": "GHCup",
+  "kotlin.languageServer.enabled": false,
+  "kotlin.debugAdapter.enabled": false
 }
