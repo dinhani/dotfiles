@@ -16,10 +16,6 @@ def user():
         USER = os.popen("whoami").read().strip()
     return USER
 
-def mac_ip():
-    """Remote host to connect to."""
-    return os.environ["REMOTE_HOST"]
-
 def win_roaming(path):
     """Path of Windows AppData/Roaming directory."""
     return f"/mnt/c/Users/{user()}/AppData/Roaming/{path}"
@@ -39,6 +35,10 @@ def dotfiles(path=None):
         return base
     else:
         return base + "/" + path
+
+def mac_ip():
+    """Network IP of Mac machine."""
+    return "192.168.0.14"
 
 # ------------------------------------------------------------------------------
 # Functions - Transfer
