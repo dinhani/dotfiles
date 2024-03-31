@@ -4,12 +4,16 @@ default:
 
 # Backup dotfiles
 backup:
-    python dotfiles.py backup
+    python bin-dotfiles.py backup
 
 # Restore dotfiles
 restore:
-    python dotfiles.py restore
+    python bin-dotfiles.py restore
+
+# Server that receives remote dotfiles
+server:
+    ruby bin-server.rb
 
 # Lint and format code
 lint:
-    yapf -i dotfiles.py
+    yapf -i bin-dotfiles.py
