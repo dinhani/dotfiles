@@ -45,6 +45,7 @@ def mac_ip():
 # ------------------------------------------------------------------------------
 
 def log_transfer(kind_source, kind_target, source_file, target_file):
+    """Logs a transfer operation."""
     print()
     print(f"{kind_source} -> {kind_target}")
     print(f" {source_file} -> {target_file}")
