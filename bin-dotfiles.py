@@ -44,9 +44,14 @@ def mac_ip():
 # Functions - Transfer
 # ------------------------------------------------------------------------------
 
-def local_file_to_remote(source, target):
+def log_transfer(kind_source, kind_target, source_file, target_file):
+    print()
+    print(f"{kind_source} -> {kind_target}")
+    print(f" {source_file} -> {target_file}")
+
+def local_file_to_remote(remote, source, target):
     """Copies a local file to a remote target using HTTP POST."""
-    print("{:<16}: {} -> {}".format("File -> Remote", source, target))
+    log_transfer("File", f"Remote ({remote})", source, target)
     with open(source, "r") as f:
         content = f.read()
     try:
@@ -54,19 +59,19 @@ def local_file_to_remote(source, target):
     except Exception as e:
         print(f"[!] Failed to communicate with remote host: {repr(e)}")
 
-def local_dir_to_remote(source, target):
+def local_dir_to_remote(remote, source, target):
     """Copies a local directory to a remote target using HTTP POST."""
-    print("{:<16}: {} -> {}".format("Dir  -> Remote", source, target))
+    log_transfer("Dir", f"Remote ({remote})", source, target)
 
     for root, _, files in os.walk(source):
         for file in files:
             source_file = f"{root}/{file}"
             target_file = f"{target}/{file}"
-            local_file_to_remote(source_file, target_file)
+            local_file_to_remote(remote, source_file, target_file)
 
 def local_dir_to_local(source, target):
     """Copies a local directory to a local target."""
-    print("{:<16}: {} -> {}".format("Dir  -> Dir", source, target))
+    log_transfer("Dir", "Dir", source, target)
 
     # create directory if necessary
     if not os.path.exists(target):
@@ -76,7 +81,7 @@ def local_dir_to_local(source, target):
 
 def local_file_to_local(source, target):
     """Copies a local file to a local target."""
-    print("{:<16}: {} -> {}".format("File -> File", source, target))
+    log_transfer("File", "File", source, target)
 
     # create directory if necessary
     target_dirname = os.path.dirname(target)
@@ -120,13 +125,13 @@ def backup():
 def restore():
     # Aliases
     local_file_to_local(dotfiles("scripts/alias.sh"), wsl_home("scripts/alias.sh"))
-    local_file_to_remote(dotfiles("scripts/alias.sh"), "~/scripts/alias.sh")
+    local_file_to_remote(mac_ip(), dotfiles("scripts/alias.sh"), "~/scripts/alias.sh")
 
     # Helix
     helix = dotfiles("helix")
     local_dir_to_local(helix, wsl_home(".config/helix"))
     local_dir_to_local(helix, win_roaming("helix"))
-    local_dir_to_remote(helix, "~/.config/helix")
+    local_dir_to_remote(mac_ip(), helix, "~/.config/helix")
 
     # IntelliJ
     local_dir_to_local(dotfiles("intellij"), win_roaming("JetBrains/IdeaIC2023.2"))
