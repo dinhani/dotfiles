@@ -40,7 +40,10 @@ def local_file_to_remote(source, target):
     print("{:<16}: {} -> {}".format("File -> Remote", source, target))
     with open(source, "r") as f:
         content = f.read()
-    requests.post(f"http://{remote_host()}/upload", json={"path": target, "content": content})
+    try:
+        requests.post(f"http://{remote_host()}/upload", json={"path": target, "content": content}, timeout=2)
+    except Exception as e:
+        print(f"[!] Failed to communicate with remote host: {repr(e)}")
 
 def local_dir_to_remote(source, target):
     """Copies a local directory to a remote target using HTTP POST."""
