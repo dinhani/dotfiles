@@ -4,36 +4,45 @@ import shutil
 import sys
 
 # ------------------------------------------------------------------------------
-# Functions
+# Functions - Folders and IPs
 # ------------------------------------------------------------------------------
 
-def remote_user():
-    """User to connect to remote host."""
-    return os.environ["REMOTE_USER"]
+USER = None
 
-def remote_host():
+def user():
+    global USER
+    """Username executing this script."""
+    if USER is None:
+        USER = os.popen("whoami").read().strip()
+    return USER
+
+def mac_ip():
     """Remote host to connect to."""
     return os.environ["REMOTE_HOST"]
 
-def appdata_roaming(path):
-    """Path inside Windows AppData/Roaming directory."""
-    return os.environ["APPDATA"] + "/" + path
+def win_roaming(path):
+    """Path of Windows AppData/Roaming directory."""
+    return f"/mnt/c/Users/{user()}/AppData/Roaming/{path}"
 
-def appdata_local(path):
-    """Path inside Windows AppData/Local directory."""
-    return os.environ["LOCALAPPDATA"] + "/" + path
+def win_local(path):
+    """Path of Windows AppData/Local directory."""
+    return f"/mnt/c/Users/{user()}/AppData/Local/{path}"
 
 def wsl_home(path):
-    """Path inside WSL2 Home directory."""
-    return os.environ["HOME"] + "/" + path
+    """Path of WSL2 Home directory."""
+    return f"/home/{user()}/{path}"
 
 def dotfiles(path=None):
-    """Path inside dotfiles directory."""
+    """Path of dotfiles backup directory."""
     base = "./dotfiles"
     if path is None:
         return base
     else:
         return base + "/" + path
+
+# ------------------------------------------------------------------------------
+# Functions - Transfer
+# ------------------------------------------------------------------------------
 
 def local_file_to_remote(source, target):
     """Copies a local file to a remote target using HTTP POST."""
@@ -41,7 +50,7 @@ def local_file_to_remote(source, target):
     with open(source, "r") as f:
         content = f.read()
     try:
-        requests.post(f"http://{remote_host()}/upload", json={"path": target, "content": content}, timeout=2)
+        requests.post(f"http://{mac_ip()}/upload", json={"path": target, "content": content}, timeout=2)
     except Exception as e:
         print(f"[!] Failed to communicate with remote host: {repr(e)}")
 
@@ -80,8 +89,6 @@ def local_file_to_local(source, target):
 # Execution
 # ------------------------------------------------------------------------------
 
-DIR_INTELLIJ = "JetBrains/IdeaIC2023.2"
-
 def backup():
     # remove synced files
     if os.path.exists(dotfiles()):
@@ -95,20 +102,20 @@ def backup():
     local_file_to_local(wsl_home(".config/helix/languages.toml"), dotfiles("helix/languages.toml"))
 
     # IntelliJ
-    local_dir_to_local(appdata_roaming("JetBrains/IdeaIC2023.2/keymaps"), dotfiles("intellij/keymaps"))
-    local_file_to_local(appdata_roaming("JetBrains/IdeaIC2023.2/options/editor.xml"), dotfiles("intellij/options/editor.xml"))
-    local_file_to_local(appdata_roaming("JetBrains/IdeaIC2023.2/options/editor-font.xml"), dotfiles("intellij/options/editor-font.xml"))
-    local_file_to_local(appdata_roaming("JetBrains/IdeaIC2023.2/options/window.layouts.xml"), dotfiles("intellij/options/window.layouts.xml"))
+    local_dir_to_local(win_roaming("JetBrains/IdeaIC2023.2/keymaps"), dotfiles("intellij/keymaps"))
+    local_file_to_local(win_roaming("JetBrains/IdeaIC2023.2/options/editor.xml"), dotfiles("intellij/options/editor.xml"))
+    local_file_to_local(win_roaming("JetBrains/IdeaIC2023.2/options/editor-font.xml"), dotfiles("intellij/options/editor-font.xml"))
+    local_file_to_local(win_roaming("JetBrains/IdeaIC2023.2/options/window.layouts.xml"), dotfiles("intellij/options/window.layouts.xml"))
 
     # VSCode
-    local_file_to_local(appdata_roaming("Code/User/keybindings.json"), dotfiles("vscode/keybindings.json"))
-    local_file_to_local(appdata_roaming("Code/User/settings.json"), dotfiles("vscode/settings.json"))
+    local_file_to_local(win_roaming("Code/User/keybindings.json"), dotfiles("vscode/keybindings.json"))
+    local_file_to_local(win_roaming("Code/User/settings.json"), dotfiles("vscode/settings.json"))
 
     # VIM
     local_file_to_local(wsl_home(".vimrc"), dotfiles(".vimrc"))
 
     # Windows Terminal
-    local_file_to_local(appdata_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"), dotfiles("windows-terminal/settings.json"))
+    local_file_to_local(win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"), dotfiles("windows-terminal/settings.json"))
 
 def restore():
     # Aliases
@@ -118,20 +125,20 @@ def restore():
     # Helix
     helix = dotfiles("helix")
     local_dir_to_local(helix, wsl_home(".config/helix"))
-    local_dir_to_local(helix, appdata_roaming("helix"))
+    local_dir_to_local(helix, win_roaming("helix"))
     local_dir_to_remote(helix, "~/.config/helix")
 
     # IntelliJ
-    local_dir_to_local(dotfiles("intellij"), appdata_roaming("JetBrains/IdeaIC2023.2"))
+    local_dir_to_local(dotfiles("intellij"), win_roaming("JetBrains/IdeaIC2023.2"))
 
     # VSCode
-    local_dir_to_local(dotfiles("vscode"), appdata_roaming("Code/User"))
+    local_dir_to_local(dotfiles("vscode"), win_roaming("Code/User"))
 
     # VIM
     local_file_to_local(dotfiles(".vimrc"), wsl_home(".vimrc"))
 
     # Windows Terminal
-    local_dir_to_local(dotfiles("windows-terminal"), appdata_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/"))
+    local_dir_to_local(dotfiles("windows-terminal"), win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/"))
 
 # ------------------------------------------------------------------------------
 # Main
