@@ -2,8 +2,8 @@
 is_linux() { [[ "$(uname -s)" == "Linux" ]]; }
 is_mac() { [[ "$(uname -s)" == "Darwin" ]]; }
 
-# folders
-alias cdp="cd ~/Desktop/projects"
+# chezmoi
+alias cz="chezmoi"
 
 # docker
 alias dkill="docker ps | awk '{if (NR > 1) {print \$1}}' | xargs -I{} docker kill {}"
