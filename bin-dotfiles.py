@@ -52,21 +52,6 @@ def local_dir_to_remote(source, target):
             target_file = f"{target}/{file}"
             local_file_to_remote(source_file, target_file)
 
-# TODO: use HTTP instead of SCP
-def remote_file_to_local(source, target):
-    """Copies a remote file to a local target."""
-    print("{:<16}: {} -> {}".format("File -> File", source, target))
-
-    # create directory if necessary
-    target_dirname = os.path.dirname(target)
-    target_basename = os.path.basename(target)
-    if target_dirname != "" and not os.path.exists(target_dirname):
-        os.makedirs(target_dirname)
-
-    # execute sync command
-    command = "scp {}@{}:{} {}/{} > out".format(remote_user(), remote_host(), source, target_dirname, target_basename)
-    os.system(command)
-
 def local_dir_to_local(source, target):
     """Copies a local directory to a local target."""
     print("{:<16}: {} -> {}".format("Dir  -> Dir", source, target))
