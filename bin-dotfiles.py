@@ -52,6 +52,7 @@ def local_dir_to_remote(source, target):
             target_file = f"{target}/{file}"
             local_file_to_remote(source_file, target_file)
 
+# TODO: use HTTP instead of SCP
 def remote_file_to_local(source, target):
     """Copies a remote file to a local target."""
     print("{:<16}: {} -> {}".format("File -> File", source, target))
