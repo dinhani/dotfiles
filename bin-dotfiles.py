@@ -6,7 +6,7 @@ import sys
 # ------------------------------------------------------------------------------
 # Functions - Folders and IPs
 # ------------------------------------------------------------------------------
-MAC_IP = "192.168.0.14:3000"
+MAC = "192.168.0.14:3000"
 USER = None
 
 def user():
@@ -24,7 +24,7 @@ def win_local(path):
     """Path of Windows AppData/Local directory."""
     return f"/mnt/c/Users/{user()}/AppData/Local/{path}"
 
-def wsl_home(path):
+def wsl(path):
     """Path of WSL2 Home directory."""
     return f"/home/{user()}/{path}"
 
@@ -46,27 +46,7 @@ def log_transfer(kind_source, kind_target, source_file, target_file):
     print(f"{kind_source} -> {kind_target}")
     print(f"  {source_file} -> {target_file}")
 
-def local_file_to_remote(remote, source, target):
-    """Copies a local file to a remote target using HTTP POST."""
-    log_transfer("File", f"Remote ({remote})", source, target)
-    with open(source, "r") as f:
-        content = f.read()
-    try:
-        requests.post(f"http://{remote}/upload", json={"path": target, "content": content}, timeout=1)
-    except Exception as e:
-        print(f"[!] Failed to communicate with remote host: {repr(e)}")
-
-def local_dir_to_remote(remote, source, target):
-    """Copies a local directory to a remote target."""
-    log_transfer("Dir", f"Remote ({remote})", source, target)
-
-    for root, _, files in os.walk(source):
-        for file in files:
-            source_file = f"{root}/{file}"
-            target_file = f"{target}/{file}"
-            local_file_to_remote(remote, source_file, target_file)
-
-def remote_file_to_local(remote, source, target):
+def r2f(remote, source, target):
     """Copies a remote file to a local target."""
     log_transfer(f"Remote ({remote})", "File", source, target)
     try:
@@ -76,7 +56,27 @@ def remote_file_to_local(remote, source, target):
     except Exception as e:
         print(f"[!] Failed to communicate with remote host: {repr(e)}")
 
-def local_dir_to_local(source, target):
+def d2r(source, remote, target):
+    """Copies a local directory to a remote target."""
+    log_transfer("Dir", f"Remote ({remote})", source, target)
+
+    for root, _, files in os.walk(source):
+        for file in files:
+            source_file = f"{root}/{file}"
+            target_file = f"{target}/{file}"
+            f2r(source_file, remote, target_file)
+
+def f2r(source, remote, target):
+    """Copies a local file to a remote target using HTTP POST."""
+    log_transfer("File", f"Remote ({remote})", source, target)
+    with open(source, "r") as f:
+        content = f.read()
+    try:
+        requests.post(f"http://{remote}/upload", json={"path": target, "content": content}, timeout=1)
+    except Exception as e:
+        print(f"[!] Failed to communicate with remote host: {repr(e)}")
+
+def d2d(source, target):
     """Copies a local directory to a local target."""
     log_transfer("Dir", "Dir", source, target)
 
@@ -86,7 +86,7 @@ def local_dir_to_local(source, target):
 
     shutil.copytree(source, target, dirs_exist_ok=True)
 
-def local_file_to_local(source, target):
+def f2f(source, target):
     """Copies a local file to a local target."""
     log_transfer("File", "File", source, target)
 
@@ -107,50 +107,49 @@ def backup():
         shutil.rmtree(dotfiles())
 
     # Aliases
-    local_file_to_local(wsl_home("scripts/alias.sh"), dotfiles("scripts/alias.sh"))
+    f2f(wsl("scripts/alias.sh"), dotfiles("scripts/alias.sh"))
 
     # Helix
-    local_file_to_local(wsl_home(".config/helix/config.toml"), dotfiles("helix/config.toml"))
-    local_file_to_local(wsl_home(".config/helix/languages.toml"), dotfiles("helix/languages.toml"))
+    f2f(wsl(".config/helix/config.toml"), dotfiles("helix/config.toml"))
+    f2f(wsl(".config/helix/languages.toml"), dotfiles("helix/languages.toml"))
 
     # IntelliJ
-    local_dir_to_local(win_roaming("JetBrains/IdeaIC2023.2/keymaps"), dotfiles("intellij/keymaps"))
-    local_file_to_local(win_roaming("JetBrains/IdeaIC2023.2/options/editor.xml"), dotfiles("intellij/options/editor.xml"))
-    local_file_to_local(win_roaming("JetBrains/IdeaIC2023.2/options/editor-font.xml"), dotfiles("intellij/options/editor-font.xml"))
-    local_file_to_local(win_roaming("JetBrains/IdeaIC2023.2/options/window.layouts.xml"), dotfiles("intellij/options/window.layouts.xml"))
+    d2d(win_roaming("JetBrains/IdeaIC2023.2/keymaps"), dotfiles("intellij/keymaps"))
+    f2f(win_roaming("JetBrains/IdeaIC2023.2/options/editor.xml"), dotfiles("intellij/options/editor.xml"))
+    f2f(win_roaming("JetBrains/IdeaIC2023.2/options/editor-font.xml"), dotfiles("intellij/options/editor-font.xml"))
+    f2f(win_roaming("JetBrains/IdeaIC2023.2/options/window.layouts.xml"), dotfiles("intellij/options/window.layouts.xml"))
 
     # VSCode
-    local_file_to_local(win_roaming("Code/User/keybindings.json"), dotfiles("vscode/keybindings.json"))
-    local_file_to_local(win_roaming("Code/User/settings.json"), dotfiles("vscode/settings.json"))
+    f2f(win_roaming("Code/User/keybindings.json"), dotfiles("vscode/keybindings.json"))
+    f2f(win_roaming("Code/User/settings.json"), dotfiles("vscode/settings.json"))
 
     # VIM
-    local_file_to_local(wsl_home(".vimrc"), dotfiles(".vimrc"))
+    f2f(wsl(".vimrc"), dotfiles(".vimrc"))
 
     # Terminal
-    local_file_to_local(win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"), dotfiles("windows-terminal/settings.json"))
+    f2f(win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"), dotfiles("windows-terminal/settings.json"))
 
 def restore():
     # Aliases
-    local_file_to_local(dotfiles("scripts/alias.sh"), wsl_home("scripts/alias.sh"))
-    local_file_to_remote(MAC_IP, dotfiles("scripts/alias.sh"), "~/scripts/alias.sh")
+    f2f(dotfiles("scripts/alias.sh"), wsl("scripts/alias.sh"))
+    f2r(dotfiles("scripts/alias.sh"), MAC, "~/scripts/alias.sh")
 
     # Helix
-    helix = dotfiles("helix")
-    local_dir_to_local(helix, wsl_home(".config/helix"))
-    local_dir_to_local(helix, win_roaming("helix"))
-    local_dir_to_remote(MAC_IP, helix, "~/.config/helix")
+    d2d(dotfiles("helix"), wsl(".config/helix"))
+    d2d(dotfiles("helix"), win_roaming("helix"))
+    d2r(dotfiles("helix"), MAC, "~/.config/helix")
 
     # IntelliJ
-    local_dir_to_local(dotfiles("intellij"), win_roaming("JetBrains/IdeaIC2023.2"))
+    d2d(dotfiles("intellij"), win_roaming("JetBrains/IdeaIC2023.2"))
 
     # VSCode
-    local_dir_to_local(dotfiles("vscode"), win_roaming("Code/User"))
+    d2d(dotfiles("vscode"), win_roaming("Code/User"))
 
     # VIM
-    local_file_to_local(dotfiles(".vimrc"), wsl_home(".vimrc"))
+    f2f(dotfiles(".vimrc"), wsl(".vimrc"))
 
     # Terminal
-    local_dir_to_local(dotfiles("windows-terminal"), win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/"))
+    d2d(dotfiles("windows-terminal"), win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/"))
 
 # ------------------------------------------------------------------------------
 # Main
