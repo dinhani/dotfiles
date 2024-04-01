@@ -106,8 +106,11 @@ def backup():
     if os.path.exists(dotfiles()):
         shutil.rmtree(dotfiles())
 
-    # Aliases
+    # Custom Scripts
     f2f(wsl("scripts/alias.sh"), dotfiles("scripts/alias.sh"))
+
+    # ASDF
+    f2f(wsl(".tool-versions"), dotfiles(".tool-versions"))
 
     # Helix
     f2f(wsl(".config/helix/config.toml"), dotfiles("helix/config.toml"))
@@ -130,9 +133,13 @@ def backup():
     f2f(win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"), dotfiles("windows-terminal/settings.json"))
 
 def restore():
-    # Aliases
+    # Custom Scripts
     f2f(dotfiles("scripts/alias.sh"), wsl("scripts/alias.sh"))
     f2r(dotfiles("scripts/alias.sh"), MAC, "~/scripts/alias.sh")
+
+    # ASDF
+    f2f(dotfiles(".tool-versions"), wsl(".tool-versions"))
+    f2r(dotfiles(".tool-versions"), MAC, "~/.tool-versions")
 
     # Helix
     d2d(dotfiles("helix"), wsl(".config/helix"))
