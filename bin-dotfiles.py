@@ -6,7 +6,7 @@ import sys
 # ------------------------------------------------------------------------------
 # Functions - Folders and IPs
 # ------------------------------------------------------------------------------
-
+MAC_IP = "192.168.0.14"
 USER = None
 
 def user():
@@ -36,10 +36,6 @@ def dotfiles(path=None):
     else:
         return base + "/" + path
 
-def mac_ip():
-    """Network IP of Mac machine."""
-    return "192.168.0.14"
-
 # ------------------------------------------------------------------------------
 # Functions - Transfer
 # ------------------------------------------------------------------------------
@@ -48,7 +44,7 @@ def log_transfer(kind_source, kind_target, source_file, target_file):
     """Logs a transfer operation."""
     print()
     print(f"{kind_source} -> {kind_target}")
-    print(f" {source_file} -> {target_file}")
+    print(f"  {source_file} -> {target_file}")
 
 def local_file_to_remote(remote, source, target):
     """Copies a local file to a remote target using HTTP POST."""
@@ -56,7 +52,7 @@ def local_file_to_remote(remote, source, target):
     with open(source, "r") as f:
         content = f.read()
     try:
-        requests.post(f"http://{mac_ip()}/upload", json={"path": target, "content": content}, timeout=2)
+        requests.post(f"http://{remote}/upload", json={"path": target, "content": content}, timeout=1)
     except Exception as e:
         print(f"[!] Failed to communicate with remote host: {repr(e)}")
 
@@ -126,13 +122,13 @@ def backup():
 def restore():
     # Aliases
     local_file_to_local(dotfiles("scripts/alias.sh"), wsl_home("scripts/alias.sh"))
-    local_file_to_remote(mac_ip(), dotfiles("scripts/alias.sh"), "~/scripts/alias.sh")
+    local_file_to_remote(MAC_IP, dotfiles("scripts/alias.sh"), "~/scripts/alias.sh")
 
     # Helix
     helix = dotfiles("helix")
     local_dir_to_local(helix, wsl_home(".config/helix"))
     local_dir_to_local(helix, win_roaming("helix"))
-    local_dir_to_remote(mac_ip(), helix, "~/.config/helix")
+    local_dir_to_remote(MAC_IP, helix, "~/.config/helix")
 
     # IntelliJ
     local_dir_to_local(dotfiles("intellij"), win_roaming("JetBrains/IdeaIC2023.2"))
