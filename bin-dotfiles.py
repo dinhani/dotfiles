@@ -6,7 +6,7 @@ import sys
 # ------------------------------------------------------------------------------
 # Functions - Folders and IPs
 # ------------------------------------------------------------------------------
-MAC_IP = "192.168.0.14"
+MAC_IP = "192.168.0.14:3000"
 USER = None
 
 def user():
@@ -57,7 +57,7 @@ def local_file_to_remote(remote, source, target):
         print(f"[!] Failed to communicate with remote host: {repr(e)}")
 
 def local_dir_to_remote(remote, source, target):
-    """Copies a local directory to a remote target using HTTP POST."""
+    """Copies a local directory to a remote target."""
     log_transfer("Dir", f"Remote ({remote})", source, target)
 
     for root, _, files in os.walk(source):
@@ -65,6 +65,16 @@ def local_dir_to_remote(remote, source, target):
             source_file = f"{root}/{file}"
             target_file = f"{target}/{file}"
             local_file_to_remote(remote, source_file, target_file)
+
+def remote_file_to_local(remote, source, target):
+    """Copies a remote file to a local target."""
+    log_transfer(f"Remote ({remote})", "File", source, target)
+    try:
+        response = requests.post(f"http://{remote}/download", json={"path": source}, timeout=1)
+        with open(target, "w") as f:
+            f.write(response.text)
+    except Exception as e:
+        print(f"[!] Failed to communicate with remote host: {repr(e)}")
 
 def local_dir_to_local(source, target):
     """Copies a local directory to a local target."""
@@ -116,7 +126,7 @@ def backup():
     # VIM
     local_file_to_local(wsl_home(".vimrc"), dotfiles(".vimrc"))
 
-    # Windows Terminal
+    # Terminal
     local_file_to_local(win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"), dotfiles("windows-terminal/settings.json"))
 
 def restore():
@@ -139,7 +149,7 @@ def restore():
     # VIM
     local_file_to_local(dotfiles(".vimrc"), wsl_home(".vimrc"))
 
-    # Windows Terminal
+    # Terminal
     local_dir_to_local(dotfiles("windows-terminal"), win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/"))
 
 # ------------------------------------------------------------------------------
