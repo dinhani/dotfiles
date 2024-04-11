@@ -6,8 +6,8 @@ is_mac() { [[ "$(uname -s)" == "Darwin" ]]; }
 alias cz="chezmoi"
 
 # docker
-alias dkill="docker ps | awk '{if (NR > 1) {print \$1}}' | xargs -I{} docker kill {}"
-alias dclean="docker container prune -f; docker image ls | grep none | awk '{print \$3}' | xargs docker image rm; docker image prune -f; docker network prune -f"
+alias dkill="docker ps --format '{{.ID}}' | xargs -I{} docker kill {}"
+alias dclean="docker container prune -f; docker network prune -f; docker volume prune -f; docker image ls | grep none | awk '{print \$3}' | xargs docker image rm; docker image prune -f;"
 
 # docker-compose
 alias dc="docker-compose"
