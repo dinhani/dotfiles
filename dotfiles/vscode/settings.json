@@ -6,6 +6,9 @@
     "editor.defaultFormatter": "vscode.typescript-language-features"
   },
   "cSpell.language": "en,pt-BR",
+  "cSpell.userWords": [
+    "openssl"
+  ],
   "diffEditor.ignoreTrimWhitespace": false,
   "editor.fontFamily": "JetBrains Mono",
   "editor.fontLigatures": true,
@@ -41,8 +44,5 @@
   "vsicons.dontShowNewVersionMessage": true,
   "workbench.colorTheme": "Default Light+",
   "workbench.editor.enablePreview": false,
-  "workbench.iconTheme": "vscode-icons",
-  "cSpell.userWords": [
-    "openssl"
-  ]
+  "workbench.iconTheme": "vscode-icons"
 }
