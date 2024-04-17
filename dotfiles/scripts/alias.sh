@@ -98,6 +98,10 @@ function md() {
 alias mdr="md README.md"
 alias mdc="md CONTRIBUTING.md"
 
+# perf
+alias prec="perf record -F 20000 -g"
+alias pflame="perf script | stackcollapse-perf.pl | flamegraph.pl  > flame.svg"
+
 # rg
 alias rgc="rg -B 1 -A 1 --line-number --context-separator ''"
 
