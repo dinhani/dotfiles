@@ -105,6 +105,9 @@ alias pflame="perf script | stackcollapse-perf.pl | flamegraph.pl  > flame.svg"
 # rg
 alias rgc="rg -B 1 -A 1 --line-number --context-separator ''"
 
+# server
+alias serve="xdg-open http://127.0.0.1:8000; python -m http.server"
+
 # solc
 alias sc="solc --base-path . --include-path ./node_modules --include-path ../node_modules"
 
@@ -115,3 +118,6 @@ fi
 
 # tree
 alias tree="~/.cargo/bin/erd -s name --dir-order first -y inverted --disk-usage logical -H"
+
+# wget
+alias wget-mirror="wget --mirror --convert-links --adjust-extension --page-requisites --no-parent --no-clobber"
