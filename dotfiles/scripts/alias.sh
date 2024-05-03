@@ -99,7 +99,7 @@ alias mdr="md README.md"
 alias mdc="md CONTRIBUTING.md"
 
 # perf
-alias prec="perf record -F 20000 -g"
+alias prec="perf record --call-graph dwarf -F 1000 -g"
 alias pflame="perf script | stackcollapse-perf.pl | flamegraph.pl  > flame.svg"
 
 # rg
