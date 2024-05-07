@@ -58,6 +58,7 @@ alias gl="git log | bat"
 alias gm="git commit -m"
 alias gma="git commit --amend -m"
 alias gman="git commit --amend --no-edit"
+alias gme="git commit --allow-empty -m"
 alias gp="git pull"
 alias gr="git reset"
 alias grb="git rebase -i"
@@ -75,8 +76,8 @@ function h() {
   if is_linux; then
     command=$(history | awk ' {$1=""; print substr($0, 2) }' | sort | uniq | fzf --tac)
   fi
-  echo $command
-  eval $command
+  history -s $command
+  eval $command  
 }
 
 # kubernetes
@@ -100,7 +101,7 @@ alias mdc="md CONTRIBUTING.md"
 
 # perf
 alias prec="perf record --call-graph dwarf -F 1000 -g"
-alias pflame="perf script | stackcollapse-perf.pl | flamegraph.pl --width 1800 --height 24 --fonttype 'Jetbrains Mono' --nametype '' --color rust --bgcolors grey --hash > flame.svg"
+alias pflame="perf script | stackcollapse-perf.pl | flamegraph.pl --width 1900 --height 24 --fonttype 'Jetbrains Mono' --nametype '' --color rust --bgcolors grey --hash > flame.svg"
 
 # rg
 alias rgc="rg -B 1 -A 1 --line-number --context-separator ''"
