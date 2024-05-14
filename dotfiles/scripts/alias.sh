@@ -2,8 +2,8 @@
 is_linux() { [[ "$(uname -s)" == "Linux" ]]; }
 is_mac() { [[ "$(uname -s)" == "Darwin" ]]; }
 
-# chezmoi
-alias cz="chezmoi"
+# clear
+alias c="clear"
 
 # docker
 alias dkill="docker ps --format '{{.ID}}' | xargs -I{} docker kill {}"
@@ -80,11 +80,20 @@ function h() {
   eval $command  
 }
 
+# linter
+function lint() {
+  if [ -f Cargo.toml ]; then
+    cargo +nightly fmt --all
+    cargo clippy --all-targets
+  fi
+}
+
 # kubernetes
 alias k="kubectl"
 alias kn="kubens"
 
 function kauth() {
+  
   gcloud container clusters get-credentials $1 --region $2
 }
 
