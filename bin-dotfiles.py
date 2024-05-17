@@ -1,4 +1,5 @@
 import os
+import platform
 import requests
 import shutil
 import sys
@@ -8,6 +9,15 @@ import sys
 # ------------------------------------------------------------------------------
 MAC = "192.168.0.14:3000"
 USER = None
+
+def is_wsl():
+    return platform.system() == "Linux"
+
+def is_mac():
+    return platform.system() == "Darwin"
+
+def is_win():
+    return is_wsl()
 
 def user():
     global USER
@@ -24,9 +34,10 @@ def win_local(path):
     """Path of Windows AppData/Local directory."""
     return f"/mnt/c/Users/{user()}/AppData/Local/{path}"
 
-def wsl(path):
-    """Path of WSL2 Home directory."""
-    return f"/home/{user()}/{path}"
+def unix_home(path):
+    """Path of Unix home directory (Linux and MC)."""
+    home = os.environ["HOME"]
+    return f"/{home}/{path}"
 
 def dotfiles(path=None):
     """Path of dotfiles backup directory."""
@@ -45,36 +56,6 @@ def log_transfer(kind_source, kind_target, source_file, target_file):
     print()
     print(f"{kind_source} -> {kind_target}")
     print(f"  {source_file} -> {target_file}")
-
-def r2f(remote, source, target):
-    """Copies a remote file to a local target."""
-    log_transfer(f"Remote ({remote})", "File", source, target)
-    try:
-        response = requests.post(f"http://{remote}/download", json={"path": source}, timeout=1)
-        with open(target, "w") as f:
-            f.write(response.text)
-    except Exception as e:
-        print(f"[!] Failed to communicate with remote host: {repr(e)}")
-
-def d2r(source, remote, target):
-    """Copies a local directory to a remote target."""
-    log_transfer("Dir", f"Remote ({remote})", source, target)
-
-    for root, _, files in os.walk(source):
-        for file in files:
-            source_file = f"{root}/{file}"
-            target_file = f"{target}/{file}"
-            f2r(source_file, remote, target_file)
-
-def f2r(source, remote, target):
-    """Copies a local file to a remote target using HTTP POST."""
-    log_transfer("File", f"Remote ({remote})", source, target)
-    with open(source, "r") as f:
-        content = f.read()
-    try:
-        requests.post(f"http://{remote}/upload", json={"path": target, "content": content}, timeout=1)
-    except Exception as e:
-        print(f"[!] Failed to communicate with remote host: {repr(e)}")
 
 def d2d(source, target):
     """Copies a local directory to a local target."""
@@ -107,56 +88,60 @@ def backup():
         shutil.rmtree(dotfiles())
 
     # Custom Scripts
-    f2f(wsl("scripts/alias.sh"), dotfiles("scripts/alias.sh"))
+    f2f(unix_home("scripts/alias.sh"), dotfiles("scripts/alias.sh"))
 
     # ASDF
-    f2f(wsl(".tool-versions"), dotfiles(".tool-versions"))
+    f2f(unix_home(".tool-versions"), dotfiles(".tool-versions"))
 
     # Helix
-    f2f(wsl(".config/helix/config.toml"), dotfiles("helix/config.toml"))
-    f2f(wsl(".config/helix/languages.toml"), dotfiles("helix/languages.toml"))
+    f2f(unix_home(".config/helix/config.toml"), dotfiles("helix/config.toml"))
+    f2f(unix_home(".config/helix/languages.toml"), dotfiles("helix/languages.toml"))
 
     # IntelliJ
-    d2d(win_roaming("JetBrains/IdeaIC2023.2/keymaps"), dotfiles("intellij/keymaps"))
-    f2f(win_roaming("JetBrains/IdeaIC2023.2/options/editor.xml"), dotfiles("intellij/options/editor.xml"))
-    f2f(win_roaming("JetBrains/IdeaIC2023.2/options/editor-font.xml"), dotfiles("intellij/options/editor-font.xml"))
-    f2f(win_roaming("JetBrains/IdeaIC2023.2/options/window.layouts.xml"), dotfiles("intellij/options/window.layouts.xml"))
+    if is_win():
+        d2d(win_roaming("JetBrains/IdeaIC2023.2/keymaps"), dotfiles("intellij/keymaps"))
+        f2f(win_roaming("JetBrains/IdeaIC2023.2/options/editor.xml"), dotfiles("intellij/options/editor.xml"))
+        f2f(win_roaming("JetBrains/IdeaIC2023.2/options/editor-font.xml"), dotfiles("intellij/options/editor-font.xml"))
+        f2f(win_roaming("JetBrains/IdeaIC2023.2/options/window.layouts.xml"), dotfiles("intellij/options/window.layouts.xml"))
 
     # VSCode
-    f2f(win_roaming("Code/User/keybindings.json"), dotfiles("vscode/keybindings.json"))
-    f2f(win_roaming("Code/User/settings.json"), dotfiles("vscode/settings.json"))
+    if is_win():
+        f2f(win_roaming("Code/User/keybindings.json"), dotfiles("vscode/keybindings.json"))
+        f2f(win_roaming("Code/User/settings.json"), dotfiles("vscode/settings.json"))
 
     # VIM
-    f2f(wsl(".vimrc"), dotfiles(".vimrc"))
+    f2f(unix_home(".vimrc"), dotfiles(".vimrc"))
 
     # Terminal
-    f2f(win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"), dotfiles("windows-terminal/settings.json"))
+    if is_win():
+        f2f(win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"), dotfiles("windows-terminal/settings.json"))
 
 def restore():
     # Custom Scripts
-    f2f(dotfiles("scripts/alias.sh"), wsl("scripts/alias.sh"))
-    f2r(dotfiles("scripts/alias.sh"), MAC, "~/scripts/alias.sh")
+    f2f(dotfiles("scripts/alias.sh"), unix_home("scripts/alias.sh"))
 
     # ASDF
-    f2f(dotfiles(".tool-versions"), wsl(".tool-versions"))
-    f2r(dotfiles(".tool-versions"), MAC, "~/.tool-versions")
+    f2f(dotfiles(".tool-versions"), unix_home(".tool-versions"))
 
     # Helix
-    d2d(dotfiles("helix"), wsl(".config/helix"))
-    d2d(dotfiles("helix"), win_roaming("helix"))
-    d2r(dotfiles("helix"), MAC, "~/.config/helix")
+    d2d(dotfiles("helix"), unix_home(".config/helix"))
+    if is_win():
+        d2d(dotfiles("helix"), win_roaming("helix"))
 
     # IntelliJ
-    d2d(dotfiles("intellij"), win_roaming("JetBrains/IdeaIC2023.2"))
+    if is_win():
+        d2d(dotfiles("intellij"), win_roaming("JetBrains/IdeaIC2023.2"))
 
     # VSCode
-    d2d(dotfiles("vscode"), win_roaming("Code/User"))
+    if is_win():
+        d2d(dotfiles("vscode"), win_roaming("Code/User"))
 
     # VIM
-    f2f(dotfiles(".vimrc"), wsl(".vimrc"))
+    f2f(dotfiles(".vimrc"), unix_home(".vimrc"))
 
     # Terminal
-    d2d(dotfiles("windows-terminal"), win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/"))
+    if is_win():
+        d2d(dotfiles("windows-terminal"), win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/"))
 
 # ------------------------------------------------------------------------------
 # Main
