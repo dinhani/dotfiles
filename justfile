@@ -10,10 +10,6 @@ backup:
 restore:
     python bin-dotfiles.py restore
 
-# Server that receives remote dotfiles
-server:
-    ruby bin-server.rb
-
 # Lint and format code
 lint:
     yapf -i bin-dotfiles.py
