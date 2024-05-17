@@ -37,7 +37,7 @@ def win_local(path):
 def unix_home(path):
     """Path of Unix home directory (Linux and MC)."""
     home = os.environ["HOME"]
-    return f"/{home}/{path}"
+    return f"{home}/{path}"
 
 def dotfiles(path=None):
     """Path of dotfiles backup directory."""
