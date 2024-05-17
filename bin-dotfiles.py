@@ -10,14 +10,17 @@ import sys
 MAC = "192.168.0.14:3000"
 USER = None
 
-def is_wsl():
+def is_linux():
+    """Check if current system is WSL / Linux."""
     return platform.system() == "Linux"
 
 def is_mac():
+    """Check if current system is MacOs."""
     return platform.system() == "Darwin"
 
 def is_win():
-    return is_wsl()
+    """Check if current system is Windows."""
+    return is_linux()
 
 def user():
     global USER
@@ -35,7 +38,7 @@ def win_local(path):
     return f"/mnt/c/Users/{user()}/AppData/Local/{path}"
 
 def unix_home(path):
-    """Path of Unix home directory (Linux and MC)."""
+    """Path of Unix home directory (Linux and Mac)."""
     home = os.environ["HOME"]
     return f"{home}/{path}"
 
