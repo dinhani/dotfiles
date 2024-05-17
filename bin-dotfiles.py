@@ -29,6 +29,11 @@ def user():
         USER = os.popen("whoami").read().strip()
     return USER
 
+def unix_home(path):
+    """Path of Unix home directory (Linux and Mac)."""
+    home = os.environ["HOME"]
+    return f"{home}/{path}"
+
 def win_roaming(path):
     """Path of Windows AppData/Roaming directory."""
     return f"/mnt/c/Users/{user()}/AppData/Roaming/{path}"
@@ -37,10 +42,13 @@ def win_local(path):
     """Path of Windows AppData/Local directory."""
     return f"/mnt/c/Users/{user()}/AppData/Local/{path}"
 
-def unix_home(path):
-    """Path of Unix home directory (Linux and Mac)."""
-    home = os.environ["HOME"]
-    return f"{home}/{path}"
+def mac_library(path):
+    """Path of Mac Library directory."""
+    return unix_home("Library/") + path
+
+def mac_app_support(path):
+    """Path of Mac Application Support directory."""
+    return mac_library("Application Support/") + path
 
 def dotfiles(path=None):
     """Path of dotfiles backup directory."""
@@ -138,6 +146,8 @@ def restore():
     # VSCode
     if is_win():
         d2d(dotfiles("vscode"), win_roaming("Code/User"))
+    if is_mac():
+        d2d(dotfiles("vscode"), mac_app_support("Code/User"))
 
     # VIM
     f2f(dotfiles(".vimrc"), unix_home(".vimrc"))
