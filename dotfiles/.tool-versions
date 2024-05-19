@@ -11,15 +11,15 @@ groovy 4.0.21
 haskell 9.8.2
 java openjdk-21.0.1
 julia 1.10.2
-kotlin 1.9.23
+kotlin 1.9.24
 lein 2.11.2
 lua 5.4.6
 maven 3.9.6
 nodejs 22.0.0
 ocaml 5.1.1
-odin dev-2024-04
+odin dev-2024-05
 perl 5.38.2
-php 8.3.6
+php 8.3.7
 powershell-core 7.4.2
 python 3.11.6
 r 4.4.0
@@ -28,7 +28,6 @@ raku 2024.04
 ruby 3.2.2
 scala 3.4.1
 solidity 0.8.25
-swiprolog 9.2.4
-v weekly.2024.18
+v weekly.2024.20
 yarn 1.22.21
 zig 0.12.0
