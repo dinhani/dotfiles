@@ -2,6 +2,10 @@
 is_linux() { [[ "$(uname -s)" == "Linux" ]]; }
 is_mac() { [[ "$(uname -s)" == "Darwin" ]]; }
 
+# self
+alias e="hx ~/scripts/alias.sh"
+alias s="source ~/.bashrc;"
+
 # clear
 alias c="clear"
 
@@ -29,6 +33,8 @@ function duhf() {
 
 # fd
 alias fd="fd --exclude .git --exclude target --exclude /mnt --color=never --hidden"
+alias fd1="fd . --max-depth 1"
+alias fd2="fd . --max-depth 2"
 
 # fzf
 function cdf() {
@@ -93,7 +99,6 @@ alias k="kubectl"
 alias kn="kubens"
 
 function kauth() {
-  
   gcloud container clusters get-credentials $1 --region $2
 }
 
@@ -107,6 +112,25 @@ function md() {
 }
 alias mdr="md README.md"
 alias mdc="md CONTRIBUTING.md"
+
+function mv-ascii() {
+  while read filename; do
+    dir=$(dirname "$filename")
+    source=$(basename "$filename")
+    target=$(echo $source | iconv -f utf-8 -t ascii//TRANSLIT | tr '[:upper:]' '[:lower:]')
+
+    # ignore special cases
+    if [[ "$source" == Cargo.* ]]; then
+      continue
+    fi
+
+    # rename only if name changed
+    if [[ $source != $target ]]; then
+      mv "$dir/$source" "$dir/__$target" # workaround: only changing case fails in Windows, so we create a temporary version with __ prefix before renaming to the final version
+      mv "$dir/__$target" "$dir/$target"
+    fi    
+  done
+}
 
 # perf
 alias prec="perf record --call-graph dwarf -F 1000 -g"
