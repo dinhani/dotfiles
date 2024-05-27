@@ -117,7 +117,7 @@ function mv-ascii() {
   while read filename; do
     dir=$(dirname "$filename")
     source=$(basename "$filename")
-    target=$(echo $source | iconv -f utf-8 -t ascii//TRANSLIT | tr '[:upper:]' '[:lower:]')
+    target=$(echo $source | iconv -f utf-8 -t ascii//TRANSLIT | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
 
     # ignore special cases
     if [[ "$source" == Cargo.* ]]; then
