@@ -155,3 +155,6 @@ alias tree="~/.cargo/bin/erd -s name --dir-order first -y inverted --disk-usage 
 
 # wget
 alias wget-mirror="wget --mirror --convert-links --adjust-extension --page-requisites --no-parent --no-clobber"
+
+# zoxide
+alias z="zoxide"
