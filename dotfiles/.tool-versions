@@ -31,3 +31,9 @@ solidity 0.8.25
 v weekly.2024.20
 yarn 1.22.21
 zig 0.12.0
+bat 0.24.0
+eza 0.18.16
+fd 10.1.0
+fzf 0.52.1
+just 1.27.0
+zoxide 0.9.4
