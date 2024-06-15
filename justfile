@@ -4,11 +4,11 @@ default:
 
 # Backup dotfiles
 backup:
-    python bin-dotfiles.py backup
+    python dotfiles.py backup
 
 # Restore dotfiles
 restore:
-    python bin-dotfiles.py restore
+    python dotfiles.py restore
 
 # Lint and format code
 lint:
