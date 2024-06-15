@@ -86,6 +86,28 @@ function h() {
   eval $command  
 }
 
+# httpie
+alias http="http --unsorted --verbose --all"
+function rpc() {
+  url=$1
+  method=$2
+  args=""
+  for arg in "${@:3}"
+  do
+    # if valid json, use json assignment, otherwise use string assignment
+    echo $arg | jq -e "type" > /dev/null 2>&1
+    if [ $? -eq 0 ]; then
+      args+="params[]:=$arg "
+    else
+      args+="params[]=$arg "
+    fi
+  done
+
+  command="http $url jsonrpc=2.0 id=$(date +%s%N) method=$method $args --sorted"
+  echo $command
+  eval $command
+}
+
 # linter
 function lint() {
   if [ -f Cargo.toml ]; then
@@ -155,6 +177,3 @@ alias tree="~/.cargo/bin/erd -s name --dir-order first -y inverted --disk-usage 
 
 # wget
 alias wget-mirror="wget --mirror --convert-links --adjust-extension --page-requisites --no-parent --no-clobber"
-
-# zoxide
-alias z="zoxide"
