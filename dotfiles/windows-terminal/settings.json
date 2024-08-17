@@ -1,23 +1,10 @@
 {
     "$help": "https://aka.ms/terminal-documentation",
     "$schema": "https://aka.ms/terminal-profiles-schema",
-    "actions":
+    "actions": 
     [
         {
-            "command": "find",
-            "keys": "ctrl+shift+f"
-        },
-        {
-            "command":
-            {
-                "action": "splitPane",
-                "split": "up",
-                "splitMode": "duplicate"
-            },
-            "keys": "ctrl+shift+up"
-        },
-        {
-            "command":
+            "command": 
             {
                 "action": "splitPane",
                 "split": "left",
@@ -26,7 +13,20 @@
             "keys": "ctrl+shift+left"
         },
         {
-            "command":
+            "command": 
+            {
+                "action": "splitPane",
+                "split": "up",
+                "splitMode": "duplicate"
+            },
+            "keys": "ctrl+shift+up"
+        },
+        {
+            "command": "find",
+            "keys": "ctrl+shift+f"
+        },
+        {
+            "command": 
             {
                 "action": "copy",
                 "singleLine": false
@@ -38,7 +38,7 @@
             "keys": "ctrl+v"
         },
         {
-            "command":
+            "command": 
             {
                 "action": "splitPane",
                 "split": "right",
@@ -47,7 +47,7 @@
             "keys": "ctrl+shift+right"
         },
         {
-            "command":
+            "command": 
             {
                 "action": "splitPane",
                 "split": "down",
@@ -63,19 +63,19 @@
     "defaultProfile": "{61c54bbd-c2c6-5271-96e7-009a87ff44bf}",
     "focusFollowMouse": false,
     "launchMode": "maximized",
-    "newTabMenu":
+    "newTabMenu": 
     [
         {
             "type": "remainingProfiles"
         }
     ],
-    "profiles":
+    "profiles": 
     {
-        "defaults":
+        "defaults": 
         {
             "useAtlasEngine": true
         },
-        "list":
+        "list": 
         [
             {
                 "antialiasingMode": "cleartype",
@@ -83,7 +83,7 @@
                 "commandline": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
                 "cursorShape": "bar",
                 "experimental.retroTerminalEffect": false,
-                "font":
+                "font": 
                 {
                     "face": "JetBrains Mono",
                     "size": 12.0,
@@ -101,7 +101,7 @@
             },
             {
                 "colorScheme": "One Half Dark",
-                "font":
+                "font": 
                 {
                     "face": "JetBrains Mono",
                     "size": 12.0,
@@ -115,7 +115,7 @@
             }
         ]
     },
-    "schemes":
+    "schemes": 
     [
         {
             "background": "#0C0C0C",
