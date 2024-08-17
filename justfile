@@ -12,4 +12,4 @@ restore:
 
 # Lint and format code
 lint:
-    yapf -i bin-dotfiles.py
+    yapf -i dotfiles.py

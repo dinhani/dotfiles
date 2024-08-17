@@ -10,6 +10,7 @@ alias s="source ~/.bashrc;"
 alias c="clear"
 
 # docker
+alias dip="ifconfig eth0 | rg inet"
 alias dkill="docker ps --format '{{.ID}}' | xargs -I{} docker kill {}"
 alias dclean="docker container prune -f; docker network prune -f; docker volume prune -f; docker image ls | grep none | awk '{print \$3}' | xargs docker image rm; docker image prune -f;"
 
@@ -139,7 +140,7 @@ function mv-ascii() {
   while read filename; do
     dir=$(dirname "$filename")
     source=$(basename "$filename")
-    target=$(echo $source | iconv -f utf-8 -t ascii//TRANSLIT | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+    target=$(echo $source | iconv -f utf-8 -t ascii//TRANSLIT | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/---/-/')
 
     # ignore special cases
     if [[ "$source" == Cargo.* ]]; then
@@ -174,6 +175,10 @@ fi
 
 # tree
 alias tree="~/.cargo/bin/erd -s name --dir-order first -y inverted --disk-usage logical -H"
+
+# watch 
+alias bwatch="browser-sync . --watch" # browser-watch
+alias fwatch="watchexec --poll 500ms --restart" # file-watch
 
 # wget
 alias wget-mirror="wget --mirror --convert-links --adjust-extension --page-requisites --no-parent --no-clobber"
