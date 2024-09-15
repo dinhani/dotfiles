@@ -109,7 +109,7 @@ def backup():
 
     # Helix
     f2f(unix_home(".config/helix/config.toml"), dotfiles("helix/config.toml"))
-    f2f(unix_home(".config/helix/languages.toml"), dotfiles("helix/languages.toml"))    
+    f2f(unix_home(".config/helix/languages.toml"), dotfiles("helix/languages.toml"))
 
     # IntelliJ
     if is_win():
