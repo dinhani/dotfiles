@@ -1,0 +1,19 @@
+{
+	"monaco": {
+		"editorOptions": {
+			"minimap": {
+				"enabled": false
+			},
+			"lineNumbers": "on",
+			"scrollBeyondLastLine": false,
+			"wordWrap": "bounded"
+		}
+	},
+	"sorting": {
+		"by": "title",
+		"type": "ascending"
+	},
+	"theme": "light",
+	"tutorial": false,
+	"cwd": "D:\\_notable"
+}
