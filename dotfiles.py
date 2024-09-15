@@ -33,6 +33,10 @@ def unix_home(path):
     home = os.environ["HOME"]
     return f"{home}/{path}"
 
+def win_home(path):
+    """Path of Windows home dirctory."""
+    return f"/mnt/c/Users/{user()}/{path}"
+
 def win_roaming(path):
     """Path of Windows AppData/Roaming directory."""
     return f"/mnt/c/Users/{user()}/AppData/Roaming/{path}"
@@ -105,7 +109,7 @@ def backup():
 
     # Helix
     f2f(unix_home(".config/helix/config.toml"), dotfiles("helix/config.toml"))
-    f2f(unix_home(".config/helix/languages.toml"), dotfiles("helix/languages.toml"))
+    f2f(unix_home(".config/helix/languages.toml"), dotfiles("helix/languages.toml"))    
 
     # IntelliJ
     if is_win():
@@ -113,6 +117,10 @@ def backup():
         f2f(win_roaming("JetBrains/IdeaIC2023.2/options/editor.xml"), dotfiles("intellij/options/editor.xml"))
         f2f(win_roaming("JetBrains/IdeaIC2023.2/options/editor-font.xml"), dotfiles("intellij/options/editor-font.xml"))
         f2f(win_roaming("JetBrains/IdeaIC2023.2/options/window.layouts.xml"), dotfiles("intellij/options/window.layouts.xml"))
+
+    # Notable
+    if is_win():
+        f2f(win_home(".notable.json"), dotfiles(".notable.json"))
 
     # VSCode
     if is_win():
@@ -141,6 +149,10 @@ def restore():
     # IntelliJ
     if is_win():
         d2d(dotfiles("intellij"), win_roaming("JetBrains/IdeaIC2023.2"))
+
+    # Notable
+    if is_win():
+        f2f(dotfiles(".notable.json"), win_home(".notable.json"))
 
     # VSCode
     if is_win():
