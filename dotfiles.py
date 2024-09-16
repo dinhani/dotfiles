@@ -8,17 +8,21 @@ import sys
 # ------------------------------------------------------------------------------
 USER = None
 
+
 def is_linux():
     """Check if current system is WSL / Linux."""
     return platform.system() == "Linux"
+
 
 def is_mac():
     """Check if current system is MacOs."""
     return platform.system() == "Darwin"
 
+
 def is_win():
     """Check if current system is Windows."""
     return os.path.exists("/mnt/c/")
+
 
 def user():
     global USER
@@ -27,30 +31,36 @@ def user():
         USER = os.popen("whoami").read().strip()
     return USER
 
+
 def unix_home(path: str) -> str:
     """Path of Unix home directory (Linux and Mac)."""
     home = os.environ["HOME"]
     return f"{home}/{path}"
 
-def win_home(path):
+
+def win_root(path: str) -> str:
+    """Path of Windows root directory."""
+    return f"/mnt/c/{path}"
+
+def win_home(path: str) -> str:
     """Path of Windows home directory."""
     return f"/mnt/c/Users/{user()}/{path}"
+
 
 def win_roaming(path: str) -> str:
     """Path of Windows AppData/Roaming directory."""
     return f"/mnt/c/Users/{user()}/AppData/Roaming/{path}"
 
+
 def win_local(path: str) -> str:
     """Path of Windows AppData/Local directory."""
     return f"/mnt/c/Users/{user()}/AppData/Local/{path}"
 
-def mac_library(path: str) -> str:
-    """Path of Mac Library directory."""
-    return unix_home("Library/") + path
 
 def mac_app_support(path: str) -> str:
     """Path of Mac Application Support directory."""
-    return mac_library("Application Support/") + path
+    return unix_home("Library/Application Support/") + path
+
 
 def dotfiles(path: str = None) -> str:
     """Path of dotfiles backup directory."""
@@ -64,32 +74,45 @@ def dotfiles(path: str = None) -> str:
 # Functions - Transfer
 # ------------------------------------------------------------------------------
 
+
 def log_transfer(kind_source, kind_target, source_file, target_file):
     """Logs a transfer operation."""
     print()
     print(f"{kind_source} -> {kind_target}")
     print(f"  {source_file} -> {target_file}")
 
+def log_error(message, exception):
+    """Logs an error message."""
+    print(f"  [!] {message}: {exception}")
+
+
 def d2d(source, target):
     """Copies a local directory to a local target."""
-    log_transfer("Dir", "Dir", source, target)
+    try:
+        log_transfer("Dir", "Dir", source, target)
 
-    # create directory if necessary
-    if not os.path.exists(target):
-        os.makedirs(target)
+        # create directory if necessary
+        if not os.path.exists(target):
+            os.makedirs(target)
 
-    shutil.copytree(source, target, dirs_exist_ok=True)
+        shutil.copytree(source, target, dirs_exist_ok=True)
+    except Exception as e:
+        log_error("Failed to copy directory", e)
+
 
 def f2f(source, target):
     """Copies a local file to a local target."""
-    log_transfer("File", "File", source, target)
+    try:
+        log_transfer("File", "File", source, target)
 
-    # create directory if necessary
-    target_dirname = os.path.dirname(target)
-    if not os.path.exists(target_dirname):
-        os.makedirs(target_dirname)
+        # create directory if necessary
+        target_dirname = os.path.dirname(target)
+        if not os.path.exists(target_dirname):
+            os.makedirs(target_dirname)
 
-    shutil.copyfile(source, target)
+        shutil.copyfile(source, target)
+    except Exception as e:
+        log_error("Failed to copy file", e)
 
 # ------------------------------------------------------------------------------
 # Execution
@@ -108,14 +131,19 @@ def backup():
 
     # Helix
     f2f(unix_home(".config/helix/config.toml"), dotfiles("helix/config.toml"))
-    f2f(unix_home(".config/helix/languages.toml"), dotfiles("helix/languages.toml"))
+    f2f(unix_home(".config/helix/languages.toml"),
+        dotfiles("helix/languages.toml"))
 
     # IntelliJ
     if is_win():
-        d2d(win_roaming("JetBrains/IdeaIC2023.2/keymaps"), dotfiles("intellij/keymaps"))
-        f2f(win_roaming("JetBrains/IdeaIC2023.2/options/editor.xml"), dotfiles("intellij/options/editor.xml"))
-        f2f(win_roaming("JetBrains/IdeaIC2023.2/options/editor-font.xml"), dotfiles("intellij/options/editor-font.xml"))
-        f2f(win_roaming("JetBrains/IdeaIC2023.2/options/window.layouts.xml"), dotfiles("intellij/options/window.layouts.xml"))
+        d2d(win_roaming("JetBrains/IdeaIC2023.2/keymaps"),
+            dotfiles("intellij/keymaps"))
+        f2f(win_roaming("JetBrains/IdeaIC2023.2/options/editor.xml"),
+            dotfiles("intellij/options/editor.xml"))
+        f2f(win_roaming("JetBrains/IdeaIC2023.2/options/editor-font.xml"),
+            dotfiles("intellij/options/editor-font.xml"))
+        f2f(win_roaming("JetBrains/IdeaIC2023.2/options/window.layouts.xml"),
+            dotfiles("intellij/options/window.layouts.xml"))
 
     # Notable
     if is_win():
@@ -123,15 +151,23 @@ def backup():
 
     # VSCode
     if is_win():
-        f2f(win_roaming("Code/User/keybindings.json"), dotfiles("vscode/keybindings.json"))
-        f2f(win_roaming("Code/User/settings.json"), dotfiles("vscode/settings.json"))
+        f2f(win_roaming("Code/User/keybindings.json"),
+            dotfiles("vscode/keybindings.json"))
+        f2f(win_roaming("Code/User/settings.json"),
+            dotfiles("vscode/settings.json"))
 
     # VIM
     f2f(unix_home(".vimrc"), dotfiles(".vimrc"))
 
     # Terminal
     if is_win():
-        f2f(win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"), dotfiles("windows-terminal/settings.json"))
+        f2f(win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"),
+            dotfiles("windows-terminal/settings.json"))
+
+    # Emulators
+    if is_win():
+        f2f(win_root("_emu/pcsx2/inis/PCSX2.ini"), dotfiles("pcsx2/PCSX2.ini"))
+
 
 def restore():
     # Custom Scripts
@@ -164,7 +200,13 @@ def restore():
 
     # Terminal
     if is_win():
-        d2d(dotfiles("windows-terminal"), win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/"))
+        d2d(dotfiles("windows-terminal"),
+            win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/"))
+
+    # Emulators
+    if is_win():
+        f2f(dotfiles("pcsx2/PCSX2.ini"), win_root("_emu/pcsx2/inis/PCSX2.ini"))
+
 
 # ------------------------------------------------------------------------------
 # Main
