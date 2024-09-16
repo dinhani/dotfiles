@@ -1,6 +1,5 @@
 import os
 import platform
-import requests
 import shutil
 import sys
 
@@ -19,7 +18,7 @@ def is_mac():
 
 def is_win():
     """Check if current system is Windows."""
-    return is_linux()
+    return os.path.exists("/mnt/c/")
 
 def user():
     global USER
@@ -28,32 +27,32 @@ def user():
         USER = os.popen("whoami").read().strip()
     return USER
 
-def unix_home(path):
+def unix_home(path: str) -> str:
     """Path of Unix home directory (Linux and Mac)."""
     home = os.environ["HOME"]
     return f"{home}/{path}"
 
 def win_home(path):
-    """Path of Windows home dirctory."""
+    """Path of Windows home directory."""
     return f"/mnt/c/Users/{user()}/{path}"
 
-def win_roaming(path):
+def win_roaming(path: str) -> str:
     """Path of Windows AppData/Roaming directory."""
     return f"/mnt/c/Users/{user()}/AppData/Roaming/{path}"
 
-def win_local(path):
+def win_local(path: str) -> str:
     """Path of Windows AppData/Local directory."""
     return f"/mnt/c/Users/{user()}/AppData/Local/{path}"
 
-def mac_library(path):
+def mac_library(path: str) -> str:
     """Path of Mac Library directory."""
     return unix_home("Library/") + path
 
-def mac_app_support(path):
+def mac_app_support(path: str) -> str:
     """Path of Mac Application Support directory."""
     return mac_library("Application Support/") + path
 
-def dotfiles(path=None):
+def dotfiles(path: str = None) -> str:
     """Path of dotfiles backup directory."""
     base = "./dotfiles"
     if path is None:
