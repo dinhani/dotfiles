@@ -4,61 +4,108 @@ import shutil
 import sys
 
 # ------------------------------------------------------------------------------
-# Functions - Directories
+# Classes
+# ------------------------------------------------------------------------------
+class Source(os.PathLike):
+    def __init__(self, path: str) -> None:
+        self.path = path
+
+    def __rshift__(self, other) -> None:
+        """Copies a source to a target. Automatically detects if source is a file or directory."""
+        if os.path.isfile(self):
+            self.cp_file(other)
+        else:
+            self.cp_dir(other)
+
+    def __fspath__(self) -> str:
+        return str(self)
+
+    def __str__(self) -> str:
+        return self.path
+
+    def cp_dir(self, target: str):
+        """Copies a local directory to a local target."""
+        try:
+            log_transfer("Dir", "Dir", self, target)
+
+            # create directory if necessary
+            if not os.path.exists(target):
+                os.makedirs(target)
+
+            shutil.copytree(self, target, dirs_exist_ok=True)
+        except Exception as e:
+            log_error("Failed to copy directory", e)
+
+    def cp_file(self, target: str):
+        """Copies a local file to a local target."""
+        try:
+            log_transfer("File", "File", self, target)
+
+            # create directory if necessary
+            target_dirname = os.path.dirname(target)
+            if not os.path.exists(target_dirname):
+                os.makedirs(target_dirname)
+
+            shutil.copyfile(self, target)
+        except Exception as e:
+            log_error("Failed to copy file", e)
+
+# ------------------------------------------------------------------------------
+# Functions - OS/Directories
 # ------------------------------------------------------------------------------
 USER = None
 
-def is_linux():
+def is_linux() -> bool:
     """Check if current system is WSL / Linux."""
     return platform.system() == "Linux"
 
-def is_mac():
+def is_mac() -> bool:
     """Check if current system is MacOs."""
     return platform.system() == "Darwin"
 
-def is_win():
+def is_win() -> bool:
     """Check if current system is Windows."""
     return os.path.exists("/mnt/c/")
 
-def user():
+def user() -> str:
     global USER
     """Username executing this script."""
     if USER is None:
         USER = os.popen("whoami").read().strip()
     return USER
 
-def unix_home(path: str) -> str:
+def unix_home(path: str) -> Source:
     """Path of Unix home directory (Linux and Mac)."""
     home = os.environ["HOME"]
-    return f"{home}/{path}"
+    return Source(f"{home}/{path}")
 
-def win_root(path: str) -> str:
+def win_root(path: str) -> Source:
     """Path of Windows root directory."""
-    return f"/mnt/c/{path}"
+    return Source(f"/mnt/c/{path}")
 
-def win_home(path: str) -> str:
+def win_home(path: str) -> Source:
     """Path of Windows home directory."""
-    return f"/mnt/c/Users/{user()}/{path}"
+    return Source(f"/mnt/c/Users/{user()}/{path}")
 
-def win_roaming(path: str) -> str:
+def win_roaming(path: str) -> Source:
     """Path of Windows AppData/Roaming directory."""
-    return f"/mnt/c/Users/{user()}/AppData/Roaming/{path}"
+    return Source(f"/mnt/c/Users/{user()}/AppData/Roaming/{path}")
 
-def win_local(path: str) -> str:
+def win_local(path: str) -> Source:
     """Path of Windows AppData/Local directory."""
-    return f"/mnt/c/Users/{user()}/AppData/Local/{path}"
+    return Source(f"/mnt/c/Users/{user()}/AppData/Local/{path}")
 
-def mac_app_support(path: str) -> str:
+def mac_app_support(path: str) -> Source:
     """Path of Mac Application Support directory."""
     return unix_home("Library/Application Support/") + path
 
-def dotfiles(path: str = None) -> str:
+def dotfiles(path: str = None) -> Source:
     """Path of dotfiles backup directory."""
     base = "./dotfiles"
     if path is None:
-        return base
+        return Source(base)
     else:
-        return base + "/" + path
+        return Source(f"{base}/{path}")
 
 # ------------------------------------------------------------------------------
 # Functions - Transfer
@@ -74,40 +121,6 @@ def log_error(message, exception):
     """Logs an error message."""
     print(f"  [!] {message}: {exception}")
 
-def cp(source: str, target: str):
-    """Copies a source to a target. Automatically detects if source is a file or directory."""
-    if os.path.isfile(source):
-        f2f(source, target)
-    else:
-        d2d(source, target)
-
-def d2d(source: str, target: str):
-    """Copies a local directory to a local target."""
-    try:
-        log_transfer("Dir", "Dir", source, target)
-
-        # create directory if necessary
-        if not os.path.exists(target):
-            os.makedirs(target)
-
-        shutil.copytree(source, target, dirs_exist_ok=True)
-    except Exception as e:
-        log_error("Failed to copy directory", e)
-
-def f2f(source: str, target: str):
-    """Copies a local file to a local target."""
-    try:
-        log_transfer("File", "File", source, target)
-
-        # create directory if necessary
-        target_dirname = os.path.dirname(target)
-        if not os.path.exists(target_dirname):
-            os.makedirs(target_dirname)
-
-        shutil.copyfile(source, target)
-    except Exception as e:
-        log_error("Failed to copy file", e)
-
 # ------------------------------------------------------------------------------
 # Execution
 # ------------------------------------------------------------------------------
@@ -118,80 +131,80 @@ def backup():
         shutil.rmtree(dotfiles())
 
     # Custom Scripts
-    cp(unix_home("scripts/alias.sh"), dotfiles("scripts/alias.sh"))
+    unix_home("scripts/alias.sh") >> dotfiles("scripts/alias.sh")
 
     # ASDF
-    cp(unix_home(".tool-versions"), dotfiles(".tool-versions"))
+    unix_home(".tool-versions") >> dotfiles(".tool-versions")
 
     # Helix
-    cp(unix_home(".config/helix/config.toml"), dotfiles("helix/config.toml"))
-    cp(unix_home(".config/helix/languages.toml"), dotfiles("helix/languages.toml"))
+    unix_home(".config/helix/config.toml") >> dotfiles("helix/config.toml")
+    unix_home(".config/helix/languages.toml") >> dotfiles("helix/languages.toml")
 
     # IntelliJ
     if is_win():
-        cp(win_roaming("JetBrains/IdeaIC2023.2/keymaps"), dotfiles("intellij/keymaps"))
-        cp(win_roaming("JetBrains/IdeaIC2023.2/options/editor.xml"), dotfiles("intellij/options/editor.xml"))
-        cp(win_roaming("JetBrains/IdeaIC2023.2/options/editor-font.xml"), dotfiles("intellij/options/editor-font.xml"))
-        cp(win_roaming("JetBrains/IdeaIC2023.2/options/window.layouts.xml"), dotfiles("intellij/options/window.layouts.xml"))
+        win_roaming("JetBrains/IdeaIC2023.2/keymaps") >> dotfiles("intellij/keymaps")
+        win_roaming("JetBrains/IdeaIC2023.2/options/editor.xml") >> dotfiles("intellij/options/editor.xml")
+        win_roaming("JetBrains/IdeaIC2023.2/options/editor-font.xml") >> dotfiles("intellij/options/editor-font.xml")
+        win_roaming("JetBrains/IdeaIC2023.2/options/window.layouts.xml") >> dotfiles("intellij/options/window.layouts.xml")
 
     # Notable
     if is_win():
-        cp(win_home(".notable.json"), dotfiles(".notable.json"))
+        win_home(".notable.json") >> dotfiles(".notable.json")
 
     # VSCode
     if is_win():
-        cp(win_roaming("Code/User/keybindings.json"), dotfiles("vscode/keybindings.json"))
-        cp(win_roaming("Code/User/settings.json"), dotfiles("vscode/settings.json"))
+        win_roaming("Code/User/keybindings.json") >> dotfiles("vscode/keybindings.json")
+        win_roaming("Code/User/settings.json") >> dotfiles("vscode/settings.json")
 
     # VIM
-    cp(unix_home(".vimrc"), dotfiles(".vimrc"))
+    unix_home(".vimrc") >> dotfiles(".vimrc")
 
     # Terminal
     if is_win():
-        f2f(win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"), dotfiles("windows-terminal/settings.json"))
+        win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json") >> dotfiles("windows-terminal/settings.json")
 
     # Emulators
     if is_win():
-        cp(win_roaming("Dolphin Emulator/Config"), dotfiles("emu/dolphin"))
-        cp(win_root("_emu/pcsx2/inis/PCSX2.ini"), dotfiles("emu/PCSX2.ini"))
+        win_roaming("Dolphin Emulator/Config") >> dotfiles("emu/dolphin")
+        win_root("_emu/pcsx2/inis/PCSX2.ini") >> dotfiles("emu/PCSX2.ini")
 
 def restore():
     # Custom Scripts
-    f2f(dotfiles("scripts/alias.sh"), unix_home("scripts/alias.sh"))
+    dotfiles("scripts/alias.sh") >> unix_home("scripts/alias.sh")
 
     # ASDF
-    f2f(dotfiles(".tool-versions"), unix_home(".tool-versions"))
+    dotfiles(".tool-versions") >> unix_home(".tool-versions")
 
     # Helix
-    d2d(dotfiles("helix"), unix_home(".config/helix"))
+    dotfiles("helix") >> unix_home(".config/helix")
     if is_win():
-        d2d(dotfiles("helix"), win_roaming("helix"))
+        dotfiles("helix") >> win_roaming("helix")
 
     # IntelliJ
     if is_win():
-        d2d(dotfiles("intellij"), win_roaming("JetBrains/IdeaIC2023.2"))
+        dotfiles("intellij") >> win_roaming("JetBrains/IdeaIC2023.2")
 
     # Notable
     if is_win():
-        f2f(dotfiles(".notable.json"), win_home(".notable.json"))
+        dotfiles(".notable.json") >> win_home(".notable.json")
 
     # VSCode
     if is_win():
-        d2d(dotfiles("vscode"), win_roaming("Code/User"))
+        dotfiles("vscode") >> win_roaming("Code/User")
     if is_mac():
-        d2d(dotfiles("vscode"), mac_app_support("Code/User"))
+        dotfiles("vscode") >> mac_app_support("Code/User")
 
     # VIM
-    f2f(dotfiles(".vimrc"), unix_home(".vimrc"))
+    dotfiles(".vimrc") >> unix_home(".vimrc")
 
     # Terminal
     if is_win():
-        d2d(dotfiles("windows-terminal"), win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/"))
+        dotfiles("windows-terminal") >> win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/")
 
     # Emulators
     if is_win():
-        d2d(dotfiles("emu/dolphin"), win_roaming("Dolphin Emulator/Config"))
-        f2f(dotfiles("emu/PCSX2.ini"), win_root("_emu/pcsx2/inis/PCSX2.ini"))
+        dotfiles("emu/dolphin") >> win_roaming("Dolphin Emulator/Config")
+        dotfiles("emu/PCSX2.ini") >> win_root("_emu/pcsx2/inis/PCSX2.ini")
 
 # ------------------------------------------------------------------------------
 # Main
