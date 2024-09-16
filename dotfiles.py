@@ -74,7 +74,14 @@ def log_error(message, exception):
     """Logs an error message."""
     print(f"  [!] {message}: {exception}")
 
-def d2d(source, target):
+def cp(source: str, target: str):
+    """Copies a source to a target. Automatically detects if source is a file or directory."""
+    if os.path.isfile(source):
+        f2f(source, target)
+    else:
+        d2d(source, target)
+
+def d2d(source: str, target: str):
     """Copies a local directory to a local target."""
     try:
         log_transfer("Dir", "Dir", source, target)
@@ -87,7 +94,7 @@ def d2d(source, target):
     except Exception as e:
         log_error("Failed to copy directory", e)
 
-def f2f(source, target):
+def f2f(source: str, target: str):
     """Copies a local file to a local target."""
     try:
         log_transfer("File", "File", source, target)
@@ -111,33 +118,33 @@ def backup():
         shutil.rmtree(dotfiles())
 
     # Custom Scripts
-    f2f(unix_home("scripts/alias.sh"), dotfiles("scripts/alias.sh"))
+    cp(unix_home("scripts/alias.sh"), dotfiles("scripts/alias.sh"))
 
     # ASDF
-    f2f(unix_home(".tool-versions"), dotfiles(".tool-versions"))
+    cp(unix_home(".tool-versions"), dotfiles(".tool-versions"))
 
     # Helix
-    f2f(unix_home(".config/helix/config.toml"), dotfiles("helix/config.toml"))
-    f2f(unix_home(".config/helix/languages.toml"), dotfiles("helix/languages.toml"))
+    cp(unix_home(".config/helix/config.toml"), dotfiles("helix/config.toml"))
+    cp(unix_home(".config/helix/languages.toml"), dotfiles("helix/languages.toml"))
 
     # IntelliJ
     if is_win():
-        d2d(win_roaming("JetBrains/IdeaIC2023.2/keymaps"), dotfiles("intellij/keymaps"))
-        f2f(win_roaming("JetBrains/IdeaIC2023.2/options/editor.xml"), dotfiles("intellij/options/editor.xml"))
-        f2f(win_roaming("JetBrains/IdeaIC2023.2/options/editor-font.xml"), dotfiles("intellij/options/editor-font.xml"))
-        f2f(win_roaming("JetBrains/IdeaIC2023.2/options/window.layouts.xml"), dotfiles("intellij/options/window.layouts.xml"))
+        cp(win_roaming("JetBrains/IdeaIC2023.2/keymaps"), dotfiles("intellij/keymaps"))
+        cp(win_roaming("JetBrains/IdeaIC2023.2/options/editor.xml"), dotfiles("intellij/options/editor.xml"))
+        cp(win_roaming("JetBrains/IdeaIC2023.2/options/editor-font.xml"), dotfiles("intellij/options/editor-font.xml"))
+        cp(win_roaming("JetBrains/IdeaIC2023.2/options/window.layouts.xml"), dotfiles("intellij/options/window.layouts.xml"))
 
     # Notable
     if is_win():
-        f2f(win_home(".notable.json"), dotfiles(".notable.json"))
+        cp(win_home(".notable.json"), dotfiles(".notable.json"))
 
     # VSCode
     if is_win():
-        f2f(win_roaming("Code/User/keybindings.json"), dotfiles("vscode/keybindings.json"))
-        f2f(win_roaming("Code/User/settings.json"), dotfiles("vscode/settings.json"))
+        cp(win_roaming("Code/User/keybindings.json"), dotfiles("vscode/keybindings.json"))
+        cp(win_roaming("Code/User/settings.json"), dotfiles("vscode/settings.json"))
 
     # VIM
-    f2f(unix_home(".vimrc"), dotfiles(".vimrc"))
+    cp(unix_home(".vimrc"), dotfiles(".vimrc"))
 
     # Terminal
     if is_win():
@@ -145,8 +152,8 @@ def backup():
 
     # Emulators
     if is_win():
-        d2d(win_roaming("Dolphin Emulator/Config"), dotfiles("emu/dolphin"))
-        f2f(win_root("_emu/pcsx2/inis/PCSX2.ini"), dotfiles("emu/PCSX2.ini"))
+        cp(win_roaming("Dolphin Emulator/Config"), dotfiles("emu/dolphin"))
+        cp(win_root("_emu/pcsx2/inis/PCSX2.ini"), dotfiles("emu/PCSX2.ini"))
 
 def restore():
     # Custom Scripts
