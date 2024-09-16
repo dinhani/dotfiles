@@ -6,5 +6,10 @@
     {
         "key": "ctrl+alt+p",
         "command": "workbench.action.gotoSymbol"
+    },
+    {
+        "key": "alt+d",
+        "command": "divider.addDividerLevel2",
+        "when": "editorTextFocus"
     }
 ]
