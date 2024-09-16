@@ -6,16 +6,9 @@ import sys
 # ------------------------------------------------------------------------------
 # Classes
 # ------------------------------------------------------------------------------
-class Source(os.PathLike):
+class File(os.PathLike):
     def __init__(self, path: str) -> None:
         self.path = path
-
-    def __rshift__(self, other) -> None:
-        """Copies a source to a target. Automatically detects if source is a file or directory."""
-        if os.path.isfile(self):
-            self.cp_file(other)
-        else:
-            self.cp_dir(other)
 
     def __fspath__(self) -> str:
         return str(self)
@@ -23,8 +16,15 @@ class Source(os.PathLike):
     def __str__(self) -> str:
         return self.path
 
+    def __rshift__(self, other) -> None:
+        """Copy a source to a target. Automatically detects if source is a file or directory."""
+        if os.path.isfile(self):
+            self.cp_file(other)
+        else:
+            self.cp_dir(other)
+
     def cp_dir(self, target: str):
-        """Copies a local directory to a local target."""
+        """Copy a local directory to a local target."""
         try:
             log_transfer("Dir", "Dir", self, target)
 
@@ -37,7 +37,7 @@ class Source(os.PathLike):
             log_error("Failed to copy directory", e)
 
     def cp_file(self, target: str):
-        """Copies a local file to a local target."""
+        """Copy a local file to a local target."""
         try:
             log_transfer("File", "File", self, target)
 
@@ -74,51 +74,51 @@ def user() -> str:
         USER = os.popen("whoami").read().strip()
     return USER
 
-def unix_home(path: str) -> Source:
+def unix_home(path: str) -> File:
     """Path of Unix home directory (Linux and Mac)."""
     home = os.environ["HOME"]
-    return Source(f"{home}/{path}")
+    return File(f"{home}/{path}")
 
-def win_root(path: str) -> Source:
+def win_root(path: str) -> File:
     """Path of Windows root directory."""
-    return Source(f"/mnt/c/{path}")
+    return File(f"/mnt/c/{path}")
 
-def win_home(path: str) -> Source:
+def win_home(path: str) -> File:
     """Path of Windows home directory."""
-    return Source(f"/mnt/c/Users/{user()}/{path}")
+    return File(f"/mnt/c/Users/{user()}/{path}")
 
-def win_roaming(path: str) -> Source:
+def win_roaming(path: str) -> File:
     """Path of Windows AppData/Roaming directory."""
-    return Source(f"/mnt/c/Users/{user()}/AppData/Roaming/{path}")
+    return File(f"/mnt/c/Users/{user()}/AppData/Roaming/{path}")
 
-def win_local(path: str) -> Source:
+def win_local(path: str) -> File:
     """Path of Windows AppData/Local directory."""
-    return Source(f"/mnt/c/Users/{user()}/AppData/Local/{path}")
+    return File(f"/mnt/c/Users/{user()}/AppData/Local/{path}")
 
-def mac_app_support(path: str) -> Source:
+def mac_app_support(path: str) -> File:
     """Path of Mac Application Support directory."""
     return unix_home("Library/Application Support/") + path
 
-def dotfiles(path: str = None) -> Source:
+def dotfiles(path: str = None) -> File:
     """Path of dotfiles backup directory."""
     base = "./dotfiles"
     if path is None:
-        return Source(base)
+        return File(base)
     else:
-        return Source(f"{base}/{path}")
+        return File(f"{base}/{path}")
 
 # ------------------------------------------------------------------------------
 # Functions - Transfer
 # ------------------------------------------------------------------------------
 
 def log_transfer(kind_source, kind_target, source_file, target_file):
-    """Logs a transfer operation."""
+    """Log a transfer operation."""
     print()
     print(f"{kind_source} -> {kind_target}")
     print(f"  {source_file} -> {target_file}")
 
 def log_error(message, exception):
-    """Logs an error message."""
+    """Log an error message."""
     print(f"  [!] {message}: {exception}")
 
 # ------------------------------------------------------------------------------
@@ -126,11 +126,16 @@ def log_error(message, exception):
 # ------------------------------------------------------------------------------
 
 def backup():
+    """Backup dotfiles from machine to local directory."""
+
     # remove synced files
     if os.path.exists(dotfiles()):
         shutil.rmtree(dotfiles())
 
-    # Custom Scripts
+    # --------------------------------------------------------------------------
+    # Unix
+    # --------------------------------------------------------------------------
+    # Aliases
     unix_home("scripts/alias.sh") >> dotfiles("scripts/alias.sh")
 
     # ASDF
@@ -140,36 +145,40 @@ def backup():
     unix_home(".config/helix/config.toml") >> dotfiles("helix/config.toml")
     unix_home(".config/helix/languages.toml") >> dotfiles("helix/languages.toml")
 
-    # IntelliJ
+    # VIM
+    unix_home(".vimrc") >> dotfiles(".vimrc")
+
+    # --------------------------------------------------------------------------
+    # Windows
+    # --------------------------------------------------------------------------
     if is_win():
+        # Emulators
+        win_roaming("Dolphin Emulator/Config") >> dotfiles("emu/dolphin")
+        win_root("_emu/pcsx2/inis/PCSX2.ini") >> dotfiles("emu/PCSX2.ini")
+
+        # IntelliJ
         win_roaming("JetBrains/IdeaIC2023.2/keymaps") >> dotfiles("intellij/keymaps")
         win_roaming("JetBrains/IdeaIC2023.2/options/editor.xml") >> dotfiles("intellij/options/editor.xml")
         win_roaming("JetBrains/IdeaIC2023.2/options/editor-font.xml") >> dotfiles("intellij/options/editor-font.xml")
         win_roaming("JetBrains/IdeaIC2023.2/options/window.layouts.xml") >> dotfiles("intellij/options/window.layouts.xml")
 
-    # Notable
-    if is_win():
+        # Notable
         win_home(".notable.json") >> dotfiles(".notable.json")
 
-    # VSCode
-    if is_win():
+        # VSCode
         win_roaming("Code/User/keybindings.json") >> dotfiles("vscode/keybindings.json")
         win_roaming("Code/User/settings.json") >> dotfiles("vscode/settings.json")
 
-    # VIM
-    unix_home(".vimrc") >> dotfiles(".vimrc")
-
-    # Terminal
-    if is_win():
+        # Terminal
         win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json") >> dotfiles("windows-terminal/settings.json")
 
-    # Emulators
-    if is_win():
-        win_roaming("Dolphin Emulator/Config") >> dotfiles("emu/dolphin")
-        win_root("_emu/pcsx2/inis/PCSX2.ini") >> dotfiles("emu/PCSX2.ini")
-
 def restore():
-    # Custom Scripts
+    """Restore dotfiles from local directory to machine."""
+
+    # --------------------------------------------------------------------------
+    # Unix
+    # --------------------------------------------------------------------------
+    # Aliases
     dotfiles("scripts/alias.sh") >> unix_home("scripts/alias.sh")
 
     # ASDF
@@ -177,34 +186,39 @@ def restore():
 
     # Helix
     dotfiles("helix") >> unix_home(".config/helix")
-    if is_win():
-        dotfiles("helix") >> win_roaming("helix")
-
-    # IntelliJ
-    if is_win():
-        dotfiles("intellij") >> win_roaming("JetBrains/IdeaIC2023.2")
-
-    # Notable
-    if is_win():
-        dotfiles(".notable.json") >> win_home(".notable.json")
-
-    # VSCode
-    if is_win():
-        dotfiles("vscode") >> win_roaming("Code/User")
-    if is_mac():
-        dotfiles("vscode") >> mac_app_support("Code/User")
 
     # VIM
     dotfiles(".vimrc") >> unix_home(".vimrc")
 
-    # Terminal
+    # --------------------------------------------------------------------------
+    # Windows
+    # --------------------------------------------------------------------------
     if is_win():
-        dotfiles("windows-terminal") >> win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/")
-
-    # Emulators
-    if is_win():
+        # Emulators
         dotfiles("emu/dolphin") >> win_roaming("Dolphin Emulator/Config")
         dotfiles("emu/PCSX2.ini") >> win_root("_emu/pcsx2/inis/PCSX2.ini")
+
+        # Helix
+        dotfiles("helix") >> win_roaming("helix")
+
+        # IntelliJ
+        dotfiles("intellij") >> win_roaming("JetBrains/IdeaIC2023.2")
+
+        # Notable
+        dotfiles(".notable.json") >> win_home(".notable.json")
+
+        # Terminal
+        dotfiles("windows-terminal") >> win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/")
+
+        # VSCode
+        dotfiles("vscode") >> win_roaming("Code/User")
+
+    # --------------------------------------------------------------------------
+    # Mac
+    # --------------------------------------------------------------------------
+    if is_mac():
+        # VSCode
+        dotfiles("vscode") >> mac_app_support("Code/User")
 
 # ------------------------------------------------------------------------------
 # Main
