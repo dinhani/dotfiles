@@ -166,7 +166,7 @@ def backup():
 
     # Emulators
     if is_win():
-        f2f(win_root("_emu/pcsx2/inis/PCSX2.ini"), dotfiles("pcsx2/PCSX2.ini"))
+        f2f(win_root("_emu/pcsx2/inis/PCSX2.ini"), dotfiles("emu/PCSX2.ini"))
 
 
 def restore():
@@ -205,7 +205,7 @@ def restore():
 
     # Emulators
     if is_win():
-        f2f(dotfiles("pcsx2/PCSX2.ini"), win_root("_emu/pcsx2/inis/PCSX2.ini"))
+        f2f(dotfiles("emu/PCSX2.ini"), win_root("_emu/pcsx2/inis/PCSX2.ini"))
 
 
 # ------------------------------------------------------------------------------
