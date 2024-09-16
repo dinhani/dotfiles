@@ -166,6 +166,7 @@ def backup():
 
     # Emulators
     if is_win():
+        d2d(win_roaming("Dolphin Emulator/Config"), dotfiles("emu/dolphin"))
         f2f(win_root("_emu/pcsx2/inis/PCSX2.ini"), dotfiles("emu/PCSX2.ini"))
 
 
@@ -205,8 +206,8 @@ def restore():
 
     # Emulators
     if is_win():
+        d2d(dotfiles("emu/dolphin"), win_roaming("Dolphin Emulator/Config"))
         f2f(dotfiles("emu/PCSX2.ini"), win_root("_emu/pcsx2/inis/PCSX2.ini"))
-
 
 # ------------------------------------------------------------------------------
 # Main
