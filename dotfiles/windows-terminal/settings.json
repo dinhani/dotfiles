@@ -4,13 +4,8 @@
     "actions": 
     [
         {
-            "command": 
-            {
-                "action": "splitPane",
-                "split": "left",
-                "splitMode": "duplicate"
-            },
-            "keys": "ctrl+shift+left"
+            "command": "find",
+            "keys": "ctrl+shift+f"
         },
         {
             "command": 
@@ -22,20 +17,13 @@
             "keys": "ctrl+shift+up"
         },
         {
-            "command": "find",
-            "keys": "ctrl+shift+f"
-        },
-        {
             "command": 
             {
-                "action": "copy",
-                "singleLine": false
+                "action": "splitPane",
+                "split": "left",
+                "splitMode": "duplicate"
             },
-            "keys": "ctrl+c"
-        },
-        {
-            "command": "paste",
-            "keys": "ctrl+v"
+            "keys": "ctrl+shift+left"
         },
         {
             "command": 
@@ -49,11 +37,23 @@
         {
             "command": 
             {
+                "action": "copy",
+                "singleLine": false
+            },
+            "keys": "ctrl+c"
+        },
+        {
+            "command": 
+            {
                 "action": "splitPane",
                 "split": "down",
                 "splitMode": "duplicate"
             },
             "keys": "ctrl+shift+down"
+        },
+        {
+            "command": "paste",
+            "keys": "ctrl+v"
         }
     ],
     "centerOnLaunch": true,
@@ -62,36 +62,27 @@
     "copyOnSelect": true,
     "defaultProfile": "{61c54bbd-c2c6-5271-96e7-009a87ff44bf}",
     "focusFollowMouse": false,
+    "language": "en-US",
     "launchMode": "maximized",
-    "newTabMenu": 
-    [
-        {
-            "type": "remainingProfiles"
-        }
-    ],
     "profiles": 
     {
-        "defaults": 
-        {
-            "useAtlasEngine": true
-        },
+        "defaults": {},
         "list": 
         [
             {
                 "antialiasingMode": "cleartype",
                 "colorScheme": "One Half Dark",
-                "commandline": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+                "commandline": "C:/Program Files/PowerShell/7/pwsh.exe",
                 "cursorShape": "bar",
-                "experimental.retroTerminalEffect": false,
                 "font": 
                 {
                     "face": "JetBrains Mono",
-                    "size": 12.0,
+                    "size": 12,
                     "weight": "medium"
                 },
                 "guid": "{4b998355-c52b-4673-aa4b-dc53a6481f8d}",
                 "hidden": false,
-                "historySize": 9001,
+                "historySize": 10000,
                 "icon": "ms-appx:///ProfileIcons/pwsh.png",
                 "name": "PS7",
                 "padding": "16",
@@ -100,18 +91,23 @@
                 "tabTitle": "PS7"
             },
             {
+                "antialiasingMode": "cleartype",
                 "colorScheme": "One Half Dark",
+                "commandline": "ubuntu2404.exe",
+                "cursorShape": "bar",
                 "font": 
                 {
                     "face": "JetBrains Mono",
-                    "size": 12.0,
+                    "size": 12,
                     "weight": "medium"
                 },
-                "guid": "{2c4de342-38b7-51cf-b940-2309a097f518}",
+                "guid": "{474e4a24-cc14-4a49-97b4-efa69da66906}",
                 "hidden": false,
+                "historySize": 10000,
+                "icon": "https://assets.ubuntu.com/v1/49a1a858-favicon-32x32.png",
                 "name": "Ubuntu",
-                "source": "Windows.Terminal.Wsl",
-                "tabTitle": "Ubuntu"
+                "suppressApplicationTitle": true,
+                "tabTitle": "Ubuntu 24.04 LTS"
             }
         ]
     },
@@ -317,30 +313,7 @@
             "cyan": "#3A96DD",
             "foreground": "#FFFFFF",
             "green": "#26A269",
-            "name": "Ubuntu-22.04-ColorScheme",
-            "purple": "#881798",
-            "red": "#C21A23",
-            "selectionBackground": "#FFFFFF",
-            "white": "#CCCCCC",
-            "yellow": "#A2734C"
-        },
-        {
-            "background": "#300A24",
-            "black": "#171421",
-            "blue": "#0037DA",
-            "brightBlack": "#767676",
-            "brightBlue": "#08458F",
-            "brightCyan": "#2C9FB3",
-            "brightGreen": "#26A269",
-            "brightPurple": "#A347BA",
-            "brightRed": "#C01C28",
-            "brightWhite": "#F2F2F2",
-            "brightYellow": "#A2734C",
-            "cursorColor": "#FFFFFF",
-            "cyan": "#3A96DD",
-            "foreground": "#FFFFFF",
-            "green": "#26A269",
-            "name": "Ubuntu-ColorScheme",
+            "name": "Ubuntu-24.04-ColorScheme",
             "purple": "#881798",
             "red": "#C21A23",
             "selectionBackground": "#FFFFFF",
@@ -374,5 +347,5 @@
     "showTabsInTitlebar": true,
     "snapToGridOnResize": true,
     "startupActions": "nt -p PS7 --title PC; nt -p Ubuntu --title WSL; ft -t 1",
-    "themes": []
+    "theme": "system"
 }
