@@ -87,11 +87,6 @@ def win_home(path: str) -> File:
     """Path of Windows home directory."""
     return File(f"/mnt/c/Users/{user()}/{path}")
 
-def win_emu(path: str) -> File:
-    """Path of Windows emulators directory."""
-    emu_dir = str(win_root("_emu"))
-    return File(f"{emu_dir}/{path}")
-
 def win_roaming(path: str) -> File:
     """Path of Windows AppData/Roaming directory."""
     return File(f"/mnt/c/Users/{user()}/AppData/Roaming/{path}")
@@ -99,6 +94,19 @@ def win_roaming(path: str) -> File:
 def win_local(path: str) -> File:
     """Path of Windows AppData/Local directory."""
     return File(f"/mnt/c/Users/{user()}/AppData/Local/{path}")
+
+def win_prog32(path: str) -> File:
+    """Path of Windows Program Files (x86) directory."""
+    return File(f"/mnt/c/Program Files (x86)/{path}")
+
+def win_prog64(path: str) -> File:
+    """Path of Windows Program Files (x64) directory."""
+    return File(f"/mnt/c/Program Files/{path}")
+
+def win_emu(path: str) -> File:
+    """Path of Windows emulators directory."""
+    emu_dir = str(win_root("_emu"))
+    return File(f"{emu_dir}/{path}")
 
 def mac_app_support(path: str) -> File:
     """Path of Mac Application Support directory."""
@@ -157,6 +165,9 @@ def backup():
     # Windows
     # --------------------------------------------------------------------------
     if is_win():
+        # Devices
+        win_prog64("FlydigiSpaceStation/config/share/") >> dotfiles("flydigi/share")
+
         # Emulators
         win_emu("ares/settings.bml") >> dotfiles("ares/settings.bml")
         win_roaming("Dolphin Emulator/Config") >> dotfiles("dolphin")
@@ -209,6 +220,9 @@ def restore():
     # Windows
     # --------------------------------------------------------------------------
     if is_win():
+        # Devices
+        dotfiles("flydigi") >> win_prog64("FlydigiSpaceStation/config")
+
         # Emulators
         dotfiles("ares") >> win_emu("ares")
         dotfiles("cemu2") >> win_emu("cemu2")
