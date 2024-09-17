@@ -87,6 +87,11 @@ def win_home(path: str) -> File:
     """Path of Windows home directory."""
     return File(f"/mnt/c/Users/{user()}/{path}")
 
+def win_emu(path: str) -> File:
+    """Path of Windows emulators directory."""
+    emu_dir = str(win_root("_emu"))
+    return File(f"{emu_dir}/{path}")
+
 def win_roaming(path: str) -> File:
     """Path of Windows AppData/Roaming directory."""
     return File(f"/mnt/c/Users/{user()}/AppData/Roaming/{path}")
@@ -154,7 +159,16 @@ def backup():
     if is_win():
         # Emulators
         win_roaming("Dolphin Emulator/Config") >> dotfiles("emu/dolphin")
-        win_root("_emu/pcsx2/inis/PCSX2.ini") >> dotfiles("emu/PCSX2.ini")
+        win_emu("cemu2/controllerProfiles") >> dotfiles("emu/cemu2/controllerProfiles")
+        win_emu("cemu2/settings.xml") >> dotfiles("emu/cemu2/settings.xml")
+        win_emu("mame/mame.ini") >> dotfiles("emu/mame/mame.ini")
+        win_emu("mame/plugin.ini") >> dotfiles("emu/mame/plugin.ini")
+        win_emu("mame/ui.ini") >> dotfiles("emu/mame/ui.ini")
+        win_emu("pcsx2/inis/PCSX2.ini") >> dotfiles("emu/pcsx2/inis/PCSX2.ini")
+        win_emu("retroarch/retroarch.cfg") >> dotfiles("emu/retroarch/retroarch.cfg")
+        win_emu("retroarch/retroarch-core-options.cfg") >> dotfiles("emu/retroarch/retroarch-core-options.cfg")
+        win_emu("retroarch/retroarch_qt.cfg") >> dotfiles("emu/retroarch/retroarch_qt.cfg")
+        win_roaming("Ryujinx/Config.json") >> dotfiles("emu/ryujinx/Config.json")
 
         # IntelliJ
         win_roaming("JetBrains/IdeaIC2023.2/keymaps") >> dotfiles("intellij/keymaps")
@@ -195,8 +209,12 @@ def restore():
     # --------------------------------------------------------------------------
     if is_win():
         # Emulators
+        dotfiles("emu/cemu2") >> win_emu("cemu2")
         dotfiles("emu/dolphin") >> win_roaming("Dolphin Emulator/Config")
-        dotfiles("emu/PCSX2.ini") >> win_root("_emu/pcsx2/inis/PCSX2.ini")
+        dotfiles("emu/mame") >> win_emu("mame")
+        dotfiles("emu/pcsx2") >> win_emu("pcsx2")
+        dotfiles("emu/retroarch") >> win_emu("retroarch")
+        dotfiles("emu/ryujinx") >> win_roaming("Ryujinx")
 
         # Helix
         dotfiles("helix") >> win_roaming("helix")
