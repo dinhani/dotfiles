@@ -158,6 +158,7 @@ def backup():
     # --------------------------------------------------------------------------
     if is_win():
         # Emulators
+        win_emu("ares/settings.bml") >> dotfiles("ares/settings.bml")
         win_roaming("Dolphin Emulator/Config") >> dotfiles("dolphin")
         win_emu("cemu2/controllerProfiles") >> dotfiles("cemu2/controllerProfiles")
         win_emu("cemu2/settings.xml") >> dotfiles("cemu2/settings.xml")
@@ -209,6 +210,7 @@ def restore():
     # --------------------------------------------------------------------------
     if is_win():
         # Emulators
+        dotfiles("ares") >> win_emu("ares")
         dotfiles("cemu2") >> win_emu("cemu2")
         dotfiles("dolphin") >> win_roaming("Dolphin Emulator/Config")
         dotfiles("mame") >> win_emu("mame")
