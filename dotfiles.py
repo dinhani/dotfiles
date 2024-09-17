@@ -192,6 +192,10 @@ def backup():
         # Notable
         win_home(".notable.json") >> dotfiles(".notable.json")
 
+        # RStudio
+        win_roaming("RStudio/config.json") >> dotfiles("rstudio/config.json")
+        win_roaming("RStudio/keybindings") >> dotfiles("rstudio/keybindings")
+
         # VSCode
         win_roaming("Code/User/keybindings.json") >> dotfiles("vscode/keybindings.json")
         win_roaming("Code/User/settings.json") >> dotfiles("vscode/settings.json")
@@ -242,6 +246,9 @@ def restore():
 
         # Notable
         dotfiles(".notable.json") >> win_home(".notable.json")
+
+        # RStudio
+        dotfiles("rstudio") >> win_roaming("RStudio")
 
         # Terminal
         dotfiles("windows-terminal") >> win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/")

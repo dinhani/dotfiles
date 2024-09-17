@@ -1,0 +1,8 @@
+{
+    "restartR": "F10",
+    "debugStep": "",
+    "setTerminalToCurrentDirectory": "",
+    "setWorkingDirToActiveDoc": "F12",
+    "executeCurrentSection": "Alt+Enter",
+    "executeCodeWithoutMovingCursor": ""
+}
