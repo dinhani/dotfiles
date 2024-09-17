@@ -166,6 +166,7 @@ def backup():
     # --------------------------------------------------------------------------
     if is_win():
         # Devices
+        win_local("LGHUB/settings.db") >> dotfiles("lghub/settings.db")
         win_prog64("FlydigiSpaceStation/config/share/") >> dotfiles("flydigi/share")
 
         # Emulators
@@ -222,6 +223,7 @@ def restore():
     if is_win():
         # Devices
         dotfiles("flydigi") >> win_prog64("FlydigiSpaceStation/config")
+        dotfiles("lghub") >> win_local("LGHUB")
 
         # Emulators
         dotfiles("ares") >> win_emu("ares")
