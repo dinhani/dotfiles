@@ -179,11 +179,11 @@ def backup():
         win_emu("mame/plugin.ini") >> dotfiles("mame/plugin.ini")
         win_emu("mame/ui.ini") >> dotfiles("mame/ui.ini")
         win_emu("pcsx2/inis/PCSX2.ini") >> dotfiles("pcsx2/inis/PCSX2.ini")
+        win_emu("project64/Config/Project64.cfg") >> dotfiles("project64/Config/Project64.cfg")
         win_emu("retroarch/retroarch.cfg") >> dotfiles("retroarch/retroarch.cfg")
         win_emu("retroarch/retroarch-core-options.cfg") >> dotfiles("retroarch/retroarch-core-options.cfg")
         win_emu("retroarch/retroarch_qt.cfg") >> dotfiles("retroarch/retroarch_qt.cfg")
         win_roaming("Ryujinx/Config.json") >> dotfiles("ryujinx/Config.json")
-        win_emu("Project64/Config/Project64.cfg") >> dotfiles("project64/Project64.cfg")
 
         # IntelliJ
         win_roaming("JetBrains/IdeaIC2023.2/keymaps") >> dotfiles("intellij/keymaps")
