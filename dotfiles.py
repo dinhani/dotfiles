@@ -110,7 +110,8 @@ def win_emu(path: str) -> File:
 
 def mac_app_support(path: str) -> File:
     """Path of Mac Application Support directory."""
-    return unix_home("Library/Application Support/") + path
+    base = unix_home("Library/Application Support/")
+    return File("f{base}/{path}")
 
 def dotfiles(path: str = None) -> File:
     """Path of dotfiles backup directory."""

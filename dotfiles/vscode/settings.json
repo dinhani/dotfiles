@@ -46,5 +46,5 @@
   "workbench.editor.enablePreview": false,
   "workbench.iconTheme": "vscode-icons",
   "github.copilot.editor.enableAutoCompletions": true,
-  "typescript.updateImportsOnFileMove.enabled": "always"
+  "typescript.updateImportsOnFileMove.enabled": "always",
 }
