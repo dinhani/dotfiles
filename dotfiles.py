@@ -183,6 +183,7 @@ def backup():
         win_emu("retroarch/retroarch-core-options.cfg") >> dotfiles("retroarch/retroarch-core-options.cfg")
         win_emu("retroarch/retroarch_qt.cfg") >> dotfiles("retroarch/retroarch_qt.cfg")
         win_roaming("Ryujinx/Config.json") >> dotfiles("ryujinx/Config.json")
+        win_emu("Project64/Config/Project64.cfg") >> dotfiles("project64/Project64.cfg")
 
         # IntelliJ
         win_roaming("JetBrains/IdeaIC2023.2/keymaps") >> dotfiles("intellij/keymaps")
@@ -236,6 +237,7 @@ def restore():
         dotfiles("dolphin") >> win_roaming("Dolphin Emulator/Config")
         dotfiles("mame") >> win_emu("mame")
         dotfiles("pcsx2") >> win_emu("pcsx2")
+        dotfiles("project64") >> win_emu("project64")
         dotfiles("retroarch") >> win_emu("retroarch")
         dotfiles("ryujinx") >> win_roaming("Ryujinx")
 
