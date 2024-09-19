@@ -256,15 +256,17 @@ def restore():
         # Terminal
         dotfiles("windows-terminal") >> win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/")
 
-        # VSCode
+        # VSCode / Cursor
         dotfiles("vscode") >> win_roaming("Code/User")
+        dotfiles("vscode") >> win_roaming("Cursor/User")
 
     # --------------------------------------------------------------------------
     # Mac
     # --------------------------------------------------------------------------
     if is_mac():
-        # VSCode
+        # VSCode / Cursor
         dotfiles("vscode") >> mac_app_support("Code/User")
+        dotfiles("vscode") >> mac_app_support("Cursor/User")
 
 # ------------------------------------------------------------------------------
 # Main
