@@ -3,8 +3,24 @@ is_linux() { [[ "$(uname -s)" == "Linux" ]]; }
 is_mac() { [[ "$(uname -s)" == "Darwin" ]]; }
 
 # self
-alias e="hx ~/scripts/alias.sh"
-alias s="source ~/.bashrc;"
+# edit-alias
+alias a="hx ~/scripts/alias.sh" # edit-alias
+
+# edit-init
+if is_linux; then
+  alias i="hx ~/.bashrc"
+fi
+if is_mac; then
+  alias i="hx ~/.zshrc"
+fi
+
+# source init
+if is_linux; then
+  alias s="source ~/.bashrc;"
+fi
+if is_mac; then
+  alias s="source ~/.zshrc"
+fi
 
 # clear
 alias c="clear"
