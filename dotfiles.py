@@ -166,6 +166,9 @@ def backup():
     # Windows
     # --------------------------------------------------------------------------
     if is_win():
+        # Aliases
+        win_home("Documents/PowerShell/Microsoft.PowerShell_profile.ps1") >> dotfiles("powershell/Microsoft.PowerShell_profile.ps1")
+
         # Devices
         win_local("LGHUB/settings.db") >> dotfiles("lghub/settings.db")
         win_prog64("FlydigiSpaceStation/config/share/") >> dotfiles("flydigi/share")
@@ -227,6 +230,9 @@ def restore():
     # Windows
     # --------------------------------------------------------------------------
     if is_win():
+        # Aliases
+        dotfiles("powershell/Microsoft.PowerShell_profile.ps1") >> win_home("Documents/PowerShell/Microsoft.PowerShell_profile.ps1")
+
         # Devices
         dotfiles("flydigi") >> win_prog64("FlydigiSpaceStation/config")
         dotfiles("lghub") >> win_local("LGHUB")

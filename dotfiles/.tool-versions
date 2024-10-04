@@ -12,7 +12,7 @@ gradle 8.7
 groovy 4.0.21
 haskell 9.8.2
 java openjdk-21.0.1
-julia 1.10.2
+julia 1.10.5
 kotlin 1.9.24
 lein 2.11.2
 lua 5.4.6
