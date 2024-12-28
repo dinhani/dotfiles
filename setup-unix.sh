@@ -148,12 +148,14 @@ log "Installing CLI tools"
 brew_install asdf
 brew_install bat
 brew_install dasel
+brew_install erdtree
 brew_install eza
 brew_install fd
 brew_install fzf
 brew_install gitql
 brew_install graphviz
 brew_install helix
+brew_install htmlq
 brew_install htop
 brew_install imagemagick
 brew_install jq
@@ -165,12 +167,14 @@ brew_install mise
 brew_install pandoc
 brew_install ripgrep
 brew_install rust
+brew_install sd
 brew_install speedtest-cli
 brew_install subversion
 brew_install sysstat
 brew_install unzip
 brew_install util-linux
 brew_install w3m
+brew_install websocat
 brew_install zoxide
 
 # ------------------------------------------------------------------------------
@@ -284,14 +288,10 @@ exit
 
 # cargo install cargo-expand
 # cargo install cargo-outdated
-# cargo install erdtree
 # cargo install ethabi-cli
-# cargo install htmlq
-# cargo install sd
 # cargo install sqlx-cli
 # cargo install wait-service
 # cargo install watchexec
-# cargo install websocat
 
 # ------------------------------------------------------------------------------
 # TODO: Review VSCode extensions process
