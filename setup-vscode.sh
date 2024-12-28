@@ -12,6 +12,7 @@ code --install-extension vscode-icons-team.vscode-icons      # Icons
 # Language / tool specific
 code --install-extension EditorConfig.EditorConfig           # .editorconfig
 code --install-extension mechatroner.rainbow-csv             # CSV
+code --install-extension golang.Go                           # Go
 code --install-extension zainchen.json                       # JSON
 code --install-extension yzhang.markdown-all-in-one          # Markdown
 code --install-extension ms-vscode.PowerShell                # PowerShell

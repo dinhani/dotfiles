@@ -67,7 +67,6 @@ EOF
 # ------------------------------------------------------------------------------
 # Config editor
 # ------------------------------------------------------------------------------
-
 log "Configuring editor"
 sudo update-alternatives --install /usr/bin/editor editor "$(brew_bin)/hx" 100
 
@@ -143,12 +142,25 @@ brew_install re2c
 # ------------------------------------------------------------------------------
 log "Installing build libraries"
 if is_linux; then
+    apt_install golang-github-go-enry-go-oniguruma-dev
+    apt_install libboost-all-dev
     apt_install libbz2-dev
+    apt_install libcrypt-dev
+    apt_install libcurl4-openssl-dev
+    apt_install libffi-dev
+    apt_install libgd-dev
     apt_install liblzma-dev
     apt_install libncurses-dev
+    apt_install libpq-dev
     apt_install libreadline-dev
+    apt_install libsqlite3-dev
     apt_install libssl-dev
+    apt_install libx11-dev
     apt_install libxml2-dev
+    apt_install libxt-dev
+    apt_install libyaml-dev
+    apt_install libzip-dev
+    apt_install libzstd-dev
     apt_install tk-dev
 fi
 
@@ -243,18 +255,18 @@ asdf_install  nodejs           22.0.0
 asdf_install  ocaml            5.1.1
 asdf_install  odin             dev-2024-05
 asdf_install  perl             5.38.2
-asdf_install  php              8.3.7
+#asdf_install  php              8.4.2
 asdf_install  powershell-core  7.4.2
 asdf_install  protoc           27.2
 asdf_install  python           3.13.1
-asdf_install  r                4.4.0
+#asdf_install  r                4.4.2
 asdf_install  racket           8.12
 asdf_install  raku             2024.04
-asdf_install  ruby             3.2.2
+#asdf_install  ruby             3.4.2
 asdf_install  scala            3.4.1
 asdf_install  solidity         0.8.25
-asdf_install  v                weekly.2024.37
-asdf_install  yarn             1.22.21
+asdf_install  v                weekly.2024.52
+asdf_install  yarn             1.22.22
 asdf_install  zig              0.13.0
 
 if not_installed "rustup"; then
@@ -267,20 +279,19 @@ fi
 # Install languages extensions
 # ------------------------------------------------------------------------------
 
-# Node
-log "Installing NodeJS extensions and tools"
-npm install -g @mermaid-js/mermaid-cli
-npm install -g browser-sync
-npm install -g phantomjs-prebuilt
-npm install -g tldr
+# Golang
+log "Installing Golang extensions"
+go install github.com/go-delve/delve/cmd/dlv@latest
+go install github.com/nametake/golangci-lint-langserver@latest
+go install golang.org/x/tools/gopls@latest
 
 # Python
 log "Installing Python extensions and tools"
 pip install bs4 dpath httpie lxml matplotlib mycli networkx numpy pandas polars pgcli python-lsp-server requests ruff scipy selenium unidecode toml tomli yamale yapf
 
 # Ruby
-log "Installing Ruby extensions and tools"
-gem install --conservative activesupport bundler eth pry nokogiri pp puma rails rufo sinatra solargraph webrick tomlrb tomlib
+# log "Installing Ruby extensions and tools"
+# gem install --conservative activesupport eth pry nokogiri pp puma rails rufo sinatra solargraph webrick tomlrb tomlib
 
 # Rust
 log "Installing Rust extensions and tools"
@@ -316,39 +327,37 @@ source $(dirname $0)/setup-vscode.sh
 # ------------------------------------------------------------------------------
 # Install local compiled tools
 # ------------------------------------------------------------------------------
-if is_linux; then
-    if [ ! -d "$DOWNLOADS/$DOWNLOADS/WSL2-Linux-Kernel" ]; then
-        log "Cloning WSL2 source"
-        git clone https://github.com/microsoft/WSL2-Linux-Kernel $DOWNLOADS/WSL2-Linux-Kernel
-    fi
-fi
+# if is_linux; then
+#     if [ ! -d "$DOWNLOADS/$DOWNLOADS/WSL2-Linux-Kernel" ]; then
+#         log "Cloning WSL2 source"
+#         git clone https://github.com/microsoft/WSL2-Linux-Kernel $DOWNLOADS/WSL2-Linux-Kernel
+#     fi
+# fi
 
 # heaptrack
-if not_installed "heaptrack"; then
-    log "Installing heaptrack"
-    git clone "https://github.com/KDE/heaptrack" $DOWNLOADS/heaptrack
+# if not_installed "heaptrack"; then
+#     log "Installing heaptrack"
+#     git clone "https://github.com/KDE/heaptrack" $DOWNLOADS/heaptrack
 
-    cd $DOWNLOADS/heaptrack
-    cmake -DCMAKE_BUILD_TYPE=Release
-    make -j16
-    sudo cp -r $DOWNLOADS/heaptrack/bin/* /usr/local/bin
-    sudo cp -r $DOWNLOADS/heaptrack/lib/* /usr/local/lib
+#     cd $DOWNLOADS/heaptrack
+#     cmake -DCMAKE_BUILD_TYPE=Release
+#     make -j16
+#     sudo cp -r $DOWNLOADS/heaptrack/bin/* /usr/local/bin
+#     sudo cp -r $DOWNLOADS/heaptrack/lib/* /usr/local/lib
 
-    cd
-fi
+#     cd
+# fi
 
 # perf
-if is_linux; then
-    if not_installed "perf"; then
-        log "Installing perf"
+# if is_linux && not_installed "perf"; then
+#     log "Installing perf"
 
-        cd $DOWNLOADS/WSL2-Linux-Kernel/tools/perf
-        NO_LIBTRACEEVENT=1 make -j16
-        sudo cp perf /usr/local/bin/perf
+#     cd $DOWNLOADS/WSL2-Linux-Kernel/tools/perf
+#     NO_LIBTRACEEVENT=1 make -j16
+#     sudo cp perf /usr/local/bin/perf
 
-        cd
-    fi
-fi
+#     cd
+# fi
 
 # pikchr
 if not_installed "pikchr"; then
@@ -363,18 +372,18 @@ if not_installed "pikchr"; then
 fi
 
 # valgrind
-if not_installed "valgrind"; then
-    log "Installing valgrind"
-    git clone https://sourceware.org/git/valgrind.git $DOWNLOADS/valgrind
+# if not_installed "valgrind"; then
+#     log "Installing valgrind"
+#     git clone https://sourceware.org/git/valgrind.git $DOWNLOADS/valgrind
 
-    cd $DOWNLOADS/valgrind
-    ./autogen.sh
-    ./configure
-    make -j16
-    sudo make install
+#     cd $DOWNLOADS/valgrind
+#     ./autogen.sh
+#     ./configure
+#     make -j16
+#     sudo make install
 
-    cd
-fi
+#     cd
+# fi
 
 # ------------------------------------------------------------------------------
 # Upgrade software
