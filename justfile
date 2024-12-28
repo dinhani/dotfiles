@@ -13,3 +13,7 @@ restore:
 # Lint and format code
 lint:
     yapf -i dotfiles.py
+
+# Setup a Linux or MacOs system from scratch
+setup:
+    ./setup-unix.sh
