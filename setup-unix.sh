@@ -212,7 +212,6 @@ brew_install perl
 brew_install powershell
 brew_install protobuf
 brew_install python@3.13
-brew_install pipx
 brew_install r
 brew_install racket
 brew_install rakudo
