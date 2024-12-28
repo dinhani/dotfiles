@@ -2,7 +2,7 @@
 source $(dirname $0)/setup-unix-functions.sh
 
 # ------------------------------------------------------------------------------
-# Config
+# Parse input parameters
 # ------------------------------------------------------------------------------
 if [ -z "$EMAIL" ]; then
     echo "Error: EMAIL is not set. Aborting script."
@@ -19,13 +19,14 @@ mkdir -p ~/projects
 # ------------------------------------------------------------------------------
 # Install config
 # ------------------------------------------------------------------------------
-log "Configuring .bash_profile and .bashrc"
+log "Configuring profiles scripts"
 
 cat << EOF > ~/.bash_profile
 source ~/.bashrc
 EOF
 
 cat << EOF > ~/.bashrc
+
 # terminal
 export HISTSIZE=100000
 export HISTFILESIZE=100000
@@ -34,105 +35,129 @@ export VISUAL=hx
 export PS1="\w "
 source \$HOME/scripts/alias.sh
 
+# system
+ulimit -n 65365
+
+# ssh
+pkill ssh-agent
+eval "\$(ssh-agent -s)"
+ssh-add \$HOME/.ssh/dinhani
+
 # windows
 export APPDATA=/mnt/c/Users/Renato/AppData/Roaming/
 export LOCALAPPDATA=/mnt/c/Users/Renato/AppData/Local/
 
 # homebrew
 export PATH=\$PATH:$(brew_bin)
+export LDFLAGS="-L$(brew_lib)"
+export CPPFLAGS="-L$(brew_include)"
+
+# asdf
 source $(brew_opt)/asdf/libexec/asdf.sh
 
-# languages
+# native languages
 source \$HOME/.cargo/env
 
-# tools
+# other tools
 export PATH=\$PATH:/usr/local/FlameGraph
 eval "\$(zoxide init bash)"
 
-# ssh
-pkill ssh-agent
-eval "\$(ssh-agent -s)"
-ssh-add \$HOME/.ssh/dinhani
 EOF
 
 # ------------------------------------------------------------------------------
+# Config editor
+# ------------------------------------------------------------------------------
 
 log "Configuring editor"
-sudo update-alternatives --set editor hx
+sudo update-alternatives --install /usr/bin/editor editor "$(brew_bin)/hx" 100
 
 # ------------------------------------------------------------------------------
-# Install APT repos
+# Config GPG key
 # ------------------------------------------------------------------------------
-log "Updating repos"
-sudo apt update
+if [ ! -e ~/.gnupg/pubring.kbx ]; then
+    log "Configuring GPG key"
+gpg --batch --gen-key <<EOF
+    Key-Type: 1
+    Key-Length: 4096
+    Subkey-Type: 1
+    Subkey-Length: 4096
+    Name-Real: Renato Dinhani
+    Name-Email: $EMAIL
+    Expire-Date: 0
+    %no-protection
+EOF
+fi
 
 # ------------------------------------------------------------------------------
-# Install APT build tools
+# Config SSH key
+# ------------------------------------------------------------------------------
+if [ ! -e ~/.ssh/dinhani.pub ]; then
+    log "Configuring SSH key"
+    ssh-keygen -t ed25519 -C "$EMAIL" -N "" -f ~/.ssh/dinhani
+fi
+
+# ------------------------------------------------------------------------------
+# Config home and user
+# ------------------------------------------------------------------------------
+log "Configuring Git"
+git config --global user.email "$EMAIL"
+git config --global user.name "Renato Dinhani"
+
+# ------------------------------------------------------------------------------
+# Install APT
+# ------------------------------------------------------------------------------
+if is_linux; then
+    log "Updating repos"
+    sudo apt update
+
+    log "Installing basic build tools"
+    apt_install build-essential
+    apt_install curl
+fi
+
+# ------------------------------------------------------------------------------
+# Install Homebrew
+# ------------------------------------------------------------------------------
+if not_installed "brew"; then
+    log "Installing Homebrew"
+    NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    reload
+fi
+
+# ------------------------------------------------------------------------------
+# Install build tools
 # ------------------------------------------------------------------------------
 log "Installing build tools"
-apt_install autoconf
-apt_install bison
-apt_install build-essential
-apt_install clang
-apt_install clangd
-apt_install cmake
-apt_install docker.io
-apt_install extra-cmake-modules
-apt_install flex
-apt_install gettext
-apt_install gfortran
-apt_install pkg-config
-apt_install re2c
-apt_install scdoc
 
+brew_install autoconf
+brew_install bison
+brew_install cmake
+brew_install gcc
+brew_install gettext
+brew_install llvm
+brew_install make
+brew_install re2c
+
+# ------------------------------------------------------------------------------
+# Install build libraries
+# ------------------------------------------------------------------------------
 log "Installing build libraries"
-apt_install libbabeltrace-dev
-apt_install libboost-all-dev
-apt_install libbz2-dev
-apt_install libcap-dev
-apt_install libclang-dev
-apt_install libcurl4-openssl-dev
-apt_install libdwarf-dev
-apt_install libelf-dev
-apt_install libgd-dev
-apt_install libgflags-dev
-apt_install libkchart-dev
-apt_install libkf5iconthemes-dev
-apt_install libkf5kio-dev
-apt_install libkf5threadweaver-dev
-apt_install liblzma-dev
-apt_install libncurses5-dev
-apt_install libnuma-dev
-apt_install libonig-dev
-apt_install libperl-dev
-apt_install libpfm4-dev
-apt_install libpq-dev
-apt_install libpugixml-dev
-apt_install libreadline-dev
-apt_install librust-atk-dev
-apt_install librust-gdk-sys-dev
-apt_install libsecp256k1
-apt_install libslang2-dev
-apt_install libsnappy-dev
-apt_install libsoup2.4-dev
-apt_install libssl-dev
-apt_install libtool
-apt_install libudev-dev
-apt_install libunwind-dev
-apt_install libx11-dev
-apt_install libxt-dev
-apt_install libyaml-dev
-apt_install libzip-dev
-apt_install libzstd-dev
-apt_install qtbase5-dev
-apt_install systemtap-sdt-dev
+if is_linux; then
+    apt_install libbz2-dev
+    apt_install liblzma-dev
+    apt_install libncurses-dev
+    apt_install libreadline-dev
+    apt_install libssl-dev
+    apt_install libxml2-dev
+    apt_install tk-dev
+fi
 
 # ------------------------------------------------------------------------------
-# Install homebrew tools
+# Install CLI tools
 # ------------------------------------------------------------------------------
-log "Installing homebrew tools"
-NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+log "Installing CLI tools"
 
+brew_install asdf
 brew_install bat
 brew_install dasel
 brew_install eza
@@ -149,24 +174,18 @@ brew_install just
 brew_install lazydocker
 brew_install lazygit
 brew_install pandoc
-brew_install rename
-brew_install rename
 brew_install ripgrep
 brew_install speedtest-cli
 brew_install subversion
 brew_install sysstat
 brew_install unzip
+brew_install util-linux
 brew_install w3m
 brew_install zoxide
 
 # ------------------------------------------------------------------------------
 # Install pre-compiled tools
 # ------------------------------------------------------------------------------
-if not_installed "asdf"; then
-    log "Installing ASDF"
-    git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.14.0
-fi
-
 if not_installed "flamegraph.pl"; then
     log "Installing FlameGraph"
     sudo git clone https://github.com/dinhani/FlameGraph-RustTheme /usr/local/FlameGraph
@@ -190,74 +209,12 @@ if not_installed "tsv-pretty"; then
 fi
 
 # ------------------------------------------------------------------------------
-# Install local compiled tools
-# ------------------------------------------------------------------------------
-if [ ! -d "$DOWNLOADS/$DOWNLOADS/WSL2-Linux-Kernel" ]; then
-    log "Cloning WSL2 source"
-    git clone https://github.com/microsoft/WSL2-Linux-Kernel $DOWNLOADS/WSL2-Linux-Kernel
-fi
-
-# heaptrack
-if not_installed "heaptrack"; then
-    log "Installing heaptrack"
-    git clone "https://github.com/KDE/heaptrack" $DOWNLOADS/heaptrack
-
-    cd $DOWNLOADS/heaptrack
-    cmake -DCMAKE_BUILD_TYPE=Release
-    make -j16
-    sudo cp -r $DOWNLOADS/heaptrack/bin/* /usr/local/bin
-    sudo cp -r $DOWNLOADS/heaptrack/lib/* /usr/local/lib
-
-    cd
-fi
-
-# perf
-if not_installed "perf"; then
-    log "Installing perf"
-
-    cd $DOWNLOADS/WSL2-Linux-Kernel/tools/perf
-    NO_LIBTRACEEVENT=1 make -j16
-    sudo cp perf /usr/local/bin/perf
-
-    cd
-fi
-
-# pikchr
-if not_installed "pikchr"; then
-    log "Installing pikchr"
-
-    git clone https://github.com/drhsqlite/pikchr.git $DOWNLOADS/pikchr
-    cd $DOWNLOADS/pikchr
-    make
-    sudo cp pikchr /usr/local/bin
-
-    cd
-fi
-
-# valgrind
-if not_installed "valgrind"; then
-    log "Installing valgrind"
-    git clone https://sourceware.org/git/valgrind.git $DOWNLOADS/valgrind
-
-    cd $DOWNLOADS/valgrind
-    ./autogen.sh
-    ./configure
-    make -j16
-    sudo make install
-
-    cd
-fi
-
-# ------------------------------------------------------------------------------
 # Install ASDF languages / tools
 # ------------------------------------------------------------------------------
 log "Installing languages"
 
-asdf plugin add cmake
 asdf plugin add dmd    https://github.com/sylph01/asdf-dmd.git
-asdf plugin add eza    https://github.com/lwiechec/asdf-eza.git
 asdf plugin add gleam
-asdf plugin add just   https://github.com/olofvndrhr/asdf-just
 asdf plugin add lein   https://github.com/miorimmax/asdf-lein.git
 asdf plugin add protoc https://github.com/paxosglobal/asdf-protoc.git
 asdf plugin add r      https://github.com/asdf-community/asdf-r.git
@@ -270,7 +227,7 @@ asdf_install  crystal          1.14.0
 asdf_install  dmd              2.092.1
 asdf_install  dotnet           9.0.101
 asdf_install  elixir           1.18.0
-asdf_install  erlang           26.2.1
+#asdf_install  erlang           26.2.1
 asdf_install  gleam            1.6.3
 asdf_install  golang           1.23.4
 asdf_install  gradle           8.12
@@ -288,7 +245,8 @@ asdf_install  odin             dev-2024-05
 asdf_install  perl             5.38.2
 asdf_install  php              8.3.7
 asdf_install  powershell-core  7.4.2
-asdf_install  python           3.11.6
+asdf_install  protoc           27.2
+asdf_install  python           3.13.1
 asdf_install  r                4.4.0
 asdf_install  racket           8.12
 asdf_install  raku             2024.04
@@ -298,11 +256,6 @@ asdf_install  solidity         0.8.25
 asdf_install  v                weekly.2024.37
 asdf_install  yarn             1.22.21
 asdf_install  zig              0.13.0
-
-# tools
-asdf_install  cmake            3.30.1
-asdf_install  eza              0.18.16
-asdf_install  protoc           27.2
 
 if not_installed "rustup"; then
     log "Installing Rust"
@@ -361,36 +314,70 @@ log "Installing VSCode extensions"
 source $(dirname $0)/setup-vscode.sh
 
 # ------------------------------------------------------------------------------
+# Install local compiled tools
+# ------------------------------------------------------------------------------
+if is_linux; then
+    if [ ! -d "$DOWNLOADS/$DOWNLOADS/WSL2-Linux-Kernel" ]; then
+        log "Cloning WSL2 source"
+        git clone https://github.com/microsoft/WSL2-Linux-Kernel $DOWNLOADS/WSL2-Linux-Kernel
+    fi
+fi
+
+# heaptrack
+if not_installed "heaptrack"; then
+    log "Installing heaptrack"
+    git clone "https://github.com/KDE/heaptrack" $DOWNLOADS/heaptrack
+
+    cd $DOWNLOADS/heaptrack
+    cmake -DCMAKE_BUILD_TYPE=Release
+    make -j16
+    sudo cp -r $DOWNLOADS/heaptrack/bin/* /usr/local/bin
+    sudo cp -r $DOWNLOADS/heaptrack/lib/* /usr/local/lib
+
+    cd
+fi
+
+# perf
+if is_linux; then
+    if not_installed "perf"; then
+        log "Installing perf"
+
+        cd $DOWNLOADS/WSL2-Linux-Kernel/tools/perf
+        NO_LIBTRACEEVENT=1 make -j16
+        sudo cp perf /usr/local/bin/perf
+
+        cd
+    fi
+fi
+
+# pikchr
+if not_installed "pikchr"; then
+    log "Installing pikchr"
+
+    git clone https://github.com/drhsqlite/pikchr.git $DOWNLOADS/pikchr
+    cd $DOWNLOADS/pikchr
+    make
+    sudo cp pikchr /usr/local/bin
+
+    cd
+fi
+
+# valgrind
+if not_installed "valgrind"; then
+    log "Installing valgrind"
+    git clone https://sourceware.org/git/valgrind.git $DOWNLOADS/valgrind
+
+    cd $DOWNLOADS/valgrind
+    ./autogen.sh
+    ./configure
+    make -j16
+    sudo make install
+
+    cd
+fi
+
+# ------------------------------------------------------------------------------
 # Upgrade software
 # ------------------------------------------------------------------------------
 log "Upgrading software"
 sudo apt upgrade -y
-
-# ------------------------------------------------------------------------------
-# Config GPG key
-# ------------------------------------------------------------------------------
-if [ ! -e ~/.gnupg/pubring.kbx ]; then
-gpg --batch --gen-key <<EOF
-    Key-Type: 1
-    Key-Length: 4096
-    Subkey-Type: 1
-    Subkey-Length: 4096
-    Name-Real: Renato Dinhani
-    Name-Email: $EMAIL
-    Expire-Date: 0
-    %no-protection
-EOF
-fi
-
-# ------------------------------------------------------------------------------
-# Config SSH key
-# ------------------------------------------------------------------------------
-if [ ! -e ~/.ssh/dinhani.pub ]; then
-    ssh-keygen -t ed25519 -C "$EMAIL" -N "" -f ~/.ssh/dinhani
-fi
-
-# ------------------------------------------------------------------------------
-# Config home and user
-# ------------------------------------------------------------------------------
-git config --global user.email "$EMAIL"
-git config --global user.name "Renato Dinhani"

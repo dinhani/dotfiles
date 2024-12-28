@@ -19,7 +19,12 @@ function is_linux() {
     [[ "$(uname -s)" == "Linux" ]]
 }
 
-# Checks if script is running on Mac with Inter processor.
+# Checks if script is running on Mac.
+function is_mac() {
+    is_mac_intel || is_mac_arm
+}
+
+# Checks if script is running on Mac with Intel processor.
 function is_mac_intel() {
     [[ "$(uname -s)" == "Darwin" && "$(uname -m)" == "x86_64" ]]
 }
@@ -63,6 +68,19 @@ function brew_lib() {
         echo "/opt/homebrew/lib"
     elif is_linux; then
         echo "/home/linuxbrew/.linuxbrew/lib"
+    else
+        echo ""
+    fi
+}
+
+# Return the Homebrew include directory based on the operating system.
+function brew_include() {
+    if is_mac_intel; then
+        echo "/usr/local/include"
+    elif is_mac_arm; then
+        echo "/opt/homebrew/include"
+    elif is_linux; then
+        echo "/home/linuxbrew/.linuxbrew/include"
     else
         echo ""
     fi
