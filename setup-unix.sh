@@ -182,7 +182,7 @@ brew_install zoxide
 # ------------------------------------------------------------------------------
 brew tap oven-sh/bun
 
-brew_install bazel
+brew_install bazelisk
 brew_install bun
 brew_install clojure
 brew_install crystal
