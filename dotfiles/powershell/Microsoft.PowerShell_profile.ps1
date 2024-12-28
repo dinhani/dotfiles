@@ -19,15 +19,19 @@ function Invoke-Archive {
         [string]$OutputPath,
 
         [Parameter(Mandatory = $false)]
-        [ValidateSet("7z", "zip")]
+        [ValidateSet("7z", "zip", "chd")]
         [string]$Type = "7z",
+
+        [Parameter(Mandatory = $false)]
+        [ValidateSet("cd", "dvd", "gdi")]
+        [string]$ChdType = "cd",
 
         [Parameter(Mandatory = $false)]
         [ValidateRange(0, 9)]
         [int]$Level = 9,
 
         [Parameter(Mandatory = $false)]
-        [int]$Limit = 2,
+        [int]$Limit = 1,
 
         [Parameter(Mandatory = $false)]
         [switch]$Directory,
@@ -65,11 +69,41 @@ function Invoke-Archive {
 
         # archive entry
         Write-Host "Archiving: $archive"
-        if ($_.PSIsContainer) {
-            $command = "7z a -t$($using:Type) -mx=$($using:Level) -bso0 -bsp0 `"$archive`" `"$($_.FullName)\*`""
-        } else {
-            $command = "7z a -t$($using:Type) -mx=$($using:Level) -bso0 -bsp0 `"$archive`" `"$($_.FullName)`""
+
+        # chd
+        if ($using:Type -eq "chd") {
+            $operation = switch ($using:ChdType) {
+                "cd"  { "createcd" }
+                "dvd" { "createdvd" }
+                "gdi" { "creategd" }
+            }
+            if ($_.PSIsContainer) {
+                $cueOrIso = $null
+                foreach ($ext in @("*.cue", "*.iso")) {
+                    $cueOrIso = Get-ChildItem -Path $_.FullName -Filter $ext | Select-Object -First 1
+                    if ($null -ne $cueOrIso) {
+                        break
+                    }
+                }
+                if ($null -eq $cueOrIso) {
+                    Write-Warning "No .cue or .iso file found in directory: $($_.FullName)"
+                    continue
+                }
+                #$command = "chdman $operation --numprocessors 6 --input `"$($cueOrIso.FullName)`" --output `"$archive`""
+                $command = "chdman $operation --input `"$($cueOrIso.FullName)`" --output `"$archive`""
+            } else {
+                Write-Warning "CHD format only supports directories"
+            }
         }
+        # 7z
+        else {
+            if ($_.PSIsContainer) {
+                $command = "7z a -t$($using:Type) -mx=$($using:Level) -bso0 -bsp0 `"$archive`" `"$($_.FullName)\*`""
+            } else {
+                $command = "7z a -t$($using:Type) -mx=$($using:Level) -bso0 -bsp0 `"$archive`" `"$($_.FullName)`""
+            }
+        }
+
         Write-Host "$command"
         Invoke-Expression $command
     }
@@ -82,7 +116,10 @@ function Invoke-Unarchive {
         [string]$InputPath,
 
         [Parameter(Mandatory = $false)]
-        [string]$OutputPath
+        [string]$OutputPath,
+
+        [Parameter(Mandatory = $false)]
+        [int]$Limit = 1
     )
 
     # parse output path
@@ -96,7 +133,7 @@ function Invoke-Unarchive {
     Write-Host "Found $($entries.Count) entries."
 
     # unarchive entries
-    $entries | ForEach-Object -ThrottleLimit 10 -Parallel {
+    $entries | ForEach-Object -ThrottleLimit $Limit -Parallel {
         # generate unarchive name
         $unarchive = Join-Path $using:OutputPath "$($_.BaseName)"
         if (Test-Path -LiteralPath $unarchive -PathType Container) {
