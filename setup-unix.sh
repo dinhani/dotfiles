@@ -61,7 +61,6 @@ source \$HOME/.cargo/env
 # other tools
 export PATH=\$PATH:/usr/local/FlameGraph
 eval "\$(zoxide init bash)"
-
 EOF
 
 # ------------------------------------------------------------------------------
@@ -132,37 +131,14 @@ brew_install autoconf
 brew_install bison
 brew_install cmake
 brew_install gcc
+brew_install gcc@11
+brew_install gcc@12
+brew_install gcc@13
+brew_install gcc@14
 brew_install gettext
 brew_install llvm
 brew_install make
 brew_install re2c
-
-# ------------------------------------------------------------------------------
-# Install build libraries
-# ------------------------------------------------------------------------------
-log "Installing build libraries"
-if is_linux; then
-    apt_install golang-github-go-enry-go-oniguruma-dev
-    apt_install libboost-all-dev
-    apt_install libbz2-dev
-    apt_install libcrypt-dev
-    apt_install libcurl4-openssl-dev
-    apt_install libffi-dev
-    apt_install libgd-dev
-    apt_install liblzma-dev
-    apt_install libncurses-dev
-    apt_install libpq-dev
-    apt_install libreadline-dev
-    apt_install libsqlite3-dev
-    apt_install libssl-dev
-    apt_install libx11-dev
-    apt_install libxml2-dev
-    apt_install libxt-dev
-    apt_install libyaml-dev
-    apt_install libzip-dev
-    apt_install libzstd-dev
-    apt_install tk-dev
-fi
 
 # ------------------------------------------------------------------------------
 # Install CLI tools
@@ -174,7 +150,6 @@ brew_install bat
 brew_install dasel
 brew_install eza
 brew_install fd
-brew_install ffmpeg
 brew_install fzf
 brew_install gitql
 brew_install graphviz
@@ -183,10 +158,13 @@ brew_install htop
 brew_install imagemagick
 brew_install jq
 brew_install just
+brew_install killport
 brew_install lazydocker
 brew_install lazygit
+brew_install mise
 brew_install pandoc
 brew_install ripgrep
+brew_install rust
 brew_install speedtest-cli
 brew_install subversion
 brew_install sysstat
@@ -194,6 +172,65 @@ brew_install unzip
 brew_install util-linux
 brew_install w3m
 brew_install zoxide
+
+# ------------------------------------------------------------------------------
+# Install languages / build tools
+# ------------------------------------------------------------------------------
+brew tap oven-sh/bun
+
+brew_install bazel
+brew_install bun
+brew_install clojure
+brew_install crystal
+brew_install dmd
+brew_install dotnet
+brew_install elixir
+brew_install erlang
+brew_install gleam
+brew_install go@1.23
+brew_install gradle
+brew_install groovy
+brew_install haskell-stack
+brew_install julia
+brew_install kotlin
+brew_install leiningen
+brew_install lua
+brew_install maven
+brew_install node@22
+brew_install ocaml
+brew_install odin
+brew_install openjdk@23
+brew_install perl
+brew_install powershell
+brew_install protobuf
+brew_install python@3.13
+brew_install r
+brew_install racket
+brew_install rakudo
+brew_install ruby@3.4
+brew_install rustup
+brew_install scala
+brew_install solidity
+brew_install vlang
+brew_install zig
+
+# ------------------------------------------------------------------------------
+# Install languages extensions
+# ------------------------------------------------------------------------------
+
+# Golang
+log "Installing Golang extensions"
+go install github.com/go-delve/delve/cmd/dlv@latest
+go install github.com/nametake/golangci-lint-langserver@latest
+go install golang.org/x/tools/gopls@latest
+
+# Python
+log "Installing Python extensions and tools"
+pip install bs4 dpath httpie lxml matplotlib mycli networkx numpy pandas polars pgcli python-lsp-server requests ruff scipy selenium unidecode toml tomli yamale yapf
+
+# Ruby
+log "Installing Ruby extensions and tools"
+gem install --conservative activesupport eth pry nokogiri pp puma rails rufo sinatra solargraph webrick tomlrb tomlib
 
 # ------------------------------------------------------------------------------
 # Install pre-compiled tools
@@ -221,108 +258,46 @@ if not_installed "tsv-pretty"; then
 fi
 
 # ------------------------------------------------------------------------------
-# Install ASDF languages / tools
+# Upgrade software
 # ------------------------------------------------------------------------------
-log "Installing languages"
+log "Upgrading software"
+sudo apt upgrade -y
 
-asdf plugin add dmd    https://github.com/sylph01/asdf-dmd.git
-asdf plugin add gleam
-asdf plugin add lein   https://github.com/miorimmax/asdf-lein.git
-asdf plugin add protoc https://github.com/paxosglobal/asdf-protoc.git
-asdf plugin add r      https://github.com/asdf-community/asdf-r.git
-
-echo > ~/.tool-versions
-asdf_install  bazel            8.0.0
-asdf_install  bun              1.1.42
-asdf_install  clojure          1.11.3.1488
-asdf_install  crystal          1.14.0
-asdf_install  dmd              2.092.1
-asdf_install  dotnet           9.0.101
-asdf_install  elixir           1.18.0
-#asdf_install  erlang           26.2.1
-asdf_install  gleam            1.6.3
-asdf_install  golang           1.23.4
-asdf_install  gradle           8.12
-asdf_install  groovy           4.0.24
-asdf_install  haskell          9.12.1
-asdf_install  java             openjdk-21.0.1
-asdf_install  julia            1.11.2
-asdf_install  kotlin           2.1.0
-asdf_install  lein             2.11.2
-asdf_install  lua              5.4.6
-asdf_install  maven            3.9.6
-asdf_install  nodejs           22.0.0
-asdf_install  ocaml            5.1.1
-asdf_install  odin             dev-2024-05
-asdf_install  perl             5.38.2
-#asdf_install  php              8.4.2
-asdf_install  powershell-core  7.4.2
-asdf_install  protoc           27.2
-asdf_install  python           3.13.1
-#asdf_install  r                4.4.2
-asdf_install  racket           8.12
-asdf_install  raku             2024.04
-#asdf_install  ruby             3.4.2
-asdf_install  scala            3.4.1
-asdf_install  solidity         0.8.25
-asdf_install  v                weekly.2024.52
-asdf_install  yarn             1.22.22
-asdf_install  zig              0.13.0
-
-if not_installed "rustup"; then
-    log "Installing Rust"
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-    reload
-fi
+exit
 
 # ------------------------------------------------------------------------------
-# Install languages extensions
+# TODO: review necessary Rust extensions
 # ------------------------------------------------------------------------------
 
-# Golang
-log "Installing Golang extensions"
-go install github.com/go-delve/delve/cmd/dlv@latest
-go install github.com/nametake/golangci-lint-langserver@latest
-go install golang.org/x/tools/gopls@latest
+# # Rust
+# log "Installing Rust extensions and tools"
+# rustup component add clippy
+# rustup component add rustfmt
+# rustup component add rust-analyzer
+# rustup target add wasm32-unknown-unknown
 
-# Python
-log "Installing Python extensions and tools"
-pip install bs4 dpath httpie lxml matplotlib mycli networkx numpy pandas polars pgcli python-lsp-server requests ruff scipy selenium unidecode toml tomli yamale yapf
+# rustup install nightly-x86_64-unknown-linux-gnu
+# rustup target add wasm32-unknown-unknown --toolchain nightly-x86_64-unknown-linux-gnu
 
-# Ruby
-# log "Installing Ruby extensions and tools"
-# gem install --conservative activesupport eth pry nokogiri pp puma rails rufo sinatra solargraph webrick tomlrb tomlib
+# rustup install nightly-2023-03-25-x86_64-unknown-linux-gnu
+# rustup target add wasm32-unknown-unknown --toolchain nightly-2023-03-25-x86_64-unknown-linux-gnu
 
-# Rust
-log "Installing Rust extensions and tools"
-rustup component add clippy
-rustup component add rustfmt
-rustup component add rust-analyzer
-rustup target add wasm32-unknown-unknown
-
-rustup install nightly-x86_64-unknown-linux-gnu
-rustup target add wasm32-unknown-unknown --toolchain nightly-x86_64-unknown-linux-gnu
-
-rustup install nightly-2023-03-25-x86_64-unknown-linux-gnu
-rustup target add wasm32-unknown-unknown --toolchain nightly-2023-03-25-x86_64-unknown-linux-gnu
-
-cargo install cargo-expand
-cargo install cargo-outdated
-cargo install erdtree
-cargo install ethabi-cli
-cargo install htmlq
-cargo install killport
-cargo install sd
-cargo install sqlx-cli
-cargo install wait-service
-cargo install watchexec
-cargo install websocat
+# cargo install cargo-expand
+# cargo install cargo-outdated
+# cargo install erdtree
+# cargo install ethabi-cli
+# cargo install htmlq
+# cargo install sd
+# cargo install sqlx-cli
+# cargo install wait-service
+# cargo install watchexec
+# cargo install websocat
 
 # ------------------------------------------------------------------------------
-# Install VSCode extensions
+# TODO: Review VSCode extensions process
 # ------------------------------------------------------------------------------
-log "Installing VSCode extensions"
-source $(dirname $0)/setup-vscode.sh
+# log "Installing VSCode extensions"
+# source $(dirname $0)/setup-vscode.sh
 
 # ------------------------------------------------------------------------------
 # Install local compiled tools
@@ -360,16 +335,16 @@ source $(dirname $0)/setup-vscode.sh
 # fi
 
 # pikchr
-if not_installed "pikchr"; then
-    log "Installing pikchr"
+# if not_installed "pikchr"; then
+#     log "Installing pikchr"
 
-    git clone https://github.com/drhsqlite/pikchr.git $DOWNLOADS/pikchr
-    cd $DOWNLOADS/pikchr
-    make
-    sudo cp pikchr /usr/local/bin
+#     git clone https://github.com/drhsqlite/pikchr.git $DOWNLOADS/pikchr
+#     cd $DOWNLOADS/pikchr
+#     make
+#     sudo cp pikchr /usr/local/bin
 
-    cd
-fi
+#     cd
+# fi
 
 # valgrind
 # if not_installed "valgrind"; then
@@ -384,9 +359,3 @@ fi
 
 #     cd
 # fi
-
-# ------------------------------------------------------------------------------
-# Upgrade software
-# ------------------------------------------------------------------------------
-log "Upgrading software"
-sudo apt upgrade -y

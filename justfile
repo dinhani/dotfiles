@@ -4,11 +4,11 @@ default:
 
 # Backup dotfiles
 backup:
-    python dotfiles.py backup
+    python3 dotfiles.py backup
 
 # Restore dotfiles
 restore:
-    python dotfiles.py restore
+    python3 dotfiles.py restore
 
 # Setup a Linux or MacOs system from scratch
 setup email="renatodinhani@gmail.com":
