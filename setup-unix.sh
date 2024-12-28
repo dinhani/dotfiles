@@ -4,8 +4,10 @@ source $(dirname $0)/setup-unix-functions.sh
 # ------------------------------------------------------------------------------
 # Config
 # ------------------------------------------------------------------------------
-EMAIL=renatodinhani@gmail.com
-log "Using e-mail: $EMAIL"
+if [ -z "$EMAIL" ]; then
+    echo "Error: EMAIL is not set. Aborting script."
+    exit 1
+fi
 
 # ------------------------------------------------------------------------------
 # Install dirs
@@ -384,7 +386,7 @@ fi
 # Config SSH key
 # ------------------------------------------------------------------------------
 if [ ! -e ~/.ssh/dinhani.pub ]; then
-    ssh-keygen -t ed25519 -C "renatodinhani@gmail.com" -N "" -f ~/.ssh/dinhani
+    ssh-keygen -t ed25519 -C "$EMAIL" -N "" -f ~/.ssh/dinhani
 fi
 
 # ------------------------------------------------------------------------------
