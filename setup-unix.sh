@@ -20,7 +20,7 @@ mkdir -p $DIR_TOOLS
 # ------------------------------------------------------------------------------
 # Install Oh My ZSH
 # ------------------------------------------------------------------------------
-if [[ -d "$HOME/.oh-my-zsh" ]]; then
+if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
     log "Installing Oh My ZSH"
     CHSH=no KEEP_ZSHRC=no RUNZSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 fi
@@ -76,7 +76,6 @@ source $(brew_opt)/asdf/libexec/asdf.sh
 
 # tool: zoxide
 eval "\$(zoxide init bash)"
-
 EOF
 
 log "Configuring .zprofile"
@@ -86,15 +85,15 @@ EOF
 
 log "Configuring .zshrc"
 cat << EOF > ~/.zshrc
-# apply .bashrc
+# load .bashrc
 source ~/.bashrc
 
-# apply oh-my-zsh
+# load oh-my-zsh
 export ZSH="$HOME/.oh-my-zsh"
 export ZSH_THEME="robbyrussell"
 source $HOME/.oh-my-zsh/oh-my-zsh.sh
 
-# apply spaceship
+# load spaceship
 source "$(brew_opt)/spaceship/spaceship.zsh"
 EOF
 
