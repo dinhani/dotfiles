@@ -115,8 +115,9 @@ source $HOME/.oh-my-zsh/oh-my-zsh.sh
 # load common
 source ~/.shell_common
 
-# fix green background
-# export LS_COLORS="$LS_COLORS:ow=1;34:tw=1;34:"
+# fix ls colors
+export LS_COLORS="$LS_COLORS:ow=1;34:tw=1;34:"
+zstyle ':completion:*' list-colors \${(s.:.)LS_COLORS}
 
 # tool: starship
 eval "\$(starship init zsh)"
