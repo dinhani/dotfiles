@@ -9,12 +9,7 @@ function is_zsh()   { [[ -n "$ZSH_VERSION"  ]]; }
 alias a="hx ~/scripts/alias.sh" # edit-alias
 
 # edit-init
-if is_bash; then
-  alias i="hx ~/.bashrc"
-fi
-if is_zsh; then
-  alias i="hx ~/.zshrc"
-fi
+alias i="hx ~/.shell_common ~/.bashrc ~/.zshrc"
 
 # source init
 if is_bash; then

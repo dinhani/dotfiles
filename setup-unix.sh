@@ -38,47 +38,45 @@ log "Configuring common shell setup"
 # ------------------------------------------------------------------------------
 cat << EOF > ~/.shell_common
 
-# env: aliases
+# aliases
 source $DIR_SCRIPTS/alias.sh
 
-# env: terminal
+# terminal
 export HISTSIZE=100000
 export HISTFILESIZE=100000
 export EDITOR=hx
 export VISUAL=hx
 
-# env: windows
+# windows
 export APPDATA=/mnt/c/Users/Renato/AppData/Roaming/
 export LOCALAPPDATA=/mnt/c/Users/Renato/AppData/Local/
 
-# env: homebrew
+# homebrew
 export PATH=\$PATH:$(brew_bin)
-
 export LIBRARY_PATH=$(brew_lib)
 export LD_LIBRARY_PATH=$(brew_lib)
 export CMAKE_LIBRARY_PATH=$(brew_lib)
 export CMAKE_SYSTEM_LIBRARY_PATH=$(brew_lib)
 export PKG_CONFIG_PATH=$(brew_lib)/pkgconfig
-
 export CPATH=$(brew_include)
 
-# env: langs
+# langs
 export PATH=\$PATH:$HOME/go/bin
 export PATH=\$PATH:$HOME/.cargo/bin
 
-# env: custom tools
+# custom tools
 export PATH=\$PATH:$DIR_TOOLS
 export PATH=\$PATH:$DIR_TOOLS/FlameGraph
 
-# tool: system
+# system
 ulimit -n 65365
 
-# tool: ssh
+# ssh
 pkill ssh-agent
 eval "\$(ssh-agent -s)"
 ssh-add $HOME/.ssh/dinhani
 
-# tool: asdf
+# asdf
 source $(brew_opt)/asdf/libexec/asdf.sh
 EOF
 
@@ -92,13 +90,13 @@ EOF
 
 log "Configuring .bashrc"
 cat << EOF > ~/.bashrc
-# load common
+# common
 source ~/.shell_common
 
-# tool: starship
+# starship
 eval "\$(starship init bash)"
 
-# tool: zoxide
+# zoxide
 eval "\$(zoxide init bash)"
 EOF
 
@@ -108,21 +106,21 @@ EOF
 
 log "Configuring .zshrc"
 cat << EOF > ~/.zshrc
-# load oh-my-zsh
+# common
+source ~/.shell_common
+
+# oh-my-zsh
 export ZSH=$HOME/.oh-my-zsh
 source $HOME/.oh-my-zsh/oh-my-zsh.sh
 
-# load common
-source ~/.shell_common
-
-# fix ls colors
+# ls colors
 export LS_COLORS="$LS_COLORS:ow=1;34:tw=1;34:"
 zstyle ':completion:*' list-colors \${(s.:.)LS_COLORS}
 
-# tool: starship
+# starship
 eval "\$(starship init zsh)"
 
-# tool: zoxide
+# zoxide
 eval "\$(zoxide init bash)"
 EOF
 
