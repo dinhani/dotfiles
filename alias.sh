@@ -1,8 +1,8 @@
 # checks
-is_linux() { [[ "$(uname -s)" == "Linux"  ]]; }
-is_mac()   { [[ "$(uname -s)" == "Darwin" ]]; }
-is_bash()  { [[ -n "$BASH_VERSION" ]] }
-is_zsh()   { [[ -n "$ZSH_VERSION"  ]] }
+function is_linux() { [[ "$(uname -s)" == "Linux"  ]]; }
+function is_mac()   { [[ "$(uname -s)" == "Darwin" ]]; }
+function is_bash()  { [[ -n "$BASH_VERSION" ]] }
+function is_zsh()   { [[ -n "$ZSH_VERSION"  ]] }
 
 # self
 # edit-alias
