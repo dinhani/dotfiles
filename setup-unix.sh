@@ -47,7 +47,8 @@ export PATH=\$PATH:$(brew_bin)
 export LDFLAGS="-L$(brew_lib)"
 export CPPFLAGS="-L$(brew_include)"
 
-# env: rust
+# env: langs
+export PATH=\$PATH:$HOME/go/bin
 export PATH=\$PATH:$HOME/.cargo/bin
 
 # env: custom tools
@@ -155,6 +156,7 @@ install_brew re2c
 log "Installing CLI tools"
 
 # shells
+install_brew bash
 install_brew nushell
 install_brew zsh
 
@@ -246,6 +248,7 @@ install_brew zig
 # Golang
 log "Installing Golang extensions"
 go install github.com/go-delve/delve/cmd/dlv@latest
+go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 go install github.com/nametake/golangci-lint-langserver@latest
 go install golang.org/x/tools/gopls@latest
 
