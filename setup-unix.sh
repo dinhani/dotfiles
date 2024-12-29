@@ -83,11 +83,6 @@ else
 fi
 EOF
 
-log "Configuring .zprofile"
-cat << EOF > ~/.zprofile
-source ~/.zshrc
-EOF
-
 log "Configuring .zshrc"
 cat << EOF > ~/.zshrc
 # load .bashrc
