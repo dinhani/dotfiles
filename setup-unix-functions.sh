@@ -1,4 +1,10 @@
-DOWNLOADS=~/downloads
+# ------------------------------------------------------------------------------
+# Dirs
+# ------------------------------------------------------------------------------
+DIR_DOWNLOADS=~/downloads
+DIR_SCRIPTS=~/scripts
+DIR_TOOLS=~/tools
+DIR_PROJECTS=~/projects
 
 # ------------------------------------------------------------------------------
 # Checks / Dirs
@@ -174,11 +180,11 @@ function download() {
     if [[ $target == /* ]]; then
         target=$target
     else
-        target=$DOWNLOADS/$target
+        target=$DIR_DOWNLOADS/$target
     fi
 
     log "Downloading: $url -> $target"
-    sudo curl -o "$target" -fsSL "$url"
+    curl -o "$target" -fsSL "$url"
 
     # make executable
     if [[ $target == /usr/local/bin/* ]]; then
@@ -199,7 +205,7 @@ function extract() {
     log "Extracting: $source => $target"
     case "$source" in
         *.tar.gz)
-            sudo tar -C $target -xzvf $source
+            tar -C $target -xzvf $source
             ;;
     esac
 }
