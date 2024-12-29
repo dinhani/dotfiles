@@ -10,20 +10,20 @@ if [ -z "$EMAIL" ]; then
 fi
 
 # ------------------------------------------------------------------------------
-# Install dirs
-# ------------------------------------------------------------------------------
-log "Creating directories"
-mkdir -p $DIR_DOWNLOADS
-mkdir -p $DIR_SCRIPTS
-mkdir -p $DIR_TOOLS
-
-# ------------------------------------------------------------------------------
 # Install Oh My ZSH
 # ------------------------------------------------------------------------------
 if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
     log "Installing Oh My ZSH"
     CHSH=no KEEP_ZSHRC=no RUNZSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 fi
+
+# ------------------------------------------------------------------------------
+# Install dirs
+# ------------------------------------------------------------------------------
+log "Creating directories"
+mkdir -p $DIR_DOWNLOADS
+mkdir -p $DIR_SCRIPTS
+mkdir -p $DIR_TOOLS
 
 # ------------------------------------------------------------------------------
 # Install config
@@ -100,51 +100,14 @@ EOF
 reload
 
 # ------------------------------------------------------------------------------
-# Config editor
-# ------------------------------------------------------------------------------
-if is_linux; then
-    log "Configuring editor"
-    sudo update-alternatives --install /usr/bin/editor editor "$(brew_bin)/hx" 100
-fi
-
-# ------------------------------------------------------------------------------
-# Config GPG key
-# ------------------------------------------------------------------------------
-if [ ! -e ~/.gnupg/pubring.kbx ]; then
-    log "Configuring GPG key"
-gpg --batch --gen-key <<EOF
-    Key-Type: 1
-    Key-Length: 4096
-    Subkey-Type: 1
-    Subkey-Length: 4096
-    Name-Real: Renato Dinhani
-    Name-Email: $EMAIL
-    Expire-Date: 0
-    %no-protection
-EOF
-fi
-
-# ------------------------------------------------------------------------------
-# Config SSH key
-# ------------------------------------------------------------------------------
-if [ ! -e ~/.ssh/dinhani.pub ]; then
-    log "Configuring SSH key"
-    ssh-keygen -t ed25519 -C "$EMAIL" -N "" -f ~/.ssh/dinhani
-fi
-
-# ------------------------------------------------------------------------------
-# Config Git
-# ------------------------------------------------------------------------------
-log "Configuring Git"
-git config --global user.email "$EMAIL"
-git config --global user.name "Renato Dinhani"
-
-# ------------------------------------------------------------------------------
 # Install APT basic tools
 # ------------------------------------------------------------------------------
 if is_linux; then
-    log "Updating APT"
+    log "Updating APT repositories"
     sudo apt update
+
+    log "Upgrading APT software"
+    sudo apt upgrade -y
 
     log "Installing APT build tools"
     install_apt build-essential
@@ -202,6 +165,7 @@ install_brew eza
 install_brew fd
 install_brew fzf
 install_brew gitql
+install_brew gnupg
 install_brew graphviz
 install_brew helix
 install_brew htmlq
@@ -366,6 +330,46 @@ if not_installed "tsv-pretty"; then
 fi
 
 # ------------------------------------------------------------------------------
+# Config editor
+# ------------------------------------------------------------------------------
+if is_linux; then
+    log "Configuring editor"
+    sudo update-alternatives --install /usr/bin/editor editor "$(brew_bin)/hx" 100
+fi
+
+# ------------------------------------------------------------------------------
+# Config GPG key
+# ------------------------------------------------------------------------------
+if [ ! -e ~/.gnupg/pubring.kbx ]; then
+    log "Configuring GPG key"
+gpg --batch --gen-key <<EOF
+    Key-Type: 1
+    Key-Length: 4096
+    Subkey-Type: 1
+    Subkey-Length: 4096
+    Name-Real: Renato Dinhani
+    Name-Email: $EMAIL
+    Expire-Date: 0
+    %no-protection
+EOF
+fi
+
+# ------------------------------------------------------------------------------
+# Config SSH key
+# ------------------------------------------------------------------------------
+if [ ! -e ~/.ssh/dinhani.pub ]; then
+    log "Configuring SSH key"
+    ssh-keygen -t ed25519 -C "$EMAIL" -N "" -f ~/.ssh/dinhani
+fi
+
+# ------------------------------------------------------------------------------
+# Config Git
+# ------------------------------------------------------------------------------
+log "Configuring Git"
+git config --global user.email "$EMAIL"
+git config --global user.name "Renato Dinhani"
+
+# ------------------------------------------------------------------------------
 # Install Desktop tools
 # ------------------------------------------------------------------------------
 if is_mac; then
@@ -388,14 +392,6 @@ if is_mac; then
     # work / utils
     install_brew google-chrome
     install_brew slack
-fi
-
-# ------------------------------------------------------------------------------
-# Upgrade software
-# ------------------------------------------------------------------------------
-if is_linux; then
-    log "Upgrading APT software"
-    sudo apt upgrade -y
 fi
 
 # ------------------------------------------------------------------------------
