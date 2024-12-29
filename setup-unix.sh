@@ -74,8 +74,10 @@ reload
 # ------------------------------------------------------------------------------
 # Config editor
 # ------------------------------------------------------------------------------
-log "Configuring editor"
-sudo update-alternatives --install /usr/bin/editor editor "$(brew_bin)/hx" 100
+if is_linux; then
+    log "Configuring editor"
+    sudo update-alternatives --install /usr/bin/editor editor "$(brew_bin)/hx" 100
+fi
 
 # ------------------------------------------------------------------------------
 # Config GPG key
