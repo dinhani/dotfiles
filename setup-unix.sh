@@ -112,8 +112,8 @@ if is_linux; then
     sudo apt update
 
     log "Installing APT build tools"
-    apt_install build-essential
-    apt_install curl
+    install_apt build-essential
+    install_apt curl
 fi
 
 # ------------------------------------------------------------------------------
@@ -130,96 +130,95 @@ fi
 # ------------------------------------------------------------------------------
 log "Installing build tools"
 
-brew_install autoconf
-brew_install bison
-brew_install cmake
-brew_install gcc
-brew_install gcc@11
-brew_install gcc@12
-brew_install gcc@13
-brew_install gcc@14
-brew_install gettext
-brew_install llvm
-brew_install make
-brew_install re2c
+install_brew autoconf
+install_brew bison
+install_brew cmake
+install_brew gcc
+install_brew gcc@11
+install_brew gcc@12
+install_brew gcc@13
+install_brew gettext
+install_brew llvm
+install_brew make
+install_brew re2c
 
 # ------------------------------------------------------------------------------
 # Install CLI tools
 # ------------------------------------------------------------------------------
 log "Installing CLI tools"
 
-brew_install asdf
-brew_install bat
-brew_install dasel
-brew_install erdtree
-brew_install eza
-brew_install fd
-brew_install fzf
-brew_install gitql
-brew_install graphviz
-brew_install helix
-brew_install htmlq
-brew_install htop
-brew_install imagemagick
-brew_install jq
-brew_install just
-brew_install killport
-brew_install lazydocker
-brew_install lazygit
-brew_install mise
-brew_install pandoc
-brew_install ripgrep
-brew_install rust
-brew_install sd
-brew_install speedtest-cli
-brew_install subversion
-brew_install sysstat
-brew_install unzip
-brew_install util-linux
-brew_install w3m
-brew_install websocat
-brew_install zoxide
+install_brew asdf
+install_brew bat
+install_brew dasel
+install_brew erdtree
+install_brew eza
+install_brew fd
+install_brew fzf
+install_brew gitql
+install_brew graphviz
+install_brew helix
+install_brew htmlq
+install_brew htop
+install_brew imagemagick
+install_brew jq
+install_brew just
+install_brew killport
+install_brew lazydocker
+install_brew lazygit
+install_brew mise
+install_brew pandoc
+install_brew ripgrep
+install_brew rust
+install_brew sd
+install_brew speedtest-cli
+install_brew subversion
+install_brew sysstat
+install_brew unzip
+install_brew util-linux
+install_brew w3m
+install_brew websocat
+install_brew zoxide
 
 # ------------------------------------------------------------------------------
 # Install languages / build tools
 # ------------------------------------------------------------------------------
 brew tap oven-sh/bun
 
-brew_install bazelisk
-brew_install bun
-brew_install clojure
-brew_install crystal
-brew_install dmd
-brew_install dotnet
-brew_install elixir
-brew_install erlang
-brew_install gleam
-brew_install go@1.23
-brew_install gradle
-brew_install groovy
-brew_install haskell-stack
-brew_install julia
-brew_install kotlin
-brew_install leiningen
-brew_install lua
-brew_install maven
-brew_install node@22
-brew_install ocaml
-brew_install odin
-brew_install openjdk@23
-brew_install perl
-brew_install powershell
-brew_install protobuf
-brew_install python@3.13
-brew_install r
-brew_install racket
-brew_install rakudo
-brew_install ruby@3.4
-brew_install rustup
-brew_install scala
-brew_install solidity
-brew_install vlang
-brew_install zig
+install_brew bazelisk
+install_brew bun
+install_brew clojure
+install_brew crystal
+install_brew dmd
+install_brew dotnet
+install_brew elixir
+install_brew erlang
+install_brew gleam
+install_brew go@1.23
+install_brew gradle
+install_brew groovy
+install_brew haskell-stack
+install_brew julia
+install_brew kotlin
+install_brew leiningen
+install_brew lua
+install_brew maven
+install_brew node@22
+install_brew ocaml
+install_brew odin
+install_brew openjdk@23
+install_brew perl
+install_brew powershell
+install_brew protobuf
+install_brew python@3.13
+install_brew r
+install_brew racket
+install_brew rakudo
+install_brew ruby@3.4
+install_brew rustup
+install_brew scala
+install_brew solidity
+install_brew vlang
+install_brew zig
 
 # ------------------------------------------------------------------------------
 # Install languages extensions
@@ -254,6 +253,32 @@ rustup +nightly component add rust-analyzer
 log "Installing Rust extensions"
 cargo install cargo-expand
 cargo install wait-service
+
+# ------------------------------------------------------------------------------
+# Install VSCode extensions
+# ------------------------------------------------------------------------------
+# General
+
+# WSL / SSH
+install_vscode ms-vscode-remote.remote-wsl         # WSL
+install_vscode ms-vscode-remote.remote-ssh         # SSH
+
+# General
+install_vscode github.copilot                      # Copilot
+install_vscode dinhani.divider                     # Divider
+install_vscode vscode-icons-team.vscode-icons      # Icons
+install_vscode oderwat.indent-rainbow              # Indent Rainbow
+install_vscode danbackes.lines                     # Lines
+
+# Language / tools
+install_vscode EditorConfig.EditorConfig           # .editorconfig
+install_vscode mechatroner.rainbow-csv             # CSV
+install_vscode golang.Go                           # Go
+install_vscode ZainChen.json                       # JSON
+install_vscode yzhang.markdown-all-in-one          # Markdown
+install_vscode ms-vscode.PowerShell                # PowerShell
+install_vscode rust-lang.rust-analyzer             # Rust
+install_vscode tamasfe.even-better-toml            # TOML
 
 # ------------------------------------------------------------------------------
 # Install pre-compiled tools
