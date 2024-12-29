@@ -105,23 +105,27 @@ function brew_opt() {
 # ------------------------------------------------------------------------------
 
 # Install something with APT.
-function apt_install() {
-    log "APT installing: $1"
+function install_apt() {
     if ! dpkg -l |  cut -d' ' -f3 | grep -qw $1; then
+        log "APT installing: $1"
         sudo apt-get install -y $1
+    else
+        log "APT skipping: $1"
     fi
 }
 
 # Install something with brew.
-function brew_install() {
-    log "Homebrew installing: $1"
+function install_brew() {
     if ! brew list -1 | grep -q "^$1\$"; then
+            log "Homebrew installing: $1"
         brew install $1
+    else
+        log "Homebrew skipping: $1"
     fi
 }
 
 # Install something with ASDF.
-function asdf_install() {
+function install_asdf() {
     lang=$1
     version=$2
 
@@ -133,6 +137,27 @@ function asdf_install() {
     # add to .tool-versions
     echo "$lang $version" >> ~/.tool-versions
     reload
+}
+
+# Install something for VSCode or Cursor
+function install_vscode() {
+    if installed "code"; then
+        if ! code --list-extensions | grep -qi "^$1\$"; then
+            log "Installing VSCode extension: $1"
+            code --install-extension $1
+        else
+            log "VSCode skipping: $1"
+        fi
+    fi
+
+    if installed "cursor"; then
+        if ! cursor --list-extensions | grep -qi "^$1\$"; then
+            log "Installing Cursor extension: $1"
+            cursor --install-extension $1
+        else
+            log "Cursor skipping: $1"
+        fi
+    fi
 }
 
 # ------------------------------------------------------------------------------
