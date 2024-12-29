@@ -18,17 +18,25 @@ mkdir -p $DIR_SCRIPTS
 mkdir -p $DIR_TOOLS
 
 # ------------------------------------------------------------------------------
+# Install Oh My ZSH
+# ------------------------------------------------------------------------------
+if [[ -d "$HOME/.oh-my-zsh" ]]; then
+    log "Installing Oh My ZSH"
+    CHSH=no KEEP_ZSHRC=no RUNZSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+fi
+
+# ------------------------------------------------------------------------------
 # Install config
 # ------------------------------------------------------------------------------
 log "Configuring aliases"
 cp alias.sh $DIR_SCRIPTS
 
-log "Configuring profiles scripts"
-
+log "Configuring .bash_profile"
 cat << EOF > ~/.bash_profile
 source ~/.bashrc
 EOF
 
+log "Configuring .bashrc"
 cat << EOF > ~/.bashrc
 # env: terminal
 export HISTSIZE=100000
@@ -70,6 +78,26 @@ source $(brew_opt)/asdf/libexec/asdf.sh
 eval "\$(zoxide init bash)"
 
 EOF
+
+log "Configuring .zprofile"
+cat << EOF > ~/.zprofile
+source ~/.zshrc
+EOF
+
+log "Configuring .zshrc"
+cat << EOF > ~/.zshrc
+# apply .bashrc
+source ~/.bashrc
+
+# apply oh-my-zsh
+export ZSH="$HOME/.oh-my-zsh"
+export ZSH_THEME="robbyrussell"
+source $HOME/.oh-my-zsh/oh-my-zsh.sh
+
+# apply spaceship
+source "$(brew_opt)/spaceship/spaceship.zsh"
+EOF
+
 reload
 
 # ------------------------------------------------------------------------------
@@ -106,7 +134,7 @@ if [ ! -e ~/.ssh/dinhani.pub ]; then
 fi
 
 # ------------------------------------------------------------------------------
-# Config home and user
+# Config Git
 # ------------------------------------------------------------------------------
 log "Configuring Git"
 git config --global user.email "$EMAIL"
@@ -132,6 +160,7 @@ if not_installed "brew"; then
     NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     reload
 fi
+
 
 # ------------------------------------------------------------------------------
 # Install build tools
@@ -159,6 +188,8 @@ log "Installing CLI tools"
 install_brew bash
 install_brew nushell
 install_brew zsh
+
+install_brew spaceship
 
 # managers
 install_brew asdf
