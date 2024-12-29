@@ -31,21 +31,21 @@ mkdir -p $DIR_TOOLS
 log "Configuring aliases"
 cp alias.sh $DIR_SCRIPTS
 
-log "Configuring .bash_profile"
-cat << EOF > ~/.bash_profile
-source ~/.bashrc
-EOF
+log "Configuring common shell setup"
 
-log "Configuring .bashrc"
-cat << EOF > ~/.bashrc
+# ------------------------------------------------------------------------------
+# .shell_common
+# ------------------------------------------------------------------------------
+cat << EOF > ~/.shell_common
+
+# env: aliases
+source $DIR_SCRIPTS/alias.sh
 
 # env: terminal
 export HISTSIZE=100000
 export HISTFILESIZE=100000
 export EDITOR=hx
 export VISUAL=hx
-export PS1="\w "
-source $DIR_SCRIPTS/alias.sh
 
 # env: windows
 export APPDATA=/mnt/c/Users/Renato/AppData/Roaming/
@@ -74,27 +74,49 @@ ssh-add $HOME/.ssh/dinhani
 
 # tool: asdf
 source $(brew_opt)/asdf/libexec/asdf.sh
+EOF
+
+# ------------------------------------------------------------------------------
+# .bashrc
+# ------------------------------------------------------------------------------
+log "Configuring .bash_profile"
+cat << EOF > ~/.bash_profile
+source ~/.bashrc
+EOF
+
+log "Configuring .bashrc"
+cat << EOF > ~/.bashrc
+# load common
+source ~/.shell_common
+
+# tool: starship
+eval "\$(starship init bash)"
 
 # tool: zoxide
-if [[ -n "\$ZSH_VERSION" ]]; then
-    eval "\$(zoxide init zsh)"
-else
-    eval "\$(zoxide init bash)"
-fi
+eval "\$(zoxide init bash)"
 EOF
+
+# ------------------------------------------------------------------------------
+# .zshrc
+# ------------------------------------------------------------------------------
 
 log "Configuring .zshrc"
 cat << EOF > ~/.zshrc
-# load .bashrc
-source ~/.bashrc
-
 # load oh-my-zsh
-export ZSH="$HOME/.oh-my-zsh"
-export ZSH_THEME="robbyrussell"
+export ZSH=$HOME/.oh-my-zsh
 source $HOME/.oh-my-zsh/oh-my-zsh.sh
 
-# load spaceship
-source "$(brew_opt)/spaceship/spaceship.zsh"
+# load common
+source ~/.shell_common
+
+# fix green background
+export LS_COLORS="$LS_COLORS:ow=1;34:tw=1;34:"
+
+# tool: starship
+eval "\$(starship init zsh)"
+
+# tool: zoxide
+eval "\$(zoxide init bash)"
 EOF
 
 reload
@@ -150,8 +172,7 @@ log "Installing CLI tools"
 install_brew bash
 install_brew nushell
 install_brew zsh
-
-install_brew spaceship
+install_brew starship
 
 # managers
 install_brew asdf
