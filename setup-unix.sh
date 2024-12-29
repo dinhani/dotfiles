@@ -106,13 +106,13 @@ git config --global user.email "$EMAIL"
 git config --global user.name "Renato Dinhani"
 
 # ------------------------------------------------------------------------------
-# Install APT
+# Install APT basic tools
 # ------------------------------------------------------------------------------
 if is_linux; then
-    log "Updating repos"
+    log "Updating APT"
     sudo apt update
 
-    log "Installing basic build tools"
+    log "Installing APT build tools"
     apt_install build-essential
     apt_install curl
 fi
@@ -268,10 +268,10 @@ fi
 # ------------------------------------------------------------------------------
 # Upgrade software
 # ------------------------------------------------------------------------------
-log "Upgrading software"
-sudo apt upgrade -y
-
-exit
+if is_linux; then
+    log "Upgrading APT software"
+    sudo apt upgrade -y
+fi
 
 # ------------------------------------------------------------------------------
 # TODO: review necessary Rust extensions
