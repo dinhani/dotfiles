@@ -13,15 +13,15 @@ fi
 # Install dirs
 # ------------------------------------------------------------------------------
 log "Creating directories"
-mkdir -p ~/downloads
-mkdir -p ~/projects
-mkdir -p ~/scripts
+mkdir -p $DIR_DOWNLOADS
+mkdir -p $DIR_SCRIPTS
+mkdir -p $DIR_TOOLS
 
 # ------------------------------------------------------------------------------
 # Install config
 # ------------------------------------------------------------------------------
 log "Configuring aliases"
-cp alias.sh ~/scripts
+cp alias.sh $DIR_SCRIPTS
 
 log "Configuring profiles scripts"
 
@@ -30,41 +30,46 @@ source ~/.bashrc
 EOF
 
 cat << EOF > ~/.bashrc
-# terminal
+# env: terminal
 export HISTSIZE=100000
 export HISTFILESIZE=100000
 export EDITOR=hx
 export VISUAL=hx
 export PS1="\w "
-source \$HOME/scripts/alias.sh
+source $DIR_SCRIPTS/alias.sh
 
-# system
-ulimit -n 65365
-
-# ssh
-pkill ssh-agent
-eval "\$(ssh-agent -s)"
-ssh-add \$HOME/.ssh/dinhani
-
-# windows
+# env: windows
 export APPDATA=/mnt/c/Users/Renato/AppData/Roaming/
 export LOCALAPPDATA=/mnt/c/Users/Renato/AppData/Local/
 
-# homebrew
+# env: homebrew
 export PATH=\$PATH:$(brew_bin)
 export LDFLAGS="-L$(brew_lib)"
 export CPPFLAGS="-L$(brew_include)"
 
-# asdf
+# env: rust
+export PATH=\$PATH:$HOME/.cargo/bin
+
+# env: custom tools
+export PATH=\$PATH:$DIR_TOOLS
+export PATH=\$PATH:$DIR_TOOLS/FlameGraph
+
+# tool: system
+ulimit -n 65365
+
+# tool: ssh
+pkill ssh-agent
+eval "\$(ssh-agent -s)"
+ssh-add $HOME/.ssh/dinhani
+
+# tool: asdf
 source $(brew_opt)/asdf/libexec/asdf.sh
 
-# rust
-export PATH=\$PATH:\$HOME/.cargo/bin
-
-# other tools
-export PATH=\$PATH:/usr/local/FlameGraph
+# tool: zoxide
 eval "\$(zoxide init bash)"
+
 EOF
+reload
 
 # ------------------------------------------------------------------------------
 # Config editor
@@ -172,12 +177,16 @@ install_brew rust
 install_brew sd
 install_brew speedtest-cli
 install_brew subversion
-install_brew sysstat
 install_brew unzip
 install_brew util-linux
 install_brew w3m
 install_brew websocat
 install_brew zoxide
+
+# linux specific
+if is_linux; then
+    install_brew sysstat
+fi
 
 # ------------------------------------------------------------------------------
 # Install languages / build tools
@@ -190,10 +199,11 @@ install_brew clojure
 install_brew crystal
 install_brew dmd
 install_brew dotnet
+install_brew dub
 install_brew elixir
 install_brew erlang
 install_brew gleam
-install_brew go@1.23
+install_brew go
 install_brew gradle
 install_brew groovy
 install_brew haskell-stack
@@ -205,15 +215,15 @@ install_brew maven
 install_brew node@22
 install_brew ocaml
 install_brew odin
-install_brew openjdk@23
+install_brew openjdk
 install_brew perl
 install_brew powershell
 install_brew protobuf
-install_brew python@3.13
+install_brew python
 install_brew r
 install_brew racket
 install_brew rakudo
-install_brew ruby@3.4
+install_brew ruby
 install_brew rustup
 install_brew scala
 install_brew solidity
@@ -285,24 +295,32 @@ install_vscode tamasfe.even-better-toml            # TOML
 # ------------------------------------------------------------------------------
 if not_installed "flamegraph.pl"; then
     log "Installing FlameGraph"
-    sudo git clone https://github.com/dinhani/FlameGraph-RustTheme /usr/local/FlameGraph
+
+    rm -rf $DIR_DOWNLOADS/FlameGraph
+    git clone https://github.com/dinhani/FlameGraph-RustTheme $DIR_DOWNLOADS/FlameGraph
+    cp -rf $DIR_DOWNLOADS/FlameGraph $DIR_TOOLS
 fi
 
 if not_installed "plantuml.jar"; then
     log "Installing PlantUML"
+
+    rm $DIR_DOWNLOADS/plantuml.jar
     download https://github.com/plantuml/plantuml/releases/download/v1.2024.6/plantuml-mit-1.2024.6.jar plantuml.jar
-    sudo cp $DOWNLOADS/plantuml.jar /usr/local/bin/plantuml.jar
+    cp $DIR_DOWNLOADS/plantuml.jar $DIR_TOOLS/plantuml.jar
 fi
 
 if not_installed "tsv-pretty"; then
     log "Installing tsv-utils"
+
+    rm $DIR_DOWNLOADS/tsv-utils.tar.gz
+    rm -rf $DIR_DOWNLOADS/tsv-utils
     download https://github.com/eBay/tsv-utils/releases/download/v2.2.0/tsv-utils-v2.2.0_linux-x86_64_ldc2.tar.gz tsv-utils.tar.gz
 
-    mkdir -p $DOWNLOADS/tsv-utils
-    tar -xzvf $DOWNLOADS/tsv-utils.tar.gz -C $DOWNLOADS/tsv-utils --strip-components=2
+    mkdir -p $DIR_DOWNLOADS/tsv-utils
+    tar -xzvf $DIR_DOWNLOADS/tsv-utils.tar.gz -C $DIR_DOWNLOADS/tsv-utils --strip-components=2
 
-    sudo mv $DOWNLOADS/tsv-utils/* /usr/local/bin/
-    rm -rf $DOWNLOADS/tsv-utils
+    mv $DIR_DOWNLOADS/tsv-utils/* $DIR_TOOLS
+    rm -rf $DIR_DOWNLOADS/tsv-utils
 fi
 
 # ------------------------------------------------------------------------------
@@ -314,31 +332,25 @@ if is_linux; then
 fi
 
 # ------------------------------------------------------------------------------
-# TODO: Review VSCode extensions process
-# ------------------------------------------------------------------------------
-# log "Installing VSCode extensions"
-# source $(dirname $0)/setup-vscode.sh
-
-# ------------------------------------------------------------------------------
 # Install local compiled tools
 # ------------------------------------------------------------------------------
 # if is_linux; then
-#     if [ ! -d "$DOWNLOADS/$DOWNLOADS/WSL2-Linux-Kernel" ]; then
+#     if [ ! -d "$DIR_DOWNLOADS/$DIR_DOWNLOADS/WSL2-Linux-Kernel" ]; then
 #         log "Cloning WSL2 source"
-#         git clone https://github.com/microsoft/WSL2-Linux-Kernel $DOWNLOADS/WSL2-Linux-Kernel
+#         git clone https://github.com/microsoft/WSL2-Linux-Kernel $DIR_DOWNLOADS/WSL2-Linux-Kernel
 #     fi
 # fi
 
 # heaptrack
 # if not_installed "heaptrack"; then
 #     log "Installing heaptrack"
-#     git clone "https://github.com/KDE/heaptrack" $DOWNLOADS/heaptrack
+#     git clone "https://github.com/KDE/heaptrack" $DIR_DOWNLOADS/heaptrack
 
-#     cd $DOWNLOADS/heaptrack
+#     cd $DIR_DOWNLOADS/heaptrack
 #     cmake -DCMAKE_BUILD_TYPE=Release
 #     make -j16
-#     sudo cp -r $DOWNLOADS/heaptrack/bin/* /usr/local/bin
-#     sudo cp -r $DOWNLOADS/heaptrack/lib/* /usr/local/lib
+#     sudo cp -r $DIR_DOWNLOADS/heaptrack/bin/* /usr/local/bin
+#     sudo cp -r $DIR_DOWNLOADS/heaptrack/lib/* /usr/local/lib
 
 #     cd
 # fi
@@ -347,7 +359,7 @@ fi
 # if is_linux && not_installed "perf"; then
 #     log "Installing perf"
 
-#     cd $DOWNLOADS/WSL2-Linux-Kernel/tools/perf
+#     cd $DIR_DOWNLOADS/WSL2-Linux-Kernel/tools/perf
 #     NO_LIBTRACEEVENT=1 make -j16
 #     sudo cp perf /usr/local/bin/perf
 
@@ -358,8 +370,8 @@ fi
 # if not_installed "pikchr"; then
 #     log "Installing pikchr"
 
-#     git clone https://github.com/drhsqlite/pikchr.git $DOWNLOADS/pikchr
-#     cd $DOWNLOADS/pikchr
+#     git clone https://github.com/drhsqlite/pikchr.git $DIR_DOWNLOADS/pikchr
+#     cd $DIR_DOWNLOADS/pikchr
 #     make
 #     sudo cp pikchr /usr/local/bin
 
@@ -369,9 +381,9 @@ fi
 # valgrind
 # if not_installed "valgrind"; then
 #     log "Installing valgrind"
-#     git clone https://sourceware.org/git/valgrind.git $DOWNLOADS/valgrind
+#     git clone https://sourceware.org/git/valgrind.git $DIR_DOWNLOADS/valgrind
 
-#     cd $DOWNLOADS/valgrind
+#     cd $DIR_DOWNLOADS/valgrind
 #     ./autogen.sh
 #     ./configure
 #     make -j16
