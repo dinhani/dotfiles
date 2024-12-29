@@ -38,6 +38,7 @@ EOF
 
 log "Configuring .bashrc"
 cat << EOF > ~/.bashrc
+
 # env: terminal
 export HISTSIZE=100000
 export HISTFILESIZE=100000
@@ -75,7 +76,11 @@ ssh-add $HOME/.ssh/dinhani
 source $(brew_opt)/asdf/libexec/asdf.sh
 
 # tool: zoxide
-eval "\$(zoxide init bash)"
+if [[ -n "\$ZSH_VERSION" ]]; then
+    eval "\$(zoxide init zsh)"
+else
+    eval "\$(zoxide init bash)"
+fi
 EOF
 
 log "Configuring .zprofile"

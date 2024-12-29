@@ -1,25 +1,27 @@
 # checks
-is_linux() { [[ "$(uname -s)" == "Linux" ]]; }
-is_mac() { [[ "$(uname -s)" == "Darwin" ]]; }
+is_linux() { [[ "$(uname -s)" == "Linux"  ]]; }
+is_mac()   { [[ "$(uname -s)" == "Darwin" ]]; }
+is_bash()  { [[ -n "$BASH_VERSION" ]] }
+is_zsh()   { [[ -n "$ZSH_VERSION"  ]] }
 
 # self
 # edit-alias
 alias a="hx ~/scripts/alias.sh" # edit-alias
 
 # edit-init
-if is_linux; then
+if is_bash; then
   alias i="hx ~/.bashrc"
 fi
-if is_mac; then
+if is_zsh; then
   alias i="hx ~/.zshrc"
 fi
 
 # source init
-if is_linux; then
-  alias s="source ~/.bashrc;"
+if is_bash; then
+  alias s="echo 'Reloading .bashrc...'; source ~/.bashrc;"
 fi
-if is_mac; then
-  alias s="source ~/.zshrc"
+if is_zsh; then
+  alias s="echo 'Reloading .zshrc...'; source ~/.zshrc"
 fi
 
 # clear
@@ -92,7 +94,7 @@ alias gsub="git submodule update --init --recursive"
 alias xh="hx"
 
 # history
-function h() {   
+function h() {
   if is_mac; then
     command=$(history 0 | awk ' {$1=""; print substr($0, 2) }' | sort | uniq | fzf --tac)
   fi
@@ -100,7 +102,7 @@ function h() {
     command=$(history | awk ' {$1=""; print substr($0, 2) }' | sort | uniq | fzf --tac)
   fi
   history -s $command
-  eval $command  
+  eval $command
 }
 
 # httpie
@@ -167,7 +169,7 @@ function mv-ascii() {
     if [[ $source != $target ]]; then
       mv "$dir/$source" "$dir/__$target" # workaround: only changing case fails in Windows, so we create a temporary version with __ prefix before renaming to the final version
       mv "$dir/__$target" "$dir/$target"
-    fi    
+    fi
   done
 }
 
@@ -192,7 +194,7 @@ fi
 # tree
 alias tree="~/.cargo/bin/erd -s name --dir-order first -y inverted --disk-usage logical -H"
 
-# watch 
+# watch
 alias bwatch="browser-sync . --watch" # browser-watch
 alias fwatch="watchexec --poll 500ms --restart" # file-watch
 
