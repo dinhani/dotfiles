@@ -40,71 +40,19 @@ function is_mac_arm() {
     [[ "$(uname -s)" == "Darwin" && "$(uname -m)" == "arm64" ]]
 }
 
-# Return the Homebrew directory based on the operating system.
-function brew_cellar() {
+
+# Returns Homebrew directory.
+function brew_dir() {
     if is_mac_intel; then
-        echo "/usr/local/Cellar"
+        echo "/usr/local"
     elif is_mac_arm; then
-        echo "/opt/homebrew/Cellar"
+        echo "/opt/homebrew"
     elif is_linux; then
-        echo "/home/linuxbrew/.linuxbrew/Cellar"
+        echo "/home/linuxbrew/.linuxbrew"
     else
-        echo ""
+        brew --prefix
     fi
 }
-
-# Return the Homebrew binary directory based on the operating system.
-function brew_bin() {
-    if is_mac_intel; then
-        echo "/usr/local/bin"
-    elif is_mac_arm; then
-        echo "/opt/homebrew/bin"
-    elif is_linux; then
-        echo "/home/linuxbrew/.linuxbrew/bin"
-    else
-        echo ""
-    fi
-}
-
-# Return the Homebrew library directory based on the operating system.
-function brew_lib() {
-    if is_mac_intel; then
-        echo "/usr/local/lib"
-    elif is_mac_arm; then
-        echo "/opt/homebrew/lib"
-    elif is_linux; then
-        echo "/home/linuxbrew/.linuxbrew/lib"
-    else
-        echo ""
-    fi
-}
-
-# Return the Homebrew include directory based on the operating system.
-function brew_include() {
-    if is_mac_intel; then
-        echo "/usr/local/include"
-    elif is_mac_arm; then
-        echo "/opt/homebrew/include"
-    elif is_linux; then
-        echo "/home/linuxbrew/.linuxbrew/include"
-    else
-        echo ""
-    fi
-}
-
-# Return the Homebrew opt directory based on the operating system.
-function brew_opt() {
-    if is_mac_intel; then
-        echo "/usr/local/opt"
-    elif is_mac_arm; then
-        echo "/opt/homebrew/opt"
-    elif is_linux; then
-        echo "/home/linuxbrew/.linuxbrew/opt"
-    else
-        echo ""
-    fi
-}
-
 
 # ------------------------------------------------------------------------------
 # Installation

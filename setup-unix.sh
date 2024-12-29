@@ -37,7 +37,6 @@ log "Configuring common shell setup"
 # .shell_common
 # ------------------------------------------------------------------------------
 cat << EOF > ~/.shell_common
-
 # aliases
 source $DIR_SCRIPTS/alias.sh
 
@@ -52,13 +51,14 @@ export APPDATA=/mnt/c/Users/Renato/AppData/Roaming/
 export LOCALAPPDATA=/mnt/c/Users/Renato/AppData/Local/
 
 # homebrew
-export PATH=\$PATH:$(brew_bin)
-export LIBRARY_PATH=$(brew_lib)
-export LD_LIBRARY_PATH=$(brew_lib)
-export CMAKE_LIBRARY_PATH=$(brew_lib)
-export CMAKE_SYSTEM_LIBRARY_PATH=$(brew_lib)
-export PKG_CONFIG_PATH=$(brew_lib)/pkgconfig
-export CPATH=$(brew_include)
+export PATH=\$PATH:$(brew_dir)/bin
+export PATH=\$PATH:$(brew_dir)/sbin
+export LIBRARY_PATH=$(brew_dir)/lib
+export LD_LIBRARY_PATH=$(brew_dir)/lib
+export CMAKE_LIBRARY_PATH=$(brew_dir)/lib
+export CMAKE_SYSTEM_LIBRARY_PATH=$(brew_dir)/lib
+export PKG_CONFIG_PATH=$(brew_dir)/lib/pkgconfig
+export CPATH=$(brew_dir)/include
 
 # langs
 export PATH=\$PATH:$HOME/go/bin
@@ -77,7 +77,7 @@ eval "\$(ssh-agent -s)"
 ssh-add $HOME/.ssh/dinhani
 
 # asdf
-source $(brew_opt)/asdf/libexec/asdf.sh
+source $(brew_dir)/opt/asdf/libexec/asdf.sh
 EOF
 
 # ------------------------------------------------------------------------------
@@ -92,6 +92,12 @@ log "Configuring .bashrc"
 cat << EOF > ~/.bashrc
 # common
 source ~/.shell_common
+
+# completions
+for COMPLETION in "$(brew_dir)/etc/bash_completion.d/"*
+do
+    source "\${COMPLETION}"
+done
 
 # starship
 eval "\$(starship init bash)"
@@ -365,7 +371,7 @@ fi
 # ------------------------------------------------------------------------------
 if is_linux; then
     log "Configuring editor"
-    sudo update-alternatives --install /usr/bin/editor editor "$(brew_bin)/hx" 100
+    sudo update-alternatives --install /usr/bin/editor editor "$(brew_dir)/bin/hx" 100
 fi
 
 # ------------------------------------------------------------------------------
