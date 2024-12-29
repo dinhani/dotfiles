@@ -213,12 +213,15 @@ install_brew speedtest-cli
 install_brew subversion
 install_brew unzip
 install_brew util-linux
+install_brew valgrind
 install_brew w3m
 install_brew websocat
 install_brew zoxide
 
 # linux specific
 if is_linux; then
+    install_apt heaptrack
+    install_apt heaptrack-gui
     install_brew sysstat
 fi
 
@@ -426,26 +429,12 @@ fi
 # ------------------------------------------------------------------------------
 # Install local compiled tools
 # ------------------------------------------------------------------------------
+
+# wsl2 source checkout
 if is_linux && [ ! -d "$DIR_DOWNLOADS/WSL2-Linux-Kernel" ]; then
     log "Cloning WSL2 source"
     git clone https://github.com/microsoft/WSL2-Linux-Kernel $DIR_DOWNLOADS/WSL2-Linux-Kernel
 fi
-
-# heaptrack
-# if is_linux; then
-#     if not_installed "heaptrack"; then
-#         log "Installing heaptrack"
-#         git clone "https://github.com/KDE/heaptrack" $DIR_DOWNLOADS/heaptrack
-
-#         cd $DIR_DOWNLOADS/heaptrack
-#         cmake -DCMAKE_BUILD_TYPE=Release
-#         make -j16
-#         sudo cp -r $DIR_DOWNLOADS/heaptrack/bin/* /usr/local/bin
-#         sudo cp -r $DIR_DOWNLOADS/heaptrack/lib/* /usr/local/lib
-
-#         cd
-#     fi
-# fi
 
 # perf
 if is_linux && not_installed "perf"; then
@@ -469,17 +458,3 @@ if not_installed "pikchr"; then
 
     cd
 fi
-
-# valgrind
-# if not_installed "valgrind"; then
-#     log "Installing valgrind"
-#     git clone https://sourceware.org/git/valgrind.git $DIR_DOWNLOADS/valgrind
-
-#     cd $DIR_DOWNLOADS/valgrind
-#     ./autogen.sh
-#     ./configure
-#     make -j16
-#     sudo make install
-
-#     cd
-# fi
