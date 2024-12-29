@@ -333,6 +333,31 @@ if not_installed "tsv-pretty"; then
 fi
 
 # ------------------------------------------------------------------------------
+# Install Desktop tools
+# ------------------------------------------------------------------------------
+if is_mac; then
+    # hardware
+    install_brew elgato-stream-deck
+    install_brew logitech-g-hub
+
+    # media
+    install_brew spotify
+
+    # terminal
+    install_brew iterm2
+    install_brew ghostty
+
+    # editors
+    install_brew insomnia
+    install_brew notable
+    install_brew visual-studio-code
+
+    # work / utils
+    install_brew google-chrome
+    install_brew slack
+fi
+
+# ------------------------------------------------------------------------------
 # Upgrade software
 # ------------------------------------------------------------------------------
 if is_linux; then
