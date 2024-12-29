@@ -154,7 +154,15 @@ install_brew re2c
 # ------------------------------------------------------------------------------
 log "Installing CLI tools"
 
+# shells
+install_brew nushell
+install_brew zsh
+
+# managers
 install_brew asdf
+install_brew mise
+
+# other
 install_brew bat
 install_brew dasel
 install_brew erdtree
@@ -172,7 +180,6 @@ install_brew just
 install_brew killport
 install_brew lazydocker
 install_brew lazygit
-install_brew mise
 install_brew pandoc
 install_brew ripgrep
 install_brew rust
