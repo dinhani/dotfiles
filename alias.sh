@@ -181,7 +181,7 @@ alias pflame="perf script | stackcollapse-perf.pl | flamegraph.pl --width 1900 -
 alias rgc="rg -B 1 -A 1 --line-number --context-separator ''"
 
 # server
-alias serve="xdg-open http://127.0.0.1:8000; python -m http.server"
+alias serve="xdg-open http://127.0.0.1:8000; python3 -m http.server"
 
 # solc
 alias sc="solc --base-path . --include-path ./node_modules --include-path ../node_modules"

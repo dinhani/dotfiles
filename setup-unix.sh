@@ -53,8 +53,14 @@ export LOCALAPPDATA=/mnt/c/Users/Renato/AppData/Local/
 
 # env: homebrew
 export PATH=\$PATH:$(brew_bin)
-export LDFLAGS="-L$(brew_lib)"
-export CPPFLAGS="-L$(brew_include)"
+
+export LIBRARY_PATH=$(brew_lib)
+export LD_LIBRARY_PATH=$(brew_lib)
+export CMAKE_LIBRARY_PATH=$(brew_lib)
+export CMAKE_SYSTEM_LIBRARY_PATH=$(brew_lib)
+export PKG_CONFIG_PATH=$(brew_lib)/pkgconfig
+
+export CPATH=$(brew_include)
 
 # env: langs
 export PATH=\$PATH:$HOME/go/bin
@@ -110,7 +116,7 @@ source $HOME/.oh-my-zsh/oh-my-zsh.sh
 source ~/.shell_common
 
 # fix green background
-export LS_COLORS="$LS_COLORS:ow=1;34:tw=1;34:"
+# export LS_COLORS="$LS_COLORS:ow=1;34:tw=1;34:"
 
 # tool: starship
 eval "\$(starship init zsh)"
@@ -154,11 +160,13 @@ log "Installing build tools"
 install_brew autoconf
 install_brew bison
 install_brew cmake
+install_brew flex
 install_brew gcc
 install_brew gcc@11
 install_brew gcc@12
 install_brew gcc@13
 install_brew gettext
+install_brew just
 install_brew llvm
 install_brew make
 install_brew re2c
@@ -173,6 +181,7 @@ install_brew bash
 install_brew nushell
 install_brew zsh
 install_brew starship
+starship preset plain-text-symbols -o ~/.config/starship.toml
 
 # managers
 install_brew asdf
@@ -193,7 +202,6 @@ install_brew htmlq
 install_brew htop
 install_brew imagemagick
 install_brew jq
-install_brew just
 install_brew killport
 install_brew lazydocker
 install_brew lazygit
@@ -418,49 +426,49 @@ fi
 # ------------------------------------------------------------------------------
 # Install local compiled tools
 # ------------------------------------------------------------------------------
+if is_linux && [ ! -d "$DIR_DOWNLOADS/WSL2-Linux-Kernel" ]; then
+    log "Cloning WSL2 source"
+    git clone https://github.com/microsoft/WSL2-Linux-Kernel $DIR_DOWNLOADS/WSL2-Linux-Kernel
+fi
+
+# heaptrack
 # if is_linux; then
-#     if [ ! -d "$DIR_DOWNLOADS/$DIR_DOWNLOADS/WSL2-Linux-Kernel" ]; then
-#         log "Cloning WSL2 source"
-#         git clone https://github.com/microsoft/WSL2-Linux-Kernel $DIR_DOWNLOADS/WSL2-Linux-Kernel
+#     if not_installed "heaptrack"; then
+#         log "Installing heaptrack"
+#         git clone "https://github.com/KDE/heaptrack" $DIR_DOWNLOADS/heaptrack
+
+#         cd $DIR_DOWNLOADS/heaptrack
+#         cmake -DCMAKE_BUILD_TYPE=Release
+#         make -j16
+#         sudo cp -r $DIR_DOWNLOADS/heaptrack/bin/* /usr/local/bin
+#         sudo cp -r $DIR_DOWNLOADS/heaptrack/lib/* /usr/local/lib
+
+#         cd
 #     fi
 # fi
 
-# heaptrack
-# if not_installed "heaptrack"; then
-#     log "Installing heaptrack"
-#     git clone "https://github.com/KDE/heaptrack" $DIR_DOWNLOADS/heaptrack
-
-#     cd $DIR_DOWNLOADS/heaptrack
-#     cmake -DCMAKE_BUILD_TYPE=Release
-#     make -j16
-#     sudo cp -r $DIR_DOWNLOADS/heaptrack/bin/* /usr/local/bin
-#     sudo cp -r $DIR_DOWNLOADS/heaptrack/lib/* /usr/local/lib
-
-#     cd
-# fi
-
 # perf
-# if is_linux && not_installed "perf"; then
-#     log "Installing perf"
+if is_linux && not_installed "perf"; then
+    log "Installing perf"
 
-#     cd $DIR_DOWNLOADS/WSL2-Linux-Kernel/tools/perf
-#     NO_LIBTRACEEVENT=1 make -j16
-#     sudo cp perf /usr/local/bin/perf
+    cd $DIR_DOWNLOADS/WSL2-Linux-Kernel/tools/perf
+    NO_LIBTRACEEVENT=1 make -j16
+    cp perf $DIR_TOOLS
 
-#     cd
-# fi
+    cd
+fi
 
 # pikchr
-# if not_installed "pikchr"; then
-#     log "Installing pikchr"
+if not_installed "pikchr"; then
+    log "Installing pikchr"
 
-#     git clone https://github.com/drhsqlite/pikchr.git $DIR_DOWNLOADS/pikchr
-#     cd $DIR_DOWNLOADS/pikchr
-#     make
-#     sudo cp pikchr /usr/local/bin
+    git clone https://github.com/drhsqlite/pikchr.git $DIR_DOWNLOADS/pikchr
+    cd $DIR_DOWNLOADS/pikchr
+    make
+    cp pikchr $DIR_TOOLS
 
-#     cd
-# fi
+    cd
+fi
 
 # valgrind
 # if not_installed "valgrind"; then
