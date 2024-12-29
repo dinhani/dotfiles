@@ -30,7 +30,6 @@ source ~/.bashrc
 EOF
 
 cat << EOF > ~/.bashrc
-
 # terminal
 export HISTSIZE=100000
 export HISTFILESIZE=100000
@@ -59,8 +58,8 @@ export CPPFLAGS="-L$(brew_include)"
 # asdf
 source $(brew_opt)/asdf/libexec/asdf.sh
 
-# native languages
-source \$HOME/.cargo/env
+# rust
+export PATH=\$PATH:\$HOME/.cargo/bin
 
 # other tools
 export PATH=\$PATH:/usr/local/FlameGraph
@@ -240,6 +239,22 @@ pip3 install --break-system-packages bs4 dpath httpie lxml matplotlib mycli netw
 log "Installing Ruby extensions and tools"
 gem install --conservative activesupport eth pry nokogiri pp puma rails rufo sinatra solargraph webrick tomlrb tomlib
 
+# Rust
+log "Installing Rust toolchains"
+rustup toolchain install stable
+rustup toolchain install nightly
+
+rustup component add clippy
+rustup component add rustfmt
+rustup component add rust-analyzer
+rustup +nightly component add clippy
+rustup +nightly component add rustfmt
+rustup +nightly component add rust-analyzer
+
+log "Installing Rust extensions"
+cargo install cargo-expand
+cargo install wait-service
+
 # ------------------------------------------------------------------------------
 # Install pre-compiled tools
 # ------------------------------------------------------------------------------
@@ -272,30 +287,6 @@ if is_linux; then
     log "Upgrading APT software"
     sudo apt upgrade -y
 fi
-
-# ------------------------------------------------------------------------------
-# TODO: review necessary Rust extensions
-# ------------------------------------------------------------------------------
-
-# # Rust
-# log "Installing Rust extensions and tools"
-# rustup component add clippy
-# rustup component add rustfmt
-# rustup component add rust-analyzer
-# rustup target add wasm32-unknown-unknown
-
-# rustup install nightly-x86_64-unknown-linux-gnu
-# rustup target add wasm32-unknown-unknown --toolchain nightly-x86_64-unknown-linux-gnu
-
-# rustup install nightly-2023-03-25-x86_64-unknown-linux-gnu
-# rustup target add wasm32-unknown-unknown --toolchain nightly-2023-03-25-x86_64-unknown-linux-gnu
-
-# cargo install cargo-expand
-# cargo install cargo-outdated
-# cargo install ethabi-cli
-# cargo install sqlx-cli
-# cargo install wait-service
-# cargo install watchexec
 
 # ------------------------------------------------------------------------------
 # TODO: Review VSCode extensions process
