@@ -153,14 +153,17 @@ def backup():
     unix_home("scripts/alias.sh") >> dotfiles("scripts/alias.sh")
 
     # ASDF
-    unix_home(".tool-versions") >> dotfiles(".tool-versions")
+    unix_home(".tool-versions") >> dotfiles("asdf/.tool-versions")
 
     # Helix
     unix_home(".config/helix/config.toml") >> dotfiles("helix/config.toml")
     unix_home(".config/helix/languages.toml") >> dotfiles("helix/languages.toml")
 
+    # Starship
+    unix_home(".config/starship.toml") >> dotfiles("starship/starship.toml")
+
     # VIM
-    unix_home(".vimrc") >> dotfiles(".vimrc")
+    unix_home(".vimrc") >> dotfiles("vim/.vimrc")
 
     # --------------------------------------------------------------------------
     # Windows
@@ -218,13 +221,16 @@ def restore():
     dotfiles("scripts/alias.sh") >> unix_home("scripts/alias.sh")
 
     # ASDF
-    dotfiles(".tool-versions") >> unix_home(".tool-versions")
+    dotfiles("asdf/.tool-versions") >> unix_home(".tool-versions")
 
     # Helix
     dotfiles("helix") >> unix_home(".config/helix")
 
+    # Starship
+    unix_home("starship/starship.toml") >> dotfiles(".config/starship.toml")
+
     # VIM
-    dotfiles(".vimrc") >> unix_home(".vimrc")
+    dotfiles("vim/.vimrc") >> unix_home(".vimrc")
 
     # --------------------------------------------------------------------------
     # Windows
