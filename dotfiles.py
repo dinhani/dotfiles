@@ -198,7 +198,7 @@ def backup():
         win_roaming("JetBrains/IdeaIC2023.2/options/window.layouts.xml") >> dotfiles("intellij/options/window.layouts.xml")
 
         # Notable
-        win_home(".notable.json") >> dotfiles(".notable.json")
+        win_home(".notable.json") >> dotfiles("notable/.notable.json")
 
         # RStudio
         win_roaming("RStudio/config.json") >> dotfiles("rstudio/config.json")
@@ -260,7 +260,7 @@ def restore():
         dotfiles("intellij") >> win_roaming("JetBrains/IdeaIC2023.2")
 
         # Notable
-        dotfiles(".notable.json") >> win_home(".notable.json")
+        dotfiles("notable/.notable.json") >> win_home(".notable.json")
 
         # RStudio
         dotfiles("rstudio") >> win_roaming("RStudio")
