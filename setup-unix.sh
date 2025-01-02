@@ -156,7 +156,6 @@ if not_installed "brew"; then
     reload
 fi
 
-
 # ------------------------------------------------------------------------------
 # Install build tools
 # ------------------------------------------------------------------------------
@@ -186,7 +185,6 @@ install_brew bash
 install_brew nushell
 install_brew zsh
 install_brew starship
-starship preset plain-text-symbols -o ~/.config/starship.toml
 
 # managers
 install_brew asdf
