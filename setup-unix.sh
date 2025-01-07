@@ -423,6 +423,8 @@ if is_mac; then
     install_brew insomnia
     install_brew notable
     install_brew visual-studio-code
+    install_brew rstudio
+    install_brew zed
 
     # work / utils
     install_brew google-chrome

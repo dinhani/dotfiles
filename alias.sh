@@ -64,6 +64,9 @@ function lsf() {
   fi
 }
 
+# gcloud
+alias gcloud-login="gcloud auth application-default login"
+
 # git
 alias ga="git add --all"
 alias gam="git add --all .; git commit -m"
