@@ -93,13 +93,14 @@ alias xh="hx"
 
 # history
 function h() {
-  if is_mac; then
+  if is_zsh; then
     command=$(history 0 | awk ' {$1=""; print substr($0, 2) }' | sort | uniq | fzf --tac)
+    print -s "$command"
   fi
-  if is_linux; then
+  if is_bash; then
     command=$(history | awk ' {$1=""; print substr($0, 2) }' | sort | uniq | fzf --tac)
+    history -s $command
   fi
-  history -s $command
   eval $command
 }
 
