@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "minor_version": 4,
+  "key": "core.config_entries",
+  "data": {
+    "entries": [
+      {"created_at":"2025-01-18T21:27:29.157524+00:00","data":{},"disabled_by":null,"discovery_keys":{},"domain":"sun","entry_id":"01JHXN0MM57XDYK82XKJ1P0ZXG","minor_version":1,"modified_at":"2025-01-18T21:27:29.157527+00:00","options":{},"pref_disable_new_entities":false,"pref_disable_polling":false,"source":"import","title":"Sun","unique_id":null,"version":1},
+      {"created_at":"2025-01-18T21:28:11.190136+00:00","data":{"language":"en","tld":"com"},"disabled_by":null,"discovery_keys":{},"domain":"google_translate","entry_id":"01JHXN1XNPK80GRTW5HQY5EJRY","minor_version":1,"modified_at":"2025-01-18T21:28:11.190139+00:00","options":{},"pref_disable_new_entities":false,"pref_disable_polling":false,"source":"onboarding","title":"Google Translate text-to-speech","unique_id":null,"version":1},
+      {"created_at":"2025-01-18T21:28:11.214717+00:00","data":{},"disabled_by":null,"discovery_keys":{},"domain":"radio_browser","entry_id":"01JHXN1XPEBFNYPZXBJ8NCEM71","minor_version":1,"modified_at":"2025-01-18T21:28:11.214721+00:00","options":{},"pref_disable_new_entities":false,"pref_disable_polling":false,"source":"onboarding","title":"Radio Browser","unique_id":null,"version":1},
+      {"created_at":"2025-01-18T21:28:11.219045+00:00","data":{"track_home":true},"disabled_by":null,"discovery_keys":{},"domain":"met","entry_id":"01JHXN1XPKE6KN5FE4XAWZCZJ8","minor_version":1,"modified_at":"2025-01-18T21:28:11.219047+00:00","options":{},"pref_disable_new_entities":false,"pref_disable_polling":false,"source":"onboarding","title":"Home","unique_id":null,"version":1},
+      {"created_at":"2025-01-18T21:28:11.221360+00:00","data":{},"disabled_by":null,"discovery_keys":{},"domain":"shopping_list","entry_id":"01JHXN1XPN9GD4JPC6SVK869HK","minor_version":1,"modified_at":"2025-01-18T21:28:11.221362+00:00","options":{},"pref_disable_new_entities":false,"pref_disable_polling":false,"source":"onboarding","title":"Shopping list","unique_id":"shopping_list","version":1}
+    ]
+  }
+}

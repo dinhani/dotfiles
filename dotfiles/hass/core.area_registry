@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "minor_version": 7,
+  "key": "core.area_registry",
+  "data": {
+    "areas": [
+      {
+        "aliases": [],
+        "floor_id": null,
+        "icon": null,
+        "id": "sala",
+        "labels": [],
+        "name": "Sala",
+        "picture": null,
+        "created_at": "2025-01-18T21:35:36.452166+00:00",
+        "modified_at": "2025-01-18T21:35:36.452169+00:00"
+      },
+      {
+        "aliases": [],
+        "floor_id": null,
+        "icon": null,
+        "id": "cozinha",
+        "labels": [],
+        "name": "Cozinha",
+        "picture": null,
+        "created_at": "2025-01-18T21:36:38.360486+00:00",
+        "modified_at": "2025-01-18T21:36:38.360489+00:00"
+      },
+      {
+        "aliases": [],
+        "floor_id": null,
+        "icon": null,
+        "id": "quarto",
+        "labels": [],
+        "name": "Quarto",
+        "picture": null,
+        "created_at": "2025-01-18T21:37:04.110588+00:00",
+        "modified_at": "2025-01-18T21:37:04.110592+00:00"
+      },
+      {
+        "aliases": [],
+        "floor_id": null,
+        "icon": null,
+        "id": "suite",
+        "labels": [],
+        "name": "Suíte",
+        "picture": null,
+        "created_at": "2025-01-18T21:37:08.236744+00:00",
+        "modified_at": "2025-01-18T21:37:08.236747+00:00"
+      },
+      {
+        "aliases": [],
+        "floor_id": null,
+        "icon": null,
+        "id": "banheiro_frente",
+        "labels": [],
+        "name": "Banheiro Frente",
+        "picture": null,
+        "created_at": "2025-01-18T21:37:15.435959+00:00",
+        "modified_at": "2025-01-18T21:37:15.435962+00:00"
+      },
+      {
+        "aliases": [],
+        "floor_id": null,
+        "icon": null,
+        "id": "banheiro_suite",
+        "labels": [],
+        "name": "Banheiro Suíte",
+        "picture": null,
+        "created_at": "2025-01-18T21:37:20.061386+00:00",
+        "modified_at": "2025-01-18T21:37:20.061390+00:00"
+      },
+      {
+        "aliases": [],
+        "floor_id": null,
+        "icon": null,
+        "id": "escritorio",
+        "labels": [],
+        "name": "Escritório",
+        "picture": null,
+        "created_at": "2025-01-18T21:37:24.671203+00:00",
+        "modified_at": "2025-01-18T21:37:24.671206+00:00"
+      }
+    ]
+  }
+}

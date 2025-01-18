@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "minor_version": 1,
+  "key": "person",
+  "data": {
+    "items": [
+      {
+        "id": "renato_dinhani",
+        "name": "Renato Dinhani",
+        "user_id": "83d9e05a9e014eb3bc165d8a488bc815",
+        "device_trackers": []
+      }
+    ]
+  }
+}
