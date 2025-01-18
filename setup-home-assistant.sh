@@ -13,7 +13,13 @@ mkdir -p $DIR_TOOLS
 # Install config
 # ------------------------------------------------------------------------------
 log "Configuring aliases"
-cp alias.sh $DIR_SCRIPTS
+
+cp scripts/alias.sh $DIR_SCRIPTS
+cp scripts/hass.sh $DIR_SCRIPTS
+cp scripts/hass-setup.sh $DIR_SCRIPTS
+
+chmod +x $DIR_SCRIPTS/hass.sh
+chmod +x $DIR_SCRIPTS/hass-setup.sh
 
 # ------------------------------------------------------------------------------
 # Install .shell_common
@@ -40,7 +46,7 @@ ulimit -n 65365
 EOF
 
 # ------------------------------------------------------------------------------
-# .bashrc
+# Install .bashrc
 # ------------------------------------------------------------------------------
 log "Configuring .bash_profile"
 cat << EOF > ~/.bash_profile
@@ -55,7 +61,6 @@ source ~/.shell_common
 # zoxide
 eval "\$(zoxide init bash)"
 EOF
-
 
 # ------------------------------------------------------------------------------
 # Install APT basic tools
@@ -92,15 +97,24 @@ install_brew gcc@13
 # ------------------------------------------------------------------------------
 log "Installing Brew CLI tools"
 install_brew bat
+install_brew fd
+install_brew helix
+install_brew jq
 install_brew ripgrep
 install_brew zoxide
 
 # ------------------------------------------------------------------------------
-# Install HomeAssistant dependencies
+# Install Python and Python CLI tools
 # ------------------------------------------------------------------------------
 log "Installing Python"
 install_brew python@3.13
 
+log "Installing Python libraries"
+pip install --break-system-packages httpie requests
+
+# ------------------------------------------------------------------------------
+# Install HomeAssistant dependencies
+# ------------------------------------------------------------------------------
 log "Installing HA Brew tools"
 install_brew ffmpeg
 
@@ -115,18 +129,35 @@ pip install --break-system-packages \
     async-upnp-client \
     av \
     go2rtc-client \
+    gtts \
     ha-ffmpeg \
     hassil \
     mutagen \
     numpy \
+    pyMetno \
     pymicro-vad \
     PyNaCl \
+    pyradios \
     pyserial \
     pyspeex-noise \
     PyTurboJPEG \
     pyudev \
     zeroconf
+
 pip install --break-system-packages \
     homeassistant \
     home-assistant-frontend \
     home-assistant-intents
+
+# ------------------------------------------------------------------------------
+# Install HA configuration
+# ------------------------------------------------------------------------------
+cat << EOF > ~/.homeassistant/configuration.yaml
+# Default
+default_config:
+frontend:
+    themes: !include_dir_merge_named themes
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+EOF

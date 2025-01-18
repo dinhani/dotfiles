@@ -21,7 +21,7 @@ mkdir -p $DIR_TOOLS
 # Install config
 # ------------------------------------------------------------------------------
 log "Configuring aliases"
-cp alias.sh $DIR_SCRIPTS
+cp scripts/alias.sh $DIR_SCRIPTS
 
 # ------------------------------------------------------------------------------
 # Install .shell_common
