@@ -16,10 +16,7 @@ log "Configuring aliases"
 
 cp scripts/alias.sh $DIR_SCRIPTS
 cp scripts/hass.sh $DIR_SCRIPTS
-cp scripts/hass-setup.sh $DIR_SCRIPTS
-
 chmod +x $DIR_SCRIPTS/hass.sh
-chmod +x $DIR_SCRIPTS/hass-setup.sh
 
 # ------------------------------------------------------------------------------
 # Install .shell_common
@@ -152,6 +149,10 @@ pip install --break-system-packages \
 # ------------------------------------------------------------------------------
 # Install HA configuration
 # ------------------------------------------------------------------------------
+log "Installing HA configuration"
+
+mkdir -p  ~/.homeassistant/
+
 cat << EOF > ~/.homeassistant/configuration.yaml
 # Default
 default_config:
@@ -161,3 +162,11 @@ automation: !include automations.yaml
 script: !include scripts.yaml
 scene: !include scenes.yaml
 EOF
+
+# ------------------------------------------------------------------------------
+# Install HA data
+# ------------------------------------------------------------------------------
+log "Installing HA data"
+mkdir -p ~/.homeassistant/.storage
+
+cp dotfiles/hass/* ~/.homeassistant/.storage
