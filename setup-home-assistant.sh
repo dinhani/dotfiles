@@ -2,11 +2,6 @@
 source $(dirname $0)/setup-unix-functions.sh
 
 # ------------------------------------------------------------------------------
-# Ask root password
-# ------------------------------------------------------------------------------
-sudo echo ""
-
-# ------------------------------------------------------------------------------
 # Install dirs
 # ------------------------------------------------------------------------------
 log "Creating directories"
@@ -38,7 +33,7 @@ export VISUAL=hx
 # homebrew
 export PATH=\$PATH:$(brew_dir)/bin
 export PATH=\$PATH:$(brew_dir)/sbin
-export PATH=\$PATH:$(brew_dir)/opt/python@3.12/libexec/bin
+export PATH=\$PATH:$(brew_dir)/opt/python@3.13/libexec/bin
 
 # system
 ulimit -n 65365
@@ -76,12 +71,6 @@ install_apt build-essential
 install_apt curl
 
 # ------------------------------------------------------------------------------
-# Install APT libraries
-# ------------------------------------------------------------------------------
-log "Installing APT libraries"
-install_apt libpcap-dev
-
-# ------------------------------------------------------------------------------
 # Install Homebrew
 # ------------------------------------------------------------------------------
 if not_installed "brew"; then
@@ -110,14 +99,16 @@ install_brew zoxide
 # Install HomeAssistant dependencies
 # ------------------------------------------------------------------------------
 log "Installing Python"
-install_brew python@3.12
+install_brew python@3.13
 
-reload
-
-log "Installing Brew HA tools"
+log "Installing HA Brew tools"
 install_brew ffmpeg
 
-log "Installing Python HA libraries"
+log "Installing HA APT libraries"
+install_apt libpcap-dev
+install_apt libturbojpeg-dev
+
+log "Installing HA Python libraries"
 pip install --break-system-packages \
     aiodhcpwatcher \
     aiodiscover \
@@ -132,8 +123,8 @@ pip install --break-system-packages \
     PyNaCl \
     pyserial \
     pyspeex-noise \
+    PyTurboJPEG \
     pyudev \
-    turbojpeg \
     zeroconf
 pip install --break-system-packages \
     homeassistant \
