@@ -123,6 +123,7 @@ log "Installing HA Python libraries"
 pip install --break-system-packages \
     aiodhcpwatcher \
     aiodiscover \
+    aiowebostv \
     async-upnp-client \
     av \
     go2rtc-client \
