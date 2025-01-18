@@ -10,12 +10,9 @@ if [ -z "$EMAIL" ]; then
 fi
 
 # ------------------------------------------------------------------------------
-# Install Oh My ZSH
+# Ask root password
 # ------------------------------------------------------------------------------
-if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
-    log "Installing Oh My ZSH"
-    CHSH=no KEEP_ZSHRC=no RUNZSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-fi
+sudo echo ""
 
 # ------------------------------------------------------------------------------
 # Install dirs
@@ -31,11 +28,11 @@ mkdir -p $DIR_TOOLS
 log "Configuring aliases"
 cp alias.sh $DIR_SCRIPTS
 
+# ------------------------------------------------------------------------------
+# Install .shell_common
+# ------------------------------------------------------------------------------
 log "Configuring common shell setup"
 
-# ------------------------------------------------------------------------------
-# .shell_common
-# ------------------------------------------------------------------------------
 cat << EOF > ~/.shell_common
 # aliases
 source $DIR_SCRIPTS/alias.sh
@@ -81,7 +78,7 @@ source $(brew_dir)/opt/asdf/libexec/asdf.sh
 EOF
 
 # ------------------------------------------------------------------------------
-# .bashrc
+# Install .bashrc
 # ------------------------------------------------------------------------------
 log "Configuring .bash_profile"
 cat << EOF > ~/.bash_profile
@@ -106,8 +103,10 @@ eval "\$(starship init bash)"
 eval "\$(zoxide init bash)"
 EOF
 
+reload
+
 # ------------------------------------------------------------------------------
-# .zshrc
+# Install .zshrc / Oh My ZSH
 # ------------------------------------------------------------------------------
 
 log "Configuring .zshrc"
@@ -129,6 +128,11 @@ eval "\$(starship init zsh)"
 # zoxide
 eval "\$(zoxide init bash)"
 EOF
+
+if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
+    log "Installing Oh My ZSH"
+    CHSH=no KEEP_ZSHRC=no RUNZSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+fi
 
 reload
 
