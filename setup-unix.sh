@@ -43,14 +43,14 @@ export APPDATA=/mnt/c/Users/Renato/AppData/Roaming/
 export LOCALAPPDATA=/mnt/c/Users/Renato/AppData/Local/
 
 # homebrew
-export PATH=\$PATH:$(brew_dir)/bin
-export PATH=\$PATH:$(brew_dir)/sbin
-export LIBRARY_PATH=$(brew_dir)/lib
-export LD_LIBRARY_PATH=$(brew_dir)/lib
+export PATH=$(brew_dir)/bin:\$PATH
+export PATH=$(brew_dir)/sbin:\$PATH
 export CMAKE_LIBRARY_PATH=$(brew_dir)/lib
 export CMAKE_SYSTEM_LIBRARY_PATH=$(brew_dir)/lib
-export PKG_CONFIG_PATH=$(brew_dir)/lib/pkgconfig
 export CPATH=$(brew_dir)/include
+export LD_LIBRARY_PATH=$(brew_dir)/lib
+export LIBRARY_PATH=$(brew_dir)/lib
+export PKG_CONFIG_PATH=$(brew_dir)/lib/pkgconfig
 
 # langs
 export PATH=\$PATH:$HOME/go/bin
