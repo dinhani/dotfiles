@@ -126,6 +126,9 @@ function rpc() {
   eval $command
 }
 
+# just
+alias j="just --justfile ~/justfile"
+
 # linter
 function lint() {
   if [ -f Cargo.toml ]; then
