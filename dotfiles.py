@@ -149,9 +149,6 @@ def backup():
     # --------------------------------------------------------------------------
     # Unix
     # --------------------------------------------------------------------------
-    # Aliases
-    unix_home("scripts/alias.sh") >> dotfiles("scripts/alias.sh")
-
     # ASDF
     unix_home(".tool-versions") >> dotfiles("asdf/.tool-versions")
 
@@ -217,9 +214,6 @@ def restore():
     # --------------------------------------------------------------------------
     # Unix
     # --------------------------------------------------------------------------
-    # Aliases
-    dotfiles("scripts/alias.sh") >> unix_home("scripts/alias.sh")
-
     # ASDF
     dotfiles("asdf/.tool-versions") >> unix_home(".tool-versions")
 
