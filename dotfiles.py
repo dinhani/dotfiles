@@ -152,6 +152,9 @@ def backup():
     # ASDF
     unix_home(".tool-versions") >> dotfiles("asdf/.tool-versions")
 
+    # Ghostty
+    unix_home(".config/ghostty/config") >> dotfiles("ghostty/config")
+
     # Helix
     unix_home(".config/helix/config.toml") >> dotfiles("helix/config.toml")
     unix_home(".config/helix/languages.toml") >> dotfiles("helix/languages.toml")
@@ -216,6 +219,9 @@ def restore():
     # --------------------------------------------------------------------------
     # ASDF
     dotfiles("asdf/.tool-versions") >> unix_home(".tool-versions")
+
+    # Ghostty
+    dotfiles("ghostty") >> unix_home(".config/ghostty")
 
     # Helix
     dotfiles("helix") >> unix_home(".config/helix")
