@@ -227,7 +227,7 @@ def restore():
     dotfiles("helix") >> unix_home(".config/helix")
 
     # Starship
-    unix_home("starship/starship.toml") >> dotfiles(".config/starship.toml")
+    dotfiles("starship/starship.toml") >> unix_home(".config/starship.toml")
 
     # VIM
     dotfiles("vim/.vimrc") >> unix_home(".vimrc")
