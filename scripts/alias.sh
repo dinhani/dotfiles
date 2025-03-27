@@ -26,6 +26,7 @@ alias c="clear"
 alias dip="ifconfig eth0 | rg inet"
 alias dkill="docker ps --format '{{.ID}}' | xargs -I{} docker kill {}"
 alias dclean="docker container prune -f; docker network prune -f; docker volume prune -f; docker image ls | grep none | awk '{print \$3}' | xargs docker image rm; docker image prune -f;"
+alias dz="lazydocker"
 
 # docker-compose
 alias dc="docker-compose"
@@ -87,6 +88,7 @@ alias gr="git reset"
 alias grb="git rebase -i"
 alias gs="git status"
 alias gsub="git submodule update --init --recursive"
+alias gz="lazygit"
 
 # helix
 alias xh="hx"

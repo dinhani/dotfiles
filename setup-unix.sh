@@ -70,6 +70,9 @@ ssh-add $HOME/.ssh/dinhani
 
 # asdf
 source $(brew_dir)/opt/asdf/libexec/asdf.sh
+
+# rust
+source $HOME/.cargo/env
 EOF
 
 # ------------------------------------------------------------------------------
@@ -209,7 +212,6 @@ install_brew lazydocker
 install_brew lazygit
 install_brew pandoc
 install_brew ripgrep
-install_brew rust
 install_brew sd
 install_brew speedtest-cli
 install_brew subversion
