@@ -271,6 +271,7 @@ install_brew vlang
 install_brew zig
 
 if not_installed "rustup"; then
+    log "Installing rustup"
     curl https://sh.rustup.rs -sSf | sh -s -- -y
 fi
 
