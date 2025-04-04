@@ -217,7 +217,6 @@ install_brew speedtest-cli
 install_brew subversion
 install_brew unzip
 install_brew util-linux
-install_brew valgrind
 install_brew w3m
 install_brew websocat
 install_brew zoxide
@@ -227,6 +226,7 @@ if is_linux; then
     install_apt heaptrack
     install_apt heaptrack-gui
     install_brew sysstat
+    install_brew valgrind
 fi
 
 # ------------------------------------------------------------------------------
@@ -265,11 +265,14 @@ install_brew r
 install_brew racket
 install_brew rakudo
 install_brew ruby
-install_brew rustup
 install_brew scala
 install_brew solidity
 install_brew vlang
 install_brew zig
+
+if not_installed "rustup"; then
+    curl https://sh.rustup.rs -sSf | sh -s -- -y
+fi
 
 # ------------------------------------------------------------------------------
 # Install languages extensions
