@@ -229,6 +229,12 @@ if is_linux; then
     install_brew valgrind
 fi
 
+# mac specific
+if is_mac; then
+    install_brew podman
+    ln -sfn $(brew_dir)/bin/podman $(brew_dir)/bin/docker
+fi
+
 # ------------------------------------------------------------------------------
 # Install languages / build tools
 # ------------------------------------------------------------------------------
