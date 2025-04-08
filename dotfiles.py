@@ -149,9 +149,6 @@ def backup():
     # --------------------------------------------------------------------------
     # Unix
     # --------------------------------------------------------------------------
-    # ASDF
-    unix_home(".tool-versions") >> dotfiles("asdf/.tool-versions")
-
     # Ghostty
     unix_home(".config/ghostty/config") >> dotfiles("ghostty/config")
 
@@ -217,9 +214,6 @@ def restore():
     # --------------------------------------------------------------------------
     # Unix
     # --------------------------------------------------------------------------
-    # ASDF
-    dotfiles("asdf/.tool-versions") >> unix_home(".tool-versions")
-
     # Ghostty
     dotfiles("ghostty") >> unix_home(".config/ghostty")
 
