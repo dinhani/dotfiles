@@ -189,10 +189,10 @@ def backup():
         win_roaming("Ryujinx/Config.json") >> dotfiles("ryujinx/Config.json")
 
         # IntelliJ
-        win_roaming("JetBrains/IdeaIC2023.2/keymaps") >> dotfiles("intellij/keymaps")
-        win_roaming("JetBrains/IdeaIC2023.2/options/editor.xml") >> dotfiles("intellij/options/editor.xml")
-        win_roaming("JetBrains/IdeaIC2023.2/options/editor-font.xml") >> dotfiles("intellij/options/editor-font.xml")
-        win_roaming("JetBrains/IdeaIC2023.2/options/window.layouts.xml") >> dotfiles("intellij/options/window.layouts.xml")
+        win_roaming("JetBrains/IdeaIC2024.3/keymaps") >> dotfiles("intellij/keymaps")
+        win_roaming("JetBrains/IdeaIC2024.3/options/editor.xml") >> dotfiles("intellij/options/editor.xml")
+        win_roaming("JetBrains/IdeaIC2024.3/options/editor-font.xml") >> dotfiles("intellij/options/editor-font.xml")
+        win_roaming("JetBrains/IdeaIC2024.3/options/window.layouts.xml") >> dotfiles("intellij/options/window.layouts.xml")
 
         # Notable
         win_home(".notable.json") >> dotfiles("notable/.notable.json")
@@ -251,7 +251,7 @@ def restore():
         dotfiles("helix") >> win_roaming("helix")
 
         # IntelliJ
-        dotfiles("intellij") >> win_roaming("JetBrains/IdeaIC2023.2")
+        dotfiles("intellij") >> win_roaming("JetBrains/IdeaIC2024.3")
 
         # Notable
         dotfiles("notable/.notable.json") >> win_home(".notable.json")
@@ -270,6 +270,9 @@ def restore():
     # Mac
     # --------------------------------------------------------------------------
     if is_mac():
+        # IntelliJ        
+        dotfiles("intellij") >> mac_app_support("JetBrains/IdeaIC2024.3")
+        
         # VSCode / Cursor
         dotfiles("vscode") >> mac_app_support("Code/User")
         dotfiles("vscode") >> mac_app_support("Cursor/User")
