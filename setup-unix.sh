@@ -422,6 +422,7 @@ if is_mac; then
     # hardware
     install_brew elgato-stream-deck
     install_brew logitech-g-hub
+    install_brew linearmouse
 
     # media
     install_brew spotify
