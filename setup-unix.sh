@@ -427,16 +427,16 @@ if is_mac; then
     # media
     install_brew spotify
 
-    # terminal
-    install_brew iterm2
+    # terminal    
     install_brew ghostty
 
     # editors
-    install_brew insomnia
+    install_brew bruno
+    install_brew intellij-idea
+    install_brew github
     install_brew notable
-    install_brew visual-studio-code
     install_brew rstudio
-    install_brew zed
+    install_brew visual-studio-code
 
     # work / utils
     install_brew google-chrome
