@@ -29,7 +29,7 @@ cp scripts/alias.sh $DIR_SCRIPTS
 log "Configuring common shell setup"
 
 cat << EOF > ~/.shell_common
-# aliases
+# aliases / functions
 source $DIR_SCRIPTS/alias.sh
 
 # terminal
@@ -41,6 +41,11 @@ export VISUAL=hx
 # windows
 export APPDATA=/mnt/c/Users/Renato/AppData/Roaming/
 export LOCALAPPDATA=/mnt/c/Users/Renato/AppData/Local/
+
+# docker / podman
+if is_mac; then
+    export DOCKER_HOST=unix://$(podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}')
+fi
 
 # homebrew
 export PATH=$(brew_dir)/bin:\$PATH
