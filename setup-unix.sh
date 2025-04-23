@@ -232,7 +232,9 @@ fi
 # mac specific
 if is_mac; then
     install_brew podman
+    install_brew podman-compose
     ln -sfn $(brew_dir)/bin/podman $(brew_dir)/bin/docker
+    ln -sfn $(brew_dir)/bin/podman-compose $(brew_dir)/bin/docker-compose
 fi
 
 # ------------------------------------------------------------------------------
