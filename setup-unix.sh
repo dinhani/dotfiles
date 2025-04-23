@@ -124,7 +124,7 @@ zstyle ':completion:*' list-colors \${(s.:.)LS_COLORS}
 eval "\$(starship init zsh)"
 
 # zoxide
-eval "\$(zoxide init bash)"
+eval "\$(zoxide init zsh)"
 EOF
 
 if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
