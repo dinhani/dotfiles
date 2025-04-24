@@ -41,6 +41,16 @@ function is_mac_arm() {
 }
 
 
+# Checks if script is running on Bash.
+function is_bash() {
+     [[ -n "$BASH_VERSION" ]];
+}
+
+# Checks if script is running on ZSH.
+function is_zsh() {
+    [[ -n "$ZSH_VERSION"  ]];
+}
+
 # Returns Homebrew directory.
 function brew_dir() {
     if is_mac_intel; then
@@ -170,5 +180,12 @@ log() {
 
 # Reload .bashrc
 function reload() {
-    source ~/.bashrc
+    if is_bash; then
+        log "Reloading .bashrc"
+        source ~/.bashrc
+    fi
+    if is_zsh; then
+        log "Reloading .zshrc"
+        source ~/.zshrc
+    fi
 }
