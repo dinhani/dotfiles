@@ -87,6 +87,10 @@ def win_home(path: str) -> File:
     """Path of Windows home directory."""
     return File(f"/mnt/c/Users/{user()}/{path}")
 
+def win_docs(path: str) -> File:
+    """Path of Windows Documents directory."""
+    return File(f"/mnt/c/Users/{user()}/Documents/{path}")
+
 def win_roaming(path: str) -> File:
     """Path of Windows AppData/Roaming directory."""
     return File(f"/mnt/c/Users/{user()}/AppData/Roaming/{path}")
@@ -174,13 +178,14 @@ def backup():
 
         # Emulators
         win_emu("ares/settings.bml") >> dotfiles("emu/ares/settings.bml")
-        win_roaming("Dolphin Emulator/Config") >> dotfiles("emu/dolphin")
+        win_emu("dolphin/User/Config") >> dotfiles("emu/dolphin/")
         win_emu("cemu2/controllerProfiles") >> dotfiles("emu/cemu2/controllerProfiles")
         win_emu("cemu2/settings.xml") >> dotfiles("emu/cemu2/settings.xml")
+        win_docs("duckstation/inis/settings.ini") >> dotfiles("emu/duckstations/settings.ini")
         win_emu("mame/mame.ini") >> dotfiles("emu/mame/mame.ini")
         win_emu("mame/plugin.ini") >> dotfiles("emu/mame/plugin.ini")
         win_emu("mame/ui.ini") >> dotfiles("emu/mame/ui.ini")
-        win_emu("pcsx2/inis/PCSX2.ini") >> dotfiles("emu/pcsx2/inis/PCSX2.ini")
+        win_docs("pcsx2/inis/PCSX2.ini") >> dotfiles("emu/pcsx2/inis/PCSX2.ini")
         win_emu("project64/Config/Project64.cfg") >> dotfiles("emu/project64/Config/Project64.cfg")
         win_emu("retroarch/retroarch.cfg") >> dotfiles("emu/retroarch/retroarch.cfg")
         win_emu("retroarch/retroarch-core-options.cfg") >> dotfiles("emu/retroarch/retroarch-core-options.cfg")
@@ -238,9 +243,11 @@ def restore():
         # Emulators
         dotfiles("emu/ares") >> win_emu("ares")
         dotfiles("emu/cemu2") >> win_emu("cemu2")
-        dotfiles("emu/dolphin") >> win_roaming("Dolphin Emulator/Config")
+        dotfiles("emu/dolphin") >> win_emu("dolphin/User/Config")
         dotfiles("emu/mame") >> win_emu("mame")
+        dotfiles("emu/duckstation") >> win_docs("duckstation")
         dotfiles("emu/pcsx2") >> win_emu("pcsx2")
+        dotfiles("emu/pcsx2") >> win_docs("pcsx2")
         dotfiles("emu/project64") >> win_emu("project64")
         dotfiles("emu/retroarch") >> win_emu("retroarch")
         dotfiles("emu/ryujinx") >> win_roaming("Ryujinx")
