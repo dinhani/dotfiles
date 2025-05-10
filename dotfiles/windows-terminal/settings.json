@@ -10,8 +10,7 @@
                 "split": "right",
                 "splitMode": "duplicate"
             },
-            "id": "User.splitPane.FEF0D40B",
-            "keys": "ctrl+shift+right"
+            "id": "User.splitPane.FEF0D40B"
         },
         {
             "command": 
@@ -20,8 +19,7 @@
                 "split": "left",
                 "splitMode": "duplicate"
             },
-            "id": "User.splitPane.652D529A",
-            "keys": "ctrl+shift+left"
+            "id": "User.splitPane.652D529A"
         },
         {
             "command": 
@@ -30,8 +28,7 @@
                 "split": "down",
                 "splitMode": "duplicate"
             },
-            "id": "User.splitPane.10B260D2",
-            "keys": "ctrl+shift+down"
+            "id": "User.splitPane.10B260D2"
         },
         {
             "command": 
@@ -40,13 +37,11 @@
                 "split": "up",
                 "splitMode": "duplicate"
             },
-            "id": "User.splitPane.7A967A9",
-            "keys": "ctrl+shift+up"
+            "id": "User.splitPane.7A967A9"
         },
         {
             "command": "find",
-            "id": "User.find",
-            "keys": "ctrl+shift+f"
+            "id": "User.find"
         },
         {
             "command": 
@@ -54,13 +49,11 @@
                 "action": "copy",
                 "singleLine": false
             },
-            "id": "User.copy.644BA8F2",
-            "keys": "ctrl+c"
+            "id": "User.copy.644BA8F2"
         },
         {
             "command": "paste",
-            "id": "User.paste",
-            "keys": "ctrl+v"
+            "id": "User.paste"
         }
     ],
     "centerOnLaunch": true,
@@ -69,6 +62,37 @@
     "copyOnSelect": true,
     "defaultProfile": "{61c54bbd-c2c6-5271-96e7-009a87ff44bf}",
     "focusFollowMouse": false,
+    "keybindings": 
+    [
+        {
+            "id": "User.splitPane.FEF0D40B",
+            "keys": "ctrl+shift+right"
+        },
+        {
+            "id": "User.splitPane.652D529A",
+            "keys": "ctrl+shift+left"
+        },
+        {
+            "id": "User.splitPane.10B260D2",
+            "keys": "ctrl+shift+down"
+        },
+        {
+            "id": "User.splitPane.7A967A9",
+            "keys": "ctrl+shift+up"
+        },
+        {
+            "id": "User.find",
+            "keys": "ctrl+shift+f"
+        },
+        {
+            "id": "User.paste",
+            "keys": "ctrl+v"
+        },
+        {
+            "id": "User.copy.644BA8F2",
+            "keys": "ctrl+c"
+        }
+    ],
     "language": "en-US",
     "launchMode": "maximized",
     "newTabMenu": 
@@ -121,18 +145,6 @@
                 "name": "Ubuntu",
                 "suppressApplicationTitle": true,
                 "tabTitle": "Ubuntu 24.04 LTS"
-            },
-            {
-                "guid": "{692fc379-40a7-5dc3-ab33-35c597b8b213}",
-                "hidden": false,
-                "name": "Developer Command Prompt for VS 2022",
-                "source": "Windows.Terminal.VisualStudio"
-            },
-            {
-                "guid": "{c19e3deb-ce3d-5f52-85a4-8f8a3316579d}",
-                "hidden": false,
-                "name": "Developer PowerShell for VS 2022",
-                "source": "Windows.Terminal.VisualStudio"
             }
         ]
     },
