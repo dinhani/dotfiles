@@ -170,7 +170,6 @@ def backup():
         win_home("Documents/PowerShell/Microsoft.PowerShell_profile.ps1") >> dotfiles("powershell/Microsoft.PowerShell_profile.ps1")
 
         # Devices
-        win_local("LGHUB/settings.db") >> dotfiles("lghub/settings.db")
         win_prog64("FlydigiSpaceStation/config/share/") >> dotfiles("flydigi/share")
 
         # Emulators
@@ -235,7 +234,6 @@ def restore():
 
         # Devices
         dotfiles("flydigi") >> win_prog64("FlydigiSpaceStation/config")
-        dotfiles("lghub") >> win_local("LGHUB")
 
         # Emulators
         dotfiles("ares") >> win_emu("ares")
@@ -270,9 +268,9 @@ def restore():
     # Mac
     # --------------------------------------------------------------------------
     if is_mac():
-        # IntelliJ        
+        # IntelliJ
         dotfiles("intellij") >> mac_app_support("JetBrains/IdeaIC2024.3")
-        
+
         # VSCode / Cursor
         dotfiles("vscode") >> mac_app_support("Code/User")
         dotfiles("vscode") >> mac_app_support("Cursor/User")
