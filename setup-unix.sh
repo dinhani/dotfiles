@@ -322,6 +322,7 @@ rustup +nightly component add rust-analyzer
 log "Installing Rust extensions"
 cargo install cargo-expand
 cargo install wait-service
+cargo install watchexec
 
 # ------------------------------------------------------------------------------
 # Install VSCode extensions
