@@ -266,7 +266,7 @@ install_brew kotlin
 install_brew leiningen
 install_brew lua
 install_brew maven
-install_brew node@22
+install_brew node
 install_brew ocaml
 install_brew odin
 install_brew openjdk
@@ -434,19 +434,19 @@ if is_mac; then
     # media
     install_brew spotify
 
-    # terminal    
+    # terminal
     install_brew ghostty
 
     # editors
     install_brew intellij-idea
     install_brew rstudio
-    install_brew visual-studio-code    
+    install_brew visual-studio-code
 
     # dev stuff
     install_brew bruno
     install_brew devtoys
     install_brew github
-    install_brew notable    
+    install_brew notable
 
     # work / utils
     install_brew google-chrome
