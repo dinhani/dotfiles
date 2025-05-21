@@ -44,7 +44,7 @@ export LOCALAPPDATA=/mnt/c/Users/Renato/AppData/Local/
 
 # docker / podman
 if is_mac; then
-    export DOCKER_HOST=unix://$(podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}')
+    export DOCKER_HOST=unix://var/run/docker.sock
 fi
 
 # homebrew
