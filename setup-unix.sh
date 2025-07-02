@@ -92,6 +92,9 @@ log "Configuring .bashrc"
 cat << EOF > ~/.bashrc
 # common
 source ~/.shell_common
+if [ -e ~/.shell_private ]; then
+    source ~/.shell_private
+fi
 
 # completions
 for COMPLETION in "$(brew_dir)/etc/bash_completion.d/"*
@@ -116,6 +119,9 @@ log "Configuring .zshrc"
 cat << EOF > ~/.zshrc
 # common
 source ~/.shell_common
+if [ -e ~/.shell_private ]; then
+    source ~/.shell_private
+fi
 
 # oh-my-zsh
 export ZSH=$HOME/.oh-my-zsh
