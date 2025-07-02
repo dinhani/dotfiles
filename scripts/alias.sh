@@ -198,6 +198,48 @@ fi
 # tree
 alias tree="~/.cargo/bin/erd -s name --dir-order first -y inverted --disk-usage logical -H"
 
+# tsh
+function tdb() {
+  # parse env
+  env=$1
+  env=$(echo $env | tr '[:lower:]' '[:upper:]')
+  # validate env
+  if [ "$env" != "PRD" ] && [ "$env" != "DEV" ]; then
+    echo "Invalid environment. Must be PRD or DEV."
+    return 1
+  fi
+
+  # parse instance
+  instance=$2
+
+  # parse database
+  database=$3
+  if [ -z "$database" ]; then
+    database="postgres"
+  fi
+
+  # parse user
+  user=$4
+  if [ -z "$user" ]; then
+    user="teleport_ro"
+  fi
+
+  # parse port
+  if [ "$env" = "PRD" ]; then
+    port="6432"
+  else
+    port="5432"
+  fi
+
+  echo "Env     : $env"
+  echo "User    : $user"
+  echo "Instance: $instance"
+  echo "Database: $database"
+  echo "Port    : $port"
+
+  tsh proxy db --db-user $user --db-name $database --port $port --tunnel $instance
+}
+
 # watch
 alias bwatch="browser-sync . --watch" # browser-watch
 alias fwatch="watchexec --poll 500ms --restart" # file-watch
