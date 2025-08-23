@@ -245,4 +245,4 @@ alias bwatch="browser-sync . --watch" # browser-watch
 alias fwatch="watchexec --poll 500ms --restart" # file-watch
 
 # wget
-alias wget-mirror="wget --mirror --convert-links --adjust-extension --page-requisites --no-parent --no-clobber"
+alias wget-mirror="wget --mirror --convert-links --adjust-extension --page-requisites --no-parent --no-clobber --no-check-certificate"
