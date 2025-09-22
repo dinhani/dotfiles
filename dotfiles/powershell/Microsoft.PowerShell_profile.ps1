@@ -9,7 +9,7 @@ function Write-Args {
     }
 }
 
-# Archive each file in the given path to 7zip or zip.
+# Archive each file in the given path to 7z zip or chd.
 function Invoke-Archive {
     param (
         [Parameter(Mandatory = $true)]
@@ -23,7 +23,7 @@ function Invoke-Archive {
         [string]$Type = "7z",
 
         [Parameter(Mandatory = $false)]
-        [ValidateSet("cd", "dvd", "gdi")]
+        [ValidateSet("cd", "dvd")]
         [string]$ChdType = "cd",
 
         [Parameter(Mandatory = $false)]
@@ -75,7 +75,6 @@ function Invoke-Archive {
             $operation = switch ($using:ChdType) {
                 "cd"  { "createcd" }
                 "dvd" { "createdvd" }
-                "gdi" { "creategd" }
             }
             if ($_.PSIsContainer) {
                 $cueOrIso = $null
@@ -266,6 +265,7 @@ function Invoke-FindDuplicates {
 
         # get hash or compute it
         $hasHash = (Get-Item -LiteralPath $_.FullName -Stream * | Where-Object { $_.Stream -eq "HASH" }).Count -gt 0
+        Write-Host $_.FullName
         if ($hasHash) {
             $hash = Get-Content -LiteralPath $_.FullName -Stream HASH
         } else {
@@ -275,20 +275,28 @@ function Invoke-FindDuplicates {
         # hash
         [PSCustomObject]@{
             FullName = $_.FullName
+            CreatedAt = $_.CreationTime
             Hash = $hash
         }
     }
 
     # show duplicates
-    $hashes |
-        Group-Object Hash |
-        Where-Object { $_.Count -gt 1 } |
-        Sort-Object Count |
-        ForEach-Object {
-            Write-Host ""
-            Write-Host "Duplicates: $($_.Name):"
-            $_.Group.FullName | ForEach-Object { Write-Host "  $_" }
+    if ($hashes.Count -eq 0) {
+        Write-Host "No duplicate found."
+    } else {
+        $hashes |
+            Group-Object Hash |
+            Where-Object { $_.Count -gt 1 } |
+            Sort-Object Count |
+            ForEach-Object {
+                Write-Host ""
+                Write-Host "Duplicates: $($_.Name):"
+                $_.Group | ForEach-Object {
+                    Write-Host "  $($_.CreatedAt.ToString("yyyy-MM-dd"))"
+                    Write-Host "    $($_.FullName)"
+                }
         }
+    }
 }
 
 # ------------------------------------------------------------------------------
@@ -315,23 +323,35 @@ function Top {
         [Parameter(ValueFromPipeline=$true)]
         $input,
 
-        [Parameter(Mandatory = $false)]
+        [Parameter(Position = 1, Mandatory = $false)]
         [int]$n = 10
     )
     $input | Select-Object -First $n
 }
 
+function Skip {
+    param(
+        [Parameter(ValueFromPipeline=$true)]
+        $input,
+
+        [Parameter(Position = 1, Mandatory = $false)]
+        [int]$n = 10
+    )
+    $input | Select-Object -Skip $n
+}
+
 # Function aliases
-Set-Alias arc        Invoke-Archive
+Set-Alias c          Clear
 Set-Alias unarc      Invoke-Unarchive
+Set-Alias arc        Invoke-Archive
 Set-Alias unarc-test Invoke-UnarchiveTest
 Set-Alias hash       Invoke-Hash
 Set-Alias dup        Invoke-FindDuplicates
 Set-Alias zzz        Invoke-ZipTo7z
 
 # Git aliases
-function gga     { git add --all }
 function ggam    { git add --all .; git commit -m }
+function gga     { git add --all }
 function ggb     { git branch }
 function ggbkill { git branch | grep -vE 'main|master' | xargs -p -I{} git branch -D {} }
 function ggc     { git checkout }
@@ -346,4 +366,5 @@ function ggp     { git pull }
 function ggr     { git reset }
 function ggrb    { git rebase -i }
 function ggs     { git status }
+
 function ggsub   { git submodule update --init --recursive }

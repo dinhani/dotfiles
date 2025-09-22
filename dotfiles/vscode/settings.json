@@ -5,7 +5,11 @@
   "[typescript]": {
     "editor.defaultFormatter": "vscode.typescript-language-features"
   },
-  "cSpell.language": "en,pt-BR",
+  "remote.SSH.serverInstallPath": {
+    "192.168.0.2": "/tools/"
+  },
+  "cSpell.enabled": false,
+  "cSpell.language": "en",
   "cSpell.userWords": [
     "openssl"
   ],
@@ -20,31 +24,42 @@
   "editor.unicodeHighlight.allowedCharacters": {
     "–": true
   },
+  "files.autoSave": "afterDelay",
   "files.exclude": {
     "**/__pycache__": true
   },
   "files.trimTrailingWhitespace": true,
+  "git.blame.editorDecoration.enabled": true,
   "git.ignoreMissingGitWarning": true,
   "git.openRepositoryInParentFolders": "never",
+  "github.copilot.editor.enableAutoCompletions": true,
   "github.copilot.enable": {
     "*": true,
     "markdown": false,
     "plaintext": true,
     "yaml": false
   },
+  "python.createEnvironment.trigger": "off",
+  "python.analysis.extraPaths": [
+    "//nas/codigos/_shared"
+  ],
   "remote.autoForwardPortsSource": "hybrid",
   "rust-analyzer.imports.prefix": "crate",
   "rust-analyzer.inlayHints.chainingHints.enable": false,
   "rust-analyzer.inlayHints.parameterHints.enable": false,
   "rust-analyzer.inlayHints.typeHints.enable": false,
   "security.allowedUNCHosts": [
-    "wsl$"
+    "wsl$",
+    "nas"
   ],
   "security.workspace.trust.untrustedFiles": "open",
+  "sort-json.settings.defaultCustomSort": "",
+  "typescript.updateImportsOnFileMove.enabled": "always",
   "vsicons.dontShowNewVersionMessage": true,
   "workbench.colorTheme": "Default Light+",
   "workbench.editor.enablePreview": false,
   "workbench.iconTheme": "vscode-icons",
-  "github.copilot.editor.enableAutoCompletions": true,
-  "typescript.updateImportsOnFileMove.enabled": "always",
+  "remote.SSH.remotePlatform": {
+    "192.168.0.2": "linux"
+  }
 }
