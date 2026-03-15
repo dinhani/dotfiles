@@ -88,10 +88,12 @@ function Invoke-Archive {
                     Write-Warning "No .cue or .iso file found in directory: $($_.FullName)"
                     continue
                 }
-                #$command = "chdman $operation --numprocessors 6 --input `"$($cueOrIso.FullName)`" --output `"$archive`""
                 $command = "chdman $operation --input `"$($cueOrIso.FullName)`" --output `"$archive`""
+            } elseif ($_.Extension -eq ".iso") {
+                $command = "chdman $operation --input `"$($_.FullName)`" --output `"$archive`""
             } else {
-                Write-Warning "CHD format only supports directories"
+                Write-Warning "CHD format only supports directories or ISO files"
+                continue
             }
         }
         # 7z
@@ -281,22 +283,49 @@ function Invoke-FindDuplicates {
     }
 
     # show duplicates
-    if ($hashes.Count -eq 0) {
-        Write-Host "No duplicate found."
-    } else {
-        $hashes |
+    $hashes = $hashes |
             Group-Object Hash |
             Where-Object { $_.Count -gt 1 } |
-            Sort-Object Count |
-            ForEach-Object {
-                Write-Host ""
-                Write-Host "Duplicates: $($_.Name):"
-                $_.Group | ForEach-Object {
-                    Write-Host "  $($_.CreatedAt.ToString("yyyy-MM-dd"))"
-                    Write-Host "    $($_.FullName)"
-                }
+            Sort-Object Count
+
+    if ($hashes.Count -eq 0) {
+        Write-Host "No duplicates found."
+    } else {
+        $hashes | ForEach-Object {
+            Write-Host ""
+            Write-Host "Duplicates: $($_.Name):"
+            $_.Group | ForEach-Object {
+                Write-Host "  $($_.CreatedAt.ToString("yyyy-MM-dd"))"
+                Write-Host "    $($_.FullName)"
+            }
         }
     }
+}
+
+# Install a package using winget.
+function Invoke-Install {
+    param (
+        [string]$name,
+        [string]$package,
+        [string]$location = $null,
+        [string]$locationExtra = $null
+    )
+
+    # log
+    Write-Host "`nInstalling ${name}: ${package}"
+
+    # prepare command with location
+    $command = "winget install --id $package --accept-package-agreements --no-upgrade --disable-interactivity"
+    if ($location) {
+        $command += " --location $location"
+        if ($locationExtra) {
+            $command += " --custom '$locationExtra$location'"
+        }
+    }
+
+    # execute command
+    Write-Host $command
+    Invoke-Expression $command
 }
 
 # ------------------------------------------------------------------------------
@@ -347,6 +376,7 @@ Set-Alias arc        Invoke-Archive
 Set-Alias unarc-test Invoke-UnarchiveTest
 Set-Alias hash       Invoke-Hash
 Set-Alias dup        Invoke-FindDuplicates
+Set-Alias add        Invoke-Install
 Set-Alias zzz        Invoke-ZipTo7z
 
 # Git aliases
