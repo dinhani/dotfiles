@@ -219,7 +219,10 @@ function Invoke-ZipTo7z {
 function Invoke-Hash {
     param (
         [Parameter(Mandatory = $true)]
-        [string]$Path
+        [string]$Path,
+
+        [Parameter(Mandatory = $false)]
+        [int]$Limit = 1
     )
 
     # list files
@@ -228,7 +231,7 @@ function Invoke-Hash {
     Write-Host "Found $($files.Count) files."
 
     # hash files
-    $files | ForEach-Object -ThrottleLimit 10 -Parallel {
+    $files | ForEach-Object -ThrottleLimit $Limit -Parallel {
         # get ADS hash
         $hasHash = (Get-Item -LiteralPath $_.FullName -Stream * | Where-Object { $_.Stream -eq "HASH" }).Count -gt 0
         if ($hasHash) {
@@ -246,7 +249,10 @@ function Invoke-Hash {
 function Invoke-FindDuplicates {
     param (
         [Parameter(Mandatory = $true)]
-        [string[]]$Path
+        [string[]]$Path,
+
+        [Parameter(Mandatory = $false)]
+        [int]$Limit = 1
     )
 
     # list files
@@ -259,7 +265,7 @@ function Invoke-FindDuplicates {
 
     # hash in parallel
     $processing = [System.Collections.Concurrent.ConcurrentQueue[bool]]::new()
-    $hashes = $filesToHash | ForEach-Object -ThrottleLimit 10 -Parallel {
+    $hashes = $filesToHash | ForEach-Object -ThrottleLimit $Limit -Parallel {
         # increment counter and log
         $processing = $using:processing
         $processing.Enqueue($true)
