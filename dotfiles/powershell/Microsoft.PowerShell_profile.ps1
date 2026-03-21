@@ -9,7 +9,7 @@ function Write-Args {
     }
 }
 
-# Archive each file in the given path to 7z zip or chd.
+# Archive each file in the given path to 7z, zip, chd or rvz.
 function Invoke-Archive {
     param (
         [Parameter(Mandatory = $true)]
@@ -19,7 +19,7 @@ function Invoke-Archive {
         [string]$OutputPath,
 
         [Parameter(Mandatory = $false)]
-        [ValidateSet("7z", "zip", "chd")]
+        [ValidateSet("7z", "zip", "chd", "rvz")]
         [string]$Type = "7z",
 
         [Parameter(Mandatory = $false)]
@@ -60,48 +60,54 @@ function Invoke-Archive {
 
     # archive entries
     $entries | ForEach-Object -ThrottleLimit $Limit -Parallel {
-        # generate archive name
-        $archive = Join-Path $using:OutputPath "$($_.BaseName).$using:Type"
-        if (Test-Path -LiteralPath $archive -PathType Leaf) {
-            Write-Warning "Skipping: $archive"
+        # track filename
+        $source = $_
+
+        # generate target name
+        $target = Join-Path $using:OutputPath "$($_.BaseName).$using:Type"
+        if (Test-Path -LiteralPath $target -PathType Leaf) {
+            Write-Warning "Skipping: $target"
             continue
         }
 
         # archive entry
-        Write-Host "Archiving: $archive"
+        Write-Host "Archiving: $target"
 
-        # chd
-        if ($using:Type -eq "chd") {
-            $operation = switch ($using:ChdType) {
-                "cd"  { "createcd" }
-                "dvd" { "createdvd" }
-            }
-            if ($_.PSIsContainer) {
-                $cueOrIso = $null
-                foreach ($ext in @("*.cue", "*.iso")) {
-                    $cueOrIso = Get-ChildItem -Path $_.FullName -Filter $ext | Select-Object -First 1
-                    if ($null -ne $cueOrIso) {
-                        break
-                    }
+        switch ($using:Type) {
+            "chd" {
+                $operation = switch ($using:ChdType) {
+                    "cd"  { "createcd" }
+                    "dvd" { "createdvd" }
                 }
-                if ($null -eq $cueOrIso) {
-                    Write-Warning "No .cue or .iso file found in directory: $($_.FullName)"
+                if ($source.PSIsContainer) {
+                    $cueOrIso = $null
+                    foreach ($ext in @("*.cue", "*.iso")) {
+                        $cueOrIso = Get-ChildItem -Path $_.FullName -Filter $ext | Select-Object -First 1
+                        if ($null -ne $cueOrIso) {
+                            break
+                        }
+                    }
+                    if ($null -eq $cueOrIso) {
+                        Write-Warning "No .cue or .iso file found in directory: $($_.FullName)"
+                        continue
+                    }
+                    $command = "chdman $operation --input `"$($cueOrIso.FullName)`" --output `"$target`""
+                } elseif ($_.Extension -eq ".iso") {
+                    $command = "chdman $operation --input `"$($source.FullName)`" --output `"$target`""
+                } else {
+                    Write-Warning "CHD format only supports directories or ISO files"
                     continue
                 }
-                $command = "chdman $operation --input `"$($cueOrIso.FullName)`" --output `"$archive`""
-            } elseif ($_.Extension -eq ".iso") {
-                $command = "chdman $operation --input `"$($_.FullName)`" --output `"$archive`""
-            } else {
-                Write-Warning "CHD format only supports directories or ISO files"
-                continue
             }
-        }
-        # 7z
-        else {
-            if ($_.PSIsContainer) {
-                $command = "7z a -t$($using:Type) -mx=$($using:Level) -bso0 -bsp0 `"$archive`" `"$($_.FullName)\*`""
-            } else {
-                $command = "7z a -t$($using:Type) -mx=$($using:Level) -bso0 -bsp0 `"$archive`" `"$($_.FullName)`""
+            "rvz" {
+                $command = "DolphinTool convert --format=rvz --compression=lzma2 --compression_level=9 --block_size=2097152 --input=`"$($source.FullName)`" --output=`"$target`""
+            }
+            { $_ -in "7z", "zip" } {
+                if ($_.PSIsContainer) {
+                    $command = "7z a -t$($using:Type) -mx=$($using:Level) -bso0 -bsp0 `"$target`" `"$($source.FullName)\*`""
+                } else {
+                    $command = "7z a -t$($using:Type) -mx=$($using:Level) -bso0 -bsp0 `"$target`" `"$($source.FullName)`""
+                }
             }
         }
 
@@ -280,6 +286,11 @@ function Invoke-FindDuplicates {
             $hash = (Get-FileHash -LiteralPath $_.FullName -Algorithm MD5).Hash
         }
 
+        # store hash if had to compute
+        if(-not $hasHash) {
+            Set-Content -LiteralPath $_.FullName -Stream HASH -Value $hash
+        }
+
         # hash
         [PSCustomObject]@{
             FullName = $_.FullName
@@ -300,7 +311,7 @@ function Invoke-FindDuplicates {
         $hashes | ForEach-Object {
             Write-Host ""
             Write-Host "Duplicates: $($_.Name):"
-            $_.Group | ForEach-Object {
+            $_.Group | Sort-Object CreatedAt | ForEach-Object {
                 Write-Host "  $($_.CreatedAt.ToString("yyyy-MM-dd"))"
                 Write-Host "    $($_.FullName)"
             }
