@@ -126,7 +126,10 @@ function Invoke-Unarchive {
         [string]$OutputPath,
 
         [Parameter(Mandatory = $false)]
-        [int]$Limit = 1
+        [int]$Limit = 1,
+
+        [Parameter(Mandatory = $false)]
+        [switch]$CheckSpace
     )
 
     # parse output path
@@ -146,6 +149,15 @@ function Invoke-Unarchive {
         if (Test-Path -LiteralPath $unarchive -PathType Container) {
             Write-Warning "Skipping: $unarchive"
             continue
+        }
+
+        # check space
+        if ($using:CheckSpace) {
+            $drive = (Get-Item -Path $using:OutputPath).PSDrive
+            if ($drive.Free -lt 20GB) {
+                Write-Warning "Skipping. Low free space: $unarchive"
+                continue
+            }
         }
 
         # unarchive entry
