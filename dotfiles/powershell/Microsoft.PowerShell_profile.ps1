@@ -82,13 +82,13 @@ function Invoke-Archive {
                 if ($source.PSIsContainer) {
                     $cueOrIso = $null
                     foreach ($ext in @("*.cue", "*.iso")) {
-                        $cueOrIso = Get-ChildItem -Path $_.FullName -Filter $ext | Select-Object -First 1
+                        $cueOrIso = Get-ChildItem -Path $source.FullName -Filter $ext | Select-Object -First 1
                         if ($null -ne $cueOrIso) {
                             break
                         }
                     }
                     if ($null -eq $cueOrIso) {
-                        Write-Warning "No .cue or .iso file found in directory: $($_.FullName)"
+                        Write-Warning "No .cue or .iso file found in directory: $($source.FullName)"
                         continue
                     }
                     $command = "chdman $operation --input `"$($cueOrIso.FullName)`" --output `"$target`""
