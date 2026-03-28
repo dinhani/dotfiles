@@ -45,21 +45,21 @@ function Invoke-Archive {
         $OutputPath = $InputPath
     }
 
-    # list entries
+    # list files
     if ($Directory) {
         Write-Host "Listing directories: $InputPath"
-        $entries = Get-ChildItem $InputPath -Directory
+        $files = Get-ChildItem $InputPath -Directory
     } elseif ($File) {
         Write-Host "Listing files: $InputPath"
-        $entries = Get-ChildItem $InputPath -File | Where-Object { $_.Extension -notin ".7z", ".gz", ".rar", ".zip" }
+        $files = Get-ChildItem $InputPath -File | Where-Object { $_.Extension -notin ".7z", ".gz", ".rar", ".zip" }
     } else {
         Write-Host "Listing files and directories: $InputPath"
-        $entries = Get-ChildItem $InputPath | Where-Object { $_.Extension -notin ".7z", ".gz", ".rar", ".zip" }
+        $files = Get-ChildItem $InputPath | Where-Object { $_.Extension -notin ".7z", ".gz", ".rar", ".zip" }
     }
-    Write-Host "Found $($entries.Count) entries."
+    Write-Host "Found $($files.Count) files."
 
-    # archive entries
-    $entries | ForEach-Object -ThrottleLimit $Limit -Parallel {
+    # archive files
+    $files | ForEach-Object -ThrottleLimit $Limit -Parallel {
         # track filename
         $source = $_
 
@@ -139,11 +139,11 @@ function Invoke-Unarchive {
 
     # list archived items
     Write-Host "Listing archived files: $InputPath"
-    $entries = Get-ChildItem $InputPath -File | Where-Object { $_.Extension -in ".7z", ".gz", ".rar", ".zip" }
-    Write-Host "Found $($entries.Count) entries."
+    $files = Get-ChildItem $InputPath -File | Where-Object { $_.Extension -in ".7z", ".gz", ".rar", ".zip" }
+    Write-Host "Found $($files.Count) files."
 
-    # unarchive entries
-    $entries | ForEach-Object -ThrottleLimit $Limit -Parallel {
+    # unarchive files
+    $files | ForEach-Object -ThrottleLimit $Limit -Parallel {
         # generate unarchive name
         $unarchive = Join-Path $using:OutputPath "$($_.BaseName)"
         if (Test-Path -LiteralPath $unarchive -PathType Container) {
@@ -170,25 +170,38 @@ function Invoke-Unarchive {
 function Invoke-UnarchiveTest {
     param (
         [Parameter(Mandatory = $true)]
-        [string]$InputPath
+        [string]$InputPath,
+
+        [Parameter(Mandatory = $false)]
+        [int]$Limit = 1,
+
+        [Parameter(Mandatory = $false)]
+        [switch]$Remove
     )
 
     # list archives
     Write-Host "Listing archived files: $InputPath"
-    $entries = Get-ChildItem $InputPath -File | Where-Object { $_.Extension -in ".7z", ".zip" }
-    Write-Host "Found $($entries.Count) entries."
+    $files = Get-ChildItem $InputPath -File | Where-Object { $_.Extension -in ".7z", ".zip" }
+    Write-Host "Found $($files.Count) files."
+
+    # create broken dir
+    $dirBroken = Join-Path $InputPath "_broken"
+    if ($Remove) {
+        New-Item -Path $dirBroken -ItemType Directory -Force -ErrorAction SilentlyContinue
+    }
 
     # test archives
-    for ($i = 0; $i -lt $entries.Count; $i++) {
-        $entry = $entries[$i]
-        & 7z t `"$($entry.FullName)`"
+    $files | ForEach-Object -ThrottleLimit $Limit -Parallel {
+        $command = "7z t `"$($_.FullName)`""
+        Write-Host "$command"
+        Invoke-Expression $command
+
         if ($LastExitCode -ne 0) {
-            Write-Host "Failed: $($entry.FullName)"
+            Write-Host "Failed: $($_.FullName)" -ForegroundColor Red
+            if ($using:Remove) {
+                Move-Item -Path $_ -Destination $using:dirBroken
+            }
         }
-        Write-Progress `
-            -Activity "Testing..." `
-            -Status "$($i + 1)/$($entries.Count): $($entry.Name)" `
-            -PercentComplete ((($i + 1) / $entries.Count) * 100)
     }
 }
 
