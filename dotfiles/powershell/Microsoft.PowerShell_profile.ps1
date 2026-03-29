@@ -388,7 +388,7 @@ function Invoke-Media {
             }
         }
 
-    $medias | ForEach-Object {
+    $medias | Sort-Object File | ForEach-Object {
         Write-Host "File: $($_.File)" -ForegroundColor Cyan
         $_.Video | ForEach-Object {
             Write-Host "  Video: $($_.Codec) $($_.Width)x$($_.Height) $($_.PixFmt)"
