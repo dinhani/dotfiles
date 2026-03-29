@@ -382,7 +382,7 @@ function Invoke-Media {
                 }
             }
             [PSCustomObject]@{
-                File   = $_.Name
+                File   = [System.IO.Path]::GetRelativePath($using:Path, $_.FullName)
                 Video  = $video
                 Audio  = $audio
             }
