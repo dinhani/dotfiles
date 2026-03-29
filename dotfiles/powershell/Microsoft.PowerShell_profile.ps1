@@ -344,6 +344,62 @@ function Invoke-FindDuplicates {
     }
 }
 
+# Technical summary of media files.
+function Invoke-Media {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+
+        [Parameter(Mandatory = $false)]
+        [int]$Limit = 1
+    )
+
+    $files = Get-ChildItem $Path -Recurse -Include *.mkv, *.mp4, *.flac
+    $filesTotal = $files.Count
+    $counter  = [ref]0
+
+    $medias = $files |
+        ForEach-Object -ThrottleLimit $Limit -Parallel {
+            $current = [System.Threading.Interlocked]::Increment(($using:counter))
+            Write-Progress -Activity "Scanning" -Status "$current / $using:filesTotal — $($_.Name)" -PercentComplete ($current / $using:filesTotal * 100)
+
+            $info = ffprobe -v quiet -print_format json -show_format -show_streams $_ 2>$null | ConvertFrom-Json
+
+            $video = $info.streams | Where-Object codec_type -eq "video" | ForEach-Object {
+                [PSCustomObject]@{
+                    Codec  = $_.codec_name
+                    Width  = $_.width
+                    Height = $_.height
+                    PixFmt = $_.pix_fmt
+                }
+            }
+            $audio = $info.streams | Where-Object codec_type -eq "audio" | ForEach-Object {
+                [PSCustomObject]@{
+                    Codec       = $_.codec_name
+                    Channels    = $_.channels
+                    ChannelLayout = $_.channel_layout
+                    SampleRate  = $_.sample_rate
+                }
+            }
+            [PSCustomObject]@{
+                File   = $_.Name
+                Video  = $video
+                Audio  = $audio
+            }
+        }
+
+    $medias | ForEach-Object {
+        Write-Host "File: $($_.File)" -ForegroundColor Cyan
+        $_.Video | ForEach-Object {
+            Write-Host "  Video: $($_.Codec) $($_.Width)x$($_.Height) $($_.PixFmt)"
+        }
+        $_.Audio | ForEach-Object {
+            Write-Host "  Audio: $($_.Codec) $($_.Channels)ch $($_.ChannelLayout) $($_.SampleRate)Hz"
+        }
+    }
+}
+
+
 # Install a package using winget.
 function Invoke-Install {
     param (
@@ -419,6 +475,7 @@ Set-Alias unarc-test Invoke-UnarchiveTest
 Set-Alias hash       Invoke-Hash
 Set-Alias dup        Invoke-FindDuplicates
 Set-Alias add        Invoke-Install
+Set-Alias media      Invoke-Media
 Set-Alias zzz        Invoke-ZipTo7z
 
 # Git aliases
