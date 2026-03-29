@@ -393,7 +393,7 @@ function Invoke-Media {
         $_.Video | ForEach-Object {
             Write-Host "  Video: $($_.Codec) $($_.Width)x$($_.Height) $($_.PixFmt)"
         }
-        $_.Audio | ForEach-Object {
+        $_.Audio | Select -First 1 | ForEach-Object {
             Write-Host "  Audio: $($_.Codec) $($_.Channels)ch $($_.ChannelLayout) $($_.SampleRate)Hz"
         }
     }
