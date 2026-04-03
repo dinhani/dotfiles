@@ -29,7 +29,7 @@ alias dclean="docker container prune -f; docker network prune -f; docker volume 
 alias dz="lazydocker"
 
 # docker-compose
-alias dc="docker-compose"
+alias dc="docker compose"
 
 # du
 if is_mac; then
