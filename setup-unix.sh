@@ -43,9 +43,9 @@ export APPDATA=/mnt/c/Users/Renato/AppData/Roaming/
 export LOCALAPPDATA=/mnt/c/Users/Renato/AppData/Local/
 
 # docker / podman
-if is_mac; then    
-    export DOCKER_HOST="unix://$(podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}')"
-fi
+# if is_mac; then    
+#    export DOCKER_HOST="unix://$(podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}')"
+# fi
 
 # homebrew
 export PATH=$(brew_dir)/bin:\$PATH
@@ -242,10 +242,11 @@ fi
 
 # mac specific
 if is_mac; then
-    install_brew podman
-    install_brew podman-compose
-    ln -sfn $(brew_dir)/bin/podman $(brew_dir)/bin/docker
-    ln -sfn $(brew_dir)/bin/podman-compose $(brew_dir)/bin/docker-compose
+    install_brew colima
+    # install_brew podman
+    # install_brew podman-compose
+    # ln -sfn $(brew_dir)/bin/podman $(brew_dir)/bin/docker
+    # ln -sfn $(brew_dir)/bin/podman-compose $(brew_dir)/bin/docker-compose
 fi
 
 # ------------------------------------------------------------------------------
