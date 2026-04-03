@@ -57,6 +57,9 @@ export LD_LIBRARY_PATH=$(brew_dir)/lib
 export LIBRARY_PATH=$(brew_dir)/lib
 export PKG_CONFIG_PATH=$(brew_dir)/lib/pkgconfig
 
+# additional tools
+export PATH=\$PATH:$HOME/.local/bin
+
 # langs
 export PATH=\$PATH:$HOME/go/bin
 export PATH=\$PATH:$HOME/.cargo/bin
