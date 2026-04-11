@@ -2,6 +2,11 @@
 # Functions
 # ------------------------------------------------------------------------------
 
+if (-not ('System.IO.Hashing.Crc32' -as [type])) {
+    Add-Type -Path (Get-ChildItem "$env:ProgramFiles\dotnet\sdk" -Recurse -Filter 'System.IO.Hashing.dll' |
+        Where-Object { $_.FullName -match 'tools[\\/]net\d' } | Select-Object -Last 1).FullName
+}
+
 # Prints each argument passed to the function with its index.
 function Write-Args {
     for($i = 0; $i -lt $args.length; $i++) {
@@ -263,16 +268,66 @@ function Invoke-Hash {
 
     # hash files
     $files | ForEach-Object -ThrottleLimit $Limit -Parallel {
-        # get ADS hash
-        $hasHash = (Get-Item -LiteralPath $_.FullName -Stream * | Where-Object { $_.Stream -eq "HASH" }).Count -gt 0
-        if ($hasHash) {
+        # check which hashes are missing
+        $streams = Get-Item -LiteralPath $_.FullName -Stream * | Select-Object -ExpandProperty Stream
+        $needMD5  = $streams -notcontains "MD5"
+        $needSHA1 = $streams -notcontains "SHA1"
+        $needCRC  = $streams -notcontains "CRC32"
+
+        if (-not $needMD5 -and -not $needSHA1 -and -not $needCRC) {
             return
         }
 
-        # hash and store it
+        # hash file in a single streaming pass (no 2 GB array limit)
         Write-Host "Hashing: $($_.FullName)"
-        $hash = Get-FileHash -LiteralPath $_.FullName -Algorithm MD5
-        Set-Content -LiteralPath $_.FullName -Stream HASH -Value $hash.Hash
+        $stream = [System.IO.File]::OpenRead($_.FullName)
+        $md5  = if ($needMD5)  {
+            [System.Security.Cryptography.IncrementalHash]::CreateHash([System.Security.Cryptography.HashAlgorithmName]::MD5)
+        }
+        $sha1 = if ($needSHA1) {
+            [System.Security.Cryptography.IncrementalHash]::CreateHash([System.Security.Cryptography.HashAlgorithmName]::SHA1)
+        }
+        $crc  = if ($needCRC)  {
+            [System.IO.Hashing.Crc32]::new()
+        }
+        try {
+            $buffer = [byte[]]::new(64MB)
+            while (($read = $stream.Read($buffer, 0, $buffer.Length)) -gt 0) {
+                if ($md5)  {
+                    $md5.AppendData($buffer, 0, $read)
+                }
+                if ($sha1) {
+                    $sha1.AppendData($buffer, 0, $read)
+                }
+                if ($crc) {
+                    if ($read -eq $buffer.Length) {
+                        $crc.Append($buffer)
+                    }
+                    else {
+                        $tmp = [byte[]]::new($read)
+                        [System.Array]::Copy($buffer, $tmp, $read)
+                        $crc.Append($tmp)
+                    }
+                }
+            }
+        } finally {
+            $stream.Dispose()
+        }
+
+        # store computed hashes
+        if ($md5) {
+            Set-Content -LiteralPath $_.FullName -Stream MD5 -Value ([System.Convert]::ToHexString($md5.GetHashAndReset()))
+            $md5.Dispose()
+        }
+        if ($sha1) {
+            Set-Content -LiteralPath $_.FullName -Stream SHA1 -Value ([System.Convert]::ToHexString($sha1.GetHashAndReset()))
+            $sha1.Dispose()
+        }
+        if ($needCRC) {
+            $hash = $crc.GetCurrentHash()
+            [System.Array]::Reverse($hash)
+            Set-Content -LiteralPath $_.FullName -Stream CRC32 -Value ([System.Convert]::ToHexString($hash))
+        }
     }
 }
 
@@ -303,17 +358,21 @@ function Invoke-FindDuplicates {
         Write-Progress -Activity "Hashing" -Status "$($processing.Count)/$($using:filesToHash.Count)" -PercentComplete ($processing.Count / $using:filesToHash.Count * 100)
 
         # get hash or compute it
-        $hasHash = (Get-Item -LiteralPath $_.FullName -Stream * | Where-Object { $_.Stream -eq "HASH" }).Count -gt 0
+        $streams = Get-Item -LiteralPath $_.FullName -Stream * | Select-Object -ExpandProperty Stream
         Write-Host $_.FullName
-        if ($hasHash) {
-            $hash = Get-Content -LiteralPath $_.FullName -Stream HASH
+        if ($streams -contains "MD5") {
+            $hash = Get-Content -LiteralPath $_.FullName -Stream MD5
         } else {
-            $hash = (Get-FileHash -LiteralPath $_.FullName -Algorithm MD5).Hash
-        }
-
-        # store hash if had to compute
-        if(-not $hasHash) {
-            Set-Content -LiteralPath $_.FullName -Stream HASH -Value $hash
+            $stream = [System.IO.File]::OpenRead($_.FullName)
+            try {
+                $bytes = [byte[]]::new($stream.Length)
+                $stream.ReadExactly($bytes, 0, $bytes.Length)
+            } finally {
+                $stream.Dispose()
+            }
+            $hashBytes = [System.Security.Cryptography.MD5]::HashData($bytes)
+            $hash = [System.Convert]::ToHexString($hashBytes)
+            Set-Content -LiteralPath $_.FullName -Stream MD5 -Value $hash
         }
 
         # hash
