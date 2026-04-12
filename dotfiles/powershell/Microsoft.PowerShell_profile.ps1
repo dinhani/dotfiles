@@ -61,7 +61,7 @@ function Invoke-Archive {
         Write-Host "Listing files and directories: $InputPath"
         $files = Get-ChildItem $InputPath | Where-Object { $_.Extension -notin ".7z", ".gz", ".rar", ".zip" }
     }
-    Write-Host "Found $($files.Count) files."
+    Write-Host "Found $($files.Count) files"
 
     # archive files
     $files | ForEach-Object -ThrottleLimit $Limit -Parallel {
@@ -145,7 +145,7 @@ function Invoke-Unarchive {
     # list archived items
     Write-Host "Listing archived files: $InputPath"
     $files = Get-ChildItem $InputPath -File | Where-Object { $_.Extension -in ".7z", ".gz", ".rar", ".zip" }
-    Write-Host "Found $($files.Count) files."
+    Write-Host "Found $($files.Count) files"
 
     # unarchive files
     $files | ForEach-Object -ThrottleLimit $Limit -Parallel {
@@ -187,7 +187,7 @@ function Invoke-UnarchiveTest {
     # list archives
     Write-Host "Listing archived files: $InputPath"
     $files = Get-ChildItem $InputPath -File | Where-Object { $_.Extension -in ".7z", ".zip" }
-    Write-Host "Found $($files.Count) files."
+    Write-Host "Found $($files.Count) files"
 
     # create broken dir
     $dirBroken = Join-Path $InputPath "_broken"
@@ -264,7 +264,7 @@ function Invoke-Hash {
     # list files
     Write-Host "Listing files: $Path"
     $files = Get-ChildItem $Path -Recurse -File
-    Write-Host "Found $($files.Count) files."
+    Write-Host "Found $($files.Count) files"
 
     # hash files
     $files | ForEach-Object -ThrottleLimit $Limit -Parallel {
@@ -343,11 +343,11 @@ function Invoke-FindDuplicates {
 
     # list files
     $files = Get-ChildItem $Path -Recurse -File
-    Write-Host "Found $($files.Count) files."
+    Write-Host "Found $($files.Count) files"
 
     # group files by size and hash only the ones that have duplicates
     $filesToHash = $files | Group-Object Length | Where-Object { $_.Count -gt 1 } | ForEach-Object { $_.Group }
-    Write-Host "Found $($filesToHash.Count) files with duplicate sizes."
+    Write-Host "Found $($filesToHash.Count) files with duplicate sizes"
 
     # hash in parallel
     $processing = [System.Collections.Concurrent.ConcurrentQueue[bool]]::new()
@@ -390,7 +390,7 @@ function Invoke-FindDuplicates {
             Sort-Object Count
 
     if ($hashes.Count -eq 0) {
-        Write-Host "No duplicates found."
+        Write-Host "No duplicates found"
     } else {
         $hashes | ForEach-Object {
             Write-Host ""
