@@ -262,8 +262,12 @@ function Invoke-Hash {
     )
 
     # list files
-    Write-Host "Listing files: $Path"
-    $files = Get-ChildItem $Path -Recurse -File
+    $files = if (Test-Path -LiteralPath $Path -PathType Leaf) {
+        Get-Item -LiteralPath $Path
+    } else {
+        Write-Host "Listing files: $Path"
+        Get-ChildItem $Path -Recurse -File
+    }
     Write-Host "Found $($files.Count) files"
 
     # hash files
