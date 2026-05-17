@@ -230,7 +230,9 @@ if is_mac; then
 
     # editors
     install_brew rstudio
-    install_brew visual-studio-code
+    if not_installed "code"; then
+        install_brew visual-studio-code
+    fi
 
     # dev stuff
     install_brew devtoys
