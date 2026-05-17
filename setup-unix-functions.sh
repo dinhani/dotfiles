@@ -41,6 +41,16 @@ function is_mac_arm() {
 }
 
 
+# Checks if script is running on a personal machine.
+function is_personal() {
+    [[ "$EMAIL" == "renatodinhani@gmail.com" ]]
+}
+
+# Checks if script is running on a work machine.
+function is_work() {
+    ! is_personal
+}
+
 # Checks if script is running on Bash.
 function is_bash() {
      [[ -n "$BASH_VERSION" ]];

@@ -450,19 +450,23 @@ if is_mac; then
     install_brew ghostty
 
     # editors
-    install_brew intellij-idea
     install_brew rstudio
     install_brew visual-studio-code
 
     # dev stuff
-    install_brew bruno
     install_brew devtoys
-    install_brew github
     install_brew notable
 
-    # work / utils
+    # utils
     install_brew google-chrome
-    install_brew slack
+
+    # work only
+    if is_work; then
+        install_brew bruno
+        install_brew github
+        install_brew intellij-idea
+        install_brew slack
+    fi
 fi
 
 # ------------------------------------------------------------------------------
