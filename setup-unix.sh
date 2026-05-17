@@ -278,6 +278,7 @@ install_brew mise
 
 # other
 install_brew bat
+install_brew claude-code
 install_brew dasel
 install_brew erdtree
 install_brew eza
