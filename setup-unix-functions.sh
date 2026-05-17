@@ -119,6 +119,16 @@ function install_asdf() {
     reload
 }
 
+# Install something from the App Store with mas.
+function install_mas() {
+    if ! mas list | awk '{print $1}' | grep -qw "$1"; then
+        log "MAS installing: $1"
+        mas install $1
+    else
+        log_skip "MAS skipping: $1"
+    fi
+}
+
 # Install something for VSCode or Cursor
 function install_vscode() {
     if installed "code"; then

@@ -207,6 +207,13 @@ if not_installed "brew"; then
 fi
 
 # ------------------------------------------------------------------------------
+# Install MAS (Mac App Store CLI)
+# ------------------------------------------------------------------------------
+if is_mac; then
+    install_brew mas
+fi
+
+# ------------------------------------------------------------------------------
 # Install Desktop tools
 # ------------------------------------------------------------------------------
 if is_mac; then
@@ -231,6 +238,11 @@ if is_mac; then
 
     # utils
     install_brew google-chrome
+
+    # app store
+    install_mas 937984704  # Amphetamine
+    install_mas 441258766  # Magnet
+    install_mas 1606145041 # Sleeve
 
     # work only
     if is_work; then
