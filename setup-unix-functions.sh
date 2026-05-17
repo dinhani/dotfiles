@@ -181,9 +181,11 @@ function extract() {
 # ------------------------------------------------------------------------------
 
 # Log a formatted message to stderr.
-log() {
+function log() {
+    local cyan="\033[1;36m"
+    local reset="\033[0m"
     echo "" 1>&2
-    echo -e "* [$(date +"%Y-%m-%d %H:%M:%S")] $@" 1>&2;
+    echo -e "${cyan}* [$(date +"%Y-%m-%d %H:%M:%S")] $@${reset}" 1>&2;
 }
 
 # Reload .bashrc
