@@ -288,6 +288,7 @@ install_brew libiconv
 install_brew libpng
 install_brew libsodium
 install_brew libxml2
+install_brew libyaml
 install_brew libzip
 install_brew oniguruma
 install_brew openssl@3
