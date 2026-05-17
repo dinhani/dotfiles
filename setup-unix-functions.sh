@@ -132,7 +132,10 @@ function install_mas() {
 # Install something for VSCode or Cursor
 function install_vscode() {
     if installed "code"; then
-        if ! code --list-extensions | grep -qi "^$1\$"; then
+        if [ -z "$CACHE_VSCODE_EXTENSIONS" ]; then
+            CACHE_VSCODE_EXTENSIONS=$(code --list-extensions)
+        fi
+        if ! echo "$CACHE_VSCODE_EXTENSIONS" | grep -qi "^$1\$"; then
             log "Installing VSCode extension: $1"
             code --install-extension $1
         else
@@ -141,7 +144,10 @@ function install_vscode() {
     fi
 
     if installed "cursor"; then
-        if ! cursor --list-extensions | grep -qi "^$1\$"; then
+        if [ -z "$CACHE_CURSOR_EXTENSIONS" ]; then
+            CACHE_CURSOR_EXTENSIONS=$(cursor --list-extensions)
+        fi
+        if ! echo "$CACHE_CURSOR_EXTENSIONS" | grep -qi "^$1\$"; then
             log "Installing Cursor extension: $1"
             cursor --install-extension $1
         else

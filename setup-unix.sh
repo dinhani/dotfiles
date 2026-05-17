@@ -401,10 +401,10 @@ fi
 
 # Golang
 log "Installing Golang extensions"
-go install github.com/go-delve/delve/cmd/dlv@latest
-go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-go install github.com/nametake/golangci-lint-langserver@latest
-go install golang.org/x/tools/gopls@latest
+not_installed "dlv"                      && go install github.com/go-delve/delve/cmd/dlv@latest
+not_installed "golangci-lint"            && go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+not_installed "golangci-lint-langserver" && go install github.com/nametake/golangci-lint-langserver@latest
+not_installed "gopls"                    && go install golang.org/x/tools/gopls@latest
 
 # Python
 log "Installing Python extensions and tools"
@@ -412,24 +412,22 @@ pip3 install --break-system-packages bs4 dpath httpie lxml matplotlib mycli netw
 
 # Ruby
 log "Installing Ruby extensions and tools"
-gem install --conservative activesupport eth pry nokogiri pp puma rails rufo sinatra solargraph webrick tomlrb tomlib
+gem install --conservative activesupport pry nokogiri pp puma rails rufo sinatra solargraph webrick tomlrb tomlib
 
 # Rust
 log "Installing Rust toolchains"
 rustup toolchain install stable
 rustup toolchain install nightly
 
-rustup component add clippy
-rustup component add rustfmt
-rustup component add rust-analyzer
-rustup +nightly component add clippy
-rustup +nightly component add rustfmt
-rustup +nightly component add rust-analyzer
+for component in clippy rustfmt rust-analyzer; do
+    rustup component add "$component"
+    rustup +nightly component add "$component"
+done
 
 log "Installing Rust extensions"
-cargo install cargo-expand
-cargo install wait-service
-cargo install watchexec
+not_installed "cargo-expand" && cargo install --locked cargo-expand
+not_installed "wait-service" && cargo install --locked wait-service
+not_installed "watchexec"    && cargo install --locked watchexec
 
 # ------------------------------------------------------------------------------
 # Install VSCode extensions
@@ -441,7 +439,6 @@ install_vscode ms-vscode-remote.remote-wsl         # WSL
 install_vscode ms-vscode-remote.remote-ssh         # SSH
 
 # General
-install_vscode github.copilot                      # Copilot
 install_vscode dinhani.divider                     # Divider
 install_vscode vscode-icons-team.vscode-icons      # Icons
 install_vscode oderwat.indent-rainbow              # Indent Rainbow
@@ -453,9 +450,12 @@ install_vscode mechatroner.rainbow-csv             # CSV
 install_vscode golang.Go                           # Go
 install_vscode ZainChen.json                       # JSON
 install_vscode yzhang.markdown-all-in-one          # Markdown
+install_vscode bierner.markdown-mermaid            # Mermaid
 install_vscode ms-vscode.PowerShell                # PowerShell
+install_vscode ms-python.python                    # Python
 install_vscode rust-lang.rust-analyzer             # Rust
 install_vscode tamasfe.even-better-toml            # TOML
+install_vscode redhat.vscode-xml                   # XML
 
 # ------------------------------------------------------------------------------
 # Install pre-compiled tools
