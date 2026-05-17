@@ -91,7 +91,7 @@ function install_apt() {
 # Install something with brew.
 function install_brew() {
     if ! brew list -1 | grep -q "^$1\$"; then
-            log "Homebrew installing: $1"
+        log "Homebrew installing: $1"
         brew install $1
     else
         log_skip "Homebrew skipping: $1"

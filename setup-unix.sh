@@ -337,6 +337,10 @@ install_brew ripgrep
 install_brew sd
 install_brew speedtest-cli
 install_brew subversion
+if not_installed "tsv-pretty"; then
+    log "Installing tsv-utils"
+    brew install rothgar/tap/tsv-utils
+fi
 install_brew unzip
 install_brew util-linux
 install_brew w3m
@@ -470,20 +474,6 @@ if not_installed "plantuml.jar"; then
     rm $DIR_DOWNLOADS/plantuml.jar
     download https://github.com/plantuml/plantuml/releases/download/v1.2024.6/plantuml-mit-1.2024.6.jar plantuml.jar
     cp $DIR_DOWNLOADS/plantuml.jar $DIR_TOOLS/plantuml.jar
-fi
-
-if not_installed "tsv-pretty"; then
-    log "Installing tsv-utils"
-
-    rm $DIR_DOWNLOADS/tsv-utils.tar.gz
-    rm -rf $DIR_DOWNLOADS/tsv-utils
-    download https://github.com/eBay/tsv-utils/releases/download/v2.2.0/tsv-utils-v2.2.0_linux-x86_64_ldc2.tar.gz tsv-utils.tar.gz
-
-    mkdir -p $DIR_DOWNLOADS/tsv-utils
-    tar -xzvf $DIR_DOWNLOADS/tsv-utils.tar.gz -C $DIR_DOWNLOADS/tsv-utils --strip-components=2
-
-    mv $DIR_DOWNLOADS/tsv-utils/* $DIR_TOOLS
-    rm -rf $DIR_DOWNLOADS/tsv-utils
 fi
 
 # ------------------------------------------------------------------------------
