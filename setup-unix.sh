@@ -321,7 +321,7 @@ if is_mac; then
     install_brew docker
     install_brew docker-compose
 
-    if [ ! -e /var/run/docker.sock ]; then
+    if [ ! -L /var/run/docker.sock ]; then
         log "Configuring Colima docker socket"
         sudo ln -sfn $HOME/.colima/default/docker.sock /var/run/docker.sock
     fi
