@@ -18,12 +18,6 @@ mkdir -p $DIR_SCRIPTS
 mkdir -p $DIR_TOOLS
 
 # ------------------------------------------------------------------------------
-# Install config
-# ------------------------------------------------------------------------------
-log "Configuring aliases"
-cp scripts/alias.sh $DIR_SCRIPTS
-
-# ------------------------------------------------------------------------------
 # Install .shell_common
 # ------------------------------------------------------------------------------
 log "Configuring common shell setup"
@@ -149,6 +143,46 @@ fi
 reload
 
 # ------------------------------------------------------------------------------
+# Install configurations
+# ------------------------------------------------------------------------------
+
+# config: aliases
+log "Configuring aliases"
+cp scripts/alias.sh $DIR_SCRIPTS
+
+# config: editor
+if is_linux; then
+    log "Configuring editor"
+    sudo update-alternatives --install /usr/bin/editor editor "$(brew_dir)/bin/hx" 100
+fi
+
+# config: gpg
+if [ ! -e ~/.gnupg/pubring.kbx ]; then
+    log "Configuring GPG key"
+gpg --batch --gen-key <<EOF
+    Key-Type: 1
+    Key-Length: 4096
+    Subkey-Type: 1
+    Subkey-Length: 4096
+    Name-Real: Renato Dinhani
+    Name-Email: $EMAIL
+    Expire-Date: 0
+    %no-protection
+EOF
+fi
+
+# config: ssh
+if [ ! -e ~/.ssh/dinhani.pub ]; then
+    log "Configuring SSH key"
+    ssh-keygen -t ed25519 -C "$EMAIL" -N "" -f ~/.ssh/dinhani
+fi
+
+# config: git
+log "Configuring Git"
+git config --global user.email "$EMAIL"
+git config --global user.name "Renato Dinhani"
+
+# ------------------------------------------------------------------------------
 # Install APT basic tools
 # ------------------------------------------------------------------------------
 if is_linux; then
@@ -170,6 +204,41 @@ if not_installed "brew"; then
     log "Installing Homebrew"
     NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     reload
+fi
+
+# ------------------------------------------------------------------------------
+# Install Desktop tools
+# ------------------------------------------------------------------------------
+if is_mac; then
+    # hardware
+    install_brew elgato-stream-deck
+    install_brew logitech-g-hub
+    install_brew linearmouse
+
+    # media
+    install_brew spotify
+
+    # terminal
+    install_brew ghostty
+
+    # editors
+    install_brew rstudio
+    install_brew visual-studio-code
+
+    # dev stuff
+    install_brew devtoys
+    install_brew notable
+
+    # utils
+    install_brew google-chrome
+
+    # work only
+    if is_work; then
+        install_brew bruno
+        install_brew github
+        install_brew intellij-idea
+        install_brew slack
+    fi
 fi
 
 # ------------------------------------------------------------------------------
@@ -245,16 +314,20 @@ fi
 
 # mac specific
 if is_mac; then
+    install_brew mas
+
     install_brew colima
     install_brew docker
     install_brew docker-compose
 
-    log "Configuring colima docker socket"
-    sudo ln -sfn $HOME/.colima/default/docker.sock /var/run/docker.sock
+    if [ ! -e /var/run/docker.sock ]; then
+        log "Configuring colima docker socket"
+        sudo ln -sfn $HOME/.colima/default/docker.sock /var/run/docker.sock
+    fi
 fi
 
 # ------------------------------------------------------------------------------
-# Install build tools (stay on brew)
+# Install build tools
 # ------------------------------------------------------------------------------
 install_brew bazelisk
 install_brew dmd
@@ -265,7 +338,7 @@ install_brew maven
 install_brew protobuf
 
 # ------------------------------------------------------------------------------
-# Install programming languages via asdf
+# Install programming languages
 # ------------------------------------------------------------------------------
 install_asdf bun             1.2.0
 install_asdf clojure         1.12.0.1530
@@ -297,7 +370,7 @@ install_asdf v               0.4.8
 install_asdf zig             0.13.0
 
 # ------------------------------------------------------------------------------
-# Install Rust via rustup (canonical installer, not asdf)
+# Install Rust
 # ------------------------------------------------------------------------------
 if not_installed "rustup"; then
     log "Installing rustup"
@@ -305,7 +378,7 @@ if not_installed "rustup"; then
 fi
 
 # ------------------------------------------------------------------------------
-# Install languages extensions
+# Install programming languages extensions
 # ------------------------------------------------------------------------------
 
 # Golang
@@ -397,81 +470,6 @@ if not_installed "tsv-pretty"; then
 
     mv $DIR_DOWNLOADS/tsv-utils/* $DIR_TOOLS
     rm -rf $DIR_DOWNLOADS/tsv-utils
-fi
-
-# ------------------------------------------------------------------------------
-# Config editor
-# ------------------------------------------------------------------------------
-if is_linux; then
-    log "Configuring editor"
-    sudo update-alternatives --install /usr/bin/editor editor "$(brew_dir)/bin/hx" 100
-fi
-
-# ------------------------------------------------------------------------------
-# Config GPG key
-# ------------------------------------------------------------------------------
-if [ ! -e ~/.gnupg/pubring.kbx ]; then
-    log "Configuring GPG key"
-gpg --batch --gen-key <<EOF
-    Key-Type: 1
-    Key-Length: 4096
-    Subkey-Type: 1
-    Subkey-Length: 4096
-    Name-Real: Renato Dinhani
-    Name-Email: $EMAIL
-    Expire-Date: 0
-    %no-protection
-EOF
-fi
-
-# ------------------------------------------------------------------------------
-# Config SSH key
-# ------------------------------------------------------------------------------
-if [ ! -e ~/.ssh/dinhani.pub ]; then
-    log "Configuring SSH key"
-    ssh-keygen -t ed25519 -C "$EMAIL" -N "" -f ~/.ssh/dinhani
-fi
-
-# ------------------------------------------------------------------------------
-# Config Git
-# ------------------------------------------------------------------------------
-log "Configuring Git"
-git config --global user.email "$EMAIL"
-git config --global user.name "Renato Dinhani"
-
-# ------------------------------------------------------------------------------
-# Install Desktop tools
-# ------------------------------------------------------------------------------
-if is_mac; then
-    # hardware
-    install_brew elgato-stream-deck
-    install_brew logitech-g-hub
-    install_brew linearmouse
-
-    # media
-    install_brew spotify
-
-    # terminal
-    install_brew ghostty
-
-    # editors
-    install_brew rstudio
-    install_brew visual-studio-code
-
-    # dev stuff
-    install_brew devtoys
-    install_brew notable
-
-    # utils
-    install_brew google-chrome
-
-    # work only
-    if is_work; then
-        install_brew bruno
-        install_brew github
-        install_brew intellij-idea
-        install_brew slack
-    fi
 fi
 
 # ------------------------------------------------------------------------------
