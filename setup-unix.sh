@@ -272,8 +272,30 @@ install_brew gettext
 install_brew just
 install_brew llvm
 install_brew make
+install_brew pkgconf
 install_brew protobuf
 install_brew re2c
+
+log "Installing build tools libraries"
+install_brew bzip2
+install_brew freetype
+install_brew gmp
+install_brew icu4c@78
+install_brew jpeg
+install_brew krb5
+install_brew libffi
+install_brew libiconv
+install_brew libpng
+install_brew libsodium
+install_brew libxml2
+install_brew libzip
+install_brew oniguruma
+install_brew openssl@3
+install_brew readline
+install_brew sqlite
+install_brew webp
+install_brew xz
+install_brew zlib
 
 # ------------------------------------------------------------------------------
 # Install CLI tools
@@ -354,7 +376,6 @@ install_asdf kotlin          2.3.21
 install_asdf lua             5.5.0
 install_asdf maven           3.9.16
 install_asdf nodejs          26.1.0
-install_asdf php             8.5.6
 install_asdf powershell-core 7.6.1
 install_asdf python          3.14.5
 install_asdf R               4.6.0
