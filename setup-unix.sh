@@ -258,6 +258,7 @@ install_brew gettext
 install_brew just
 install_brew llvm
 install_brew make
+install_brew protobuf
 install_brew re2c
 
 # ------------------------------------------------------------------------------
@@ -321,21 +322,10 @@ if is_mac; then
     install_brew docker-compose
 
     if [ ! -e /var/run/docker.sock ]; then
-        log "Configuring colima docker socket"
+        log "Configuring Colima docker socket"
         sudo ln -sfn $HOME/.colima/default/docker.sock /var/run/docker.sock
     fi
 fi
-
-# ------------------------------------------------------------------------------
-# Install build tools
-# ------------------------------------------------------------------------------
-install_brew bazelisk
-install_brew dmd
-install_brew dub
-install_brew gradle
-install_brew leiningen
-install_brew maven
-install_brew protobuf
 
 # ------------------------------------------------------------------------------
 # Install programming languages
@@ -348,12 +338,15 @@ install_asdf elixir          1.18.1
 install_asdf erlang          27.2
 install_asdf gleam           1.7.0
 install_asdf golang          1.23.4
+install_asdf gradle          8.11.1
 install_asdf groovy          4.0.24
 install_asdf haskell         9.10.1
 install_asdf java            openjdk-21.0.2
 install_asdf julia           1.11.2
 install_asdf kotlin          2.1.0
+install_asdf leiningen       2.11.2
 install_asdf lua             5.4.7
+install_asdf maven           3.9.9
 install_asdf nodejs          22.12.0
 install_asdf ocaml           5.2.0
 install_asdf odin            dev-2025-01
