@@ -101,12 +101,17 @@ function install_brew() {
 # Install something with ASDF.
 function install_asdf() {
     lang=$1
-    version=$2
+    version=${2:-latest}
 
     # install plugin and lang
     log "ASDF installing: $lang $version"
     asdf plugin add $lang
     asdf install $lang $version
+
+    # resolve `latest` to a concrete version for .tool-versions
+    if [[ "$version" == "latest" ]]; then
+        version=$(asdf latest $lang)
+    fi
 
     # add to .tool-versions
     echo "$lang $version" >> ~/.tool-versions

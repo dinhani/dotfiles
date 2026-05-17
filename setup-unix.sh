@@ -254,46 +254,51 @@ if is_mac; then
 fi
 
 # ------------------------------------------------------------------------------
-# Install languages / build tools
+# Install build tools (stay on brew)
 # ------------------------------------------------------------------------------
-brew tap oven-sh/bun
-
 install_brew bazelisk
-install_brew bun
-install_brew clojure
-install_brew crystal
 install_brew dmd
-install_brew dotnet
 install_brew dub
-install_brew elixir
-install_brew erlang
-install_brew gleam
-install_brew go
 install_brew gradle
-install_brew groovy
-install_brew haskell-stack
-install_brew julia
-install_brew kotlin
 install_brew leiningen
-install_brew lua
 install_brew maven
-install_brew node
-install_brew ocaml
-install_brew odin
-install_brew openjdk
-install_brew perl
-install_brew powershell
 install_brew protobuf
-install_brew python
-install_brew r
-install_brew racket
-install_brew rakudo
-install_brew ruby
-install_brew scala
-install_brew solidity
-install_brew vlang
-install_brew zig
 
+# ------------------------------------------------------------------------------
+# Install programming languages via asdf
+# ------------------------------------------------------------------------------
+install_asdf bun             1.2.0
+install_asdf clojure         1.12.0.1530
+install_asdf crystal         1.14.0
+install_asdf dotnet-core     9.0.100
+install_asdf elixir          1.18.1
+install_asdf erlang          27.2
+install_asdf gleam           1.7.0
+install_asdf golang          1.23.4
+install_asdf groovy          4.0.24
+install_asdf haskell         9.10.1
+install_asdf java            openjdk-21.0.2
+install_asdf julia           1.11.2
+install_asdf kotlin          2.1.0
+install_asdf lua             5.4.7
+install_asdf nodejs          22.12.0
+install_asdf ocaml           5.2.0
+install_asdf odin            dev-2025-01
+install_asdf perl            5.40.0
+install_asdf powershell-core 7.4.6
+install_asdf python          3.13.1
+install_asdf R               4.4.2
+install_asdf racket          8.15
+install_asdf raku            2024.10
+install_asdf ruby            3.4.1
+install_asdf scala           3.6.2
+install_asdf solidity        0.8.28
+install_asdf v               0.4.8
+install_asdf zig             0.13.0
+
+# ------------------------------------------------------------------------------
+# Install Rust via rustup (canonical installer, not asdf)
+# ------------------------------------------------------------------------------
 if not_installed "rustup"; then
     log "Installing rustup"
     curl https://sh.rustup.rs -sSf | sh -s -- -y
