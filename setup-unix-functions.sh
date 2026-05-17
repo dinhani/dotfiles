@@ -105,8 +105,16 @@ function install_asdf() {
 
     # install plugin and lang
     log "ASDF installing: $lang $version"
-    asdf plugin add $lang
-    asdf install $lang $version
+    if ! asdf plugin list 2>/dev/null | grep -qw "$lang"; then
+        asdf plugin add $lang
+    else
+        log "ASDF plugin skipping: $lang"
+    fi
+    if ! asdf list $lang 2>/dev/null | grep -qw "$version"; then
+        asdf install $lang $version
+    else
+        log "ASDF version skipping: $lang $version"
+    fi
     asdf set -u $lang $version
     reload
 }
