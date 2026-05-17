@@ -71,7 +71,7 @@ eval "\$(ssh-agent -s)"
 ssh-add $HOME/.ssh/dinhani
 
 # asdf
-source $(brew_dir)/opt/asdf/libexec/asdf.sh
+export PATH=\$HOME/.asdf/shims:\$PATH
 
 # rust
 source $HOME/.cargo/env
