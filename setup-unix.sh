@@ -343,36 +343,20 @@ fi
 # ------------------------------------------------------------------------------
 # Install programming languages
 # ------------------------------------------------------------------------------
-install_asdf bun             1.3.14
-install_asdf clojure         1.12.5.1645
-install_asdf crystal         1.20.2
 install_asdf dotnet          10.0.300
-install_asdf elixir          1.19.5-otp-27
-install_asdf erlang          29.0
-install_asdf gleam           1.16.0
 install_asdf golang          1.26.3
 install_asdf gradle          9.5.1
-install_asdf groovy          5.0.6
-install_asdf haskell         9.14.1
 install_asdf java            openjdk-26.0.1
 install_asdf julia           1.12.6
 install_asdf kotlin          2.3.21
-install_asdf leiningen       2.12.0
 install_asdf lua             5.5.0
 install_asdf maven           3.9.16
 install_asdf nodejs          26.1.0
-install_asdf ocaml           5.4.1
-install_asdf odin            dev-2026-05
-install_asdf perl            5.42.2
+install_asdf php             8.5.6
 install_asdf powershell-core 7.6.1
 install_asdf python          3.14.5
 install_asdf R               4.6.0
-install_asdf racket          9.1
-install_asdf raku            2026.03
 install_asdf ruby            4.0.4
-install_asdf scala           3.8.3
-install_asdf solidity        0.8.35
-install_asdf v               0.5.1
 install_asdf zig             0.16.0
 
 # ------------------------------------------------------------------------------
