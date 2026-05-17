@@ -240,7 +240,9 @@ if is_mac; then
         install_brew "cursor"
     fi
     install_brew intellij-idea
+    install_brew rider
     install_brew pycharm
+    install_brew datagrip
     install_brew rstudio
 
     # dev tools
