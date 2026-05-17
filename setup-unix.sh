@@ -157,7 +157,7 @@ if is_linux; then
 fi
 
 # config: gpg
-if [ ! -e ~/.gnupg/pubring.kbx ]; then
+if ! gpg --list-secret-keys "$EMAIL" >/dev/null 2>&1; then
     log "Configuring GPG key"
 gpg --batch --gen-key <<EOF
     Key-Type: 1
