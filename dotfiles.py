@@ -1,3 +1,4 @@
+import functools
 import os
 import platform
 import shutil
@@ -113,8 +114,21 @@ def dotfiles(path: str = "") -> File:
     return File(Path(__file__).parent, "dotfiles", path)
 
 # ------------------------------------------------------------------------------
+# Decorator
+# ------------------------------------------------------------------------------
+def operation(name: str, target_dir: str):
+    """Wrap a backup/restore function. `target_dir` is the path under `dotfiles/`."""
+    def decorator(fn):
+        @functools.wraps(fn)
+        def wrapper(*args, **kwargs):
+            return fn(*args, **kwargs)
+        return wrapper
+    return decorator
+
+# ------------------------------------------------------------------------------
 # Items - Ghostty
 # ------------------------------------------------------------------------------
+@operation("Ghostty", "ghostty")
 def backup_ghostty():
     match CURRENT_OS:
         case OS.WIN:
@@ -122,6 +136,7 @@ def backup_ghostty():
         case OS.LINUX | OS.MAC:
             unix_home(".config/ghostty/config") >> dotfiles("ghostty/config")
 
+@operation("Ghostty", "ghostty")
 def restore_ghostty():
     match CURRENT_OS:
         case OS.WIN:
@@ -132,6 +147,7 @@ def restore_ghostty():
 # ------------------------------------------------------------------------------
 # Items - Helix
 # ------------------------------------------------------------------------------
+@operation("Helix", "helix")
 def backup_helix():
     match CURRENT_OS:
         case OS.WIN:
@@ -141,6 +157,7 @@ def backup_helix():
             unix_home(".config/helix/config.toml") >> dotfiles("helix/config.toml")
             unix_home(".config/helix/languages.toml") >> dotfiles("helix/languages.toml")
 
+@operation("Helix", "helix")
 def restore_helix():
     match CURRENT_OS:
         case OS.WIN:
@@ -151,6 +168,7 @@ def restore_helix():
 # ------------------------------------------------------------------------------
 # Items - IntelliJ
 # ------------------------------------------------------------------------------
+@operation("IntelliJ", "intellij")
 def backup_intellij():
     match CURRENT_OS:
         case OS.WIN:
@@ -161,6 +179,7 @@ def backup_intellij():
         case OS.LINUX | OS.MAC:
             log_unsupported("IntelliJ")
 
+@operation("IntelliJ", "intellij")
 def restore_intellij():
     match CURRENT_OS:
         case OS.WIN:
@@ -173,6 +192,7 @@ def restore_intellij():
 # ------------------------------------------------------------------------------
 # Items - Notable
 # ------------------------------------------------------------------------------
+@operation("Notable", "notable")
 def backup_notable():
     match CURRENT_OS:
         case OS.WIN:
@@ -180,6 +200,7 @@ def backup_notable():
         case OS.LINUX | OS.MAC:
             log_unsupported("Notable")
 
+@operation("Notable", "notable")
 def restore_notable():
     match CURRENT_OS:
         case OS.WIN:
@@ -190,6 +211,7 @@ def restore_notable():
 # ------------------------------------------------------------------------------
 # Items - PowerShell
 # ------------------------------------------------------------------------------
+@operation("PowerShell", "powershell")
 def backup_powershell():
     match CURRENT_OS:
         case OS.WIN:
@@ -197,6 +219,7 @@ def backup_powershell():
         case OS.LINUX | OS.MAC:
             log_unsupported("PowerShell")
 
+@operation("PowerShell", "powershell")
 def restore_powershell():
     match CURRENT_OS:
         case OS.WIN:
@@ -207,6 +230,7 @@ def restore_powershell():
 # ------------------------------------------------------------------------------
 # Items - RStudio
 # ------------------------------------------------------------------------------
+@operation("RStudio", "rstudio")
 def backup_rstudio():
     match CURRENT_OS:
         case OS.WIN:
@@ -215,6 +239,7 @@ def backup_rstudio():
         case OS.LINUX | OS.MAC:
             log_unsupported("RStudio")
 
+@operation("RStudio", "rstudio")
 def restore_rstudio():
     match CURRENT_OS:
         case OS.WIN:
@@ -225,6 +250,7 @@ def restore_rstudio():
 # ------------------------------------------------------------------------------
 # Items - Starship
 # ------------------------------------------------------------------------------
+@operation("Starship", "starship")
 def backup_starship():
     match CURRENT_OS:
         case OS.WIN:
@@ -232,6 +258,7 @@ def backup_starship():
         case OS.LINUX | OS.MAC:
             unix_home(".config/starship.toml") >> dotfiles("starship/starship.toml")
 
+@operation("Starship", "starship")
 def restore_starship():
     match CURRENT_OS:
         case OS.WIN:
@@ -242,6 +269,7 @@ def restore_starship():
 # ------------------------------------------------------------------------------
 # Items - VIM
 # ------------------------------------------------------------------------------
+@operation("VIM", "vim")
 def backup_vim():
     match CURRENT_OS:
         case OS.WIN:
@@ -249,6 +277,7 @@ def backup_vim():
         case OS.LINUX | OS.MAC:
             unix_home(".vimrc") >> dotfiles("vim/.vimrc")
 
+@operation("VIM", "vim")
 def restore_vim():
     match CURRENT_OS:
         case OS.WIN:
@@ -259,6 +288,7 @@ def restore_vim():
 # ------------------------------------------------------------------------------
 # Items - VSCode / Cursor
 # ------------------------------------------------------------------------------
+@operation("VSCode / Cursor", "vscode")
 def backup_vscode():
     match CURRENT_OS:
         case OS.WIN:
@@ -267,6 +297,7 @@ def backup_vscode():
         case OS.LINUX | OS.MAC:
             log_unsupported("VSCode / Cursor")
 
+@operation("VSCode / Cursor", "vscode")
 def restore_vscode():
     match CURRENT_OS:
         case OS.WIN:
@@ -281,6 +312,7 @@ def restore_vscode():
 # ------------------------------------------------------------------------------
 # Items - Windows Terminal
 # ------------------------------------------------------------------------------
+@operation("Windows Terminal", "windows-terminal")
 def backup_windows_terminal():
     match CURRENT_OS:
         case OS.WIN:
@@ -288,6 +320,7 @@ def backup_windows_terminal():
         case OS.LINUX | OS.MAC:
             log_unsupported("Windows Terminal")
 
+@operation("Windows Terminal", "windows-terminal")
 def restore_windows_terminal():
     match CURRENT_OS:
         case OS.WIN:
