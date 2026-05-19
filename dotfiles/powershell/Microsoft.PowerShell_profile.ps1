@@ -417,7 +417,12 @@ function Invoke-Media {
         [int]$Limit = 1
     )
 
-    $files = Get-ChildItem $Path -Recurse -Include *.mkv, *.mp4, *.flac
+    $files = if (Test-Path -LiteralPath $Path -PathType Leaf) {
+        Get-Item -LiteralPath $Path
+    } else {
+        Get-ChildItem $Path -Recurse -Include *.mkv, *.mp4, *.flac
+    }
+    $basePath = if (Test-Path -LiteralPath $Path -PathType Leaf) { Split-Path $Path -Parent } else { $Path }
     $filesTotal = $files.Count
     $counter  = [ref]0
 
@@ -445,7 +450,7 @@ function Invoke-Media {
                 }
             }
             [PSCustomObject]@{
-                File   = [System.IO.Path]::GetRelativePath($using:Path, $_.FullName)
+                File   = [System.IO.Path]::GetRelativePath($using:basePath, $_.FullName)
                 Video  = $video
                 Audio  = $audio
             }
@@ -459,6 +464,42 @@ function Invoke-Media {
         $_.Audio | Select -First 1 | ForEach-Object {
             Write-Host "  Audio: $($_.Codec) $($_.Channels)ch $($_.ChannelLayout) $($_.SampleRate)Hz"
         }
+    }
+}
+
+function Invoke-RenameAscii {
+    param(
+        [Parameter(ValueFromPipeline)]
+        $Input
+    )
+     process {
+        $filename = if ($Input -is [System.IO.FileInfo]) { $Input.FullName } else { "$Input" }
+
+        $dir    = Split-Path $filename -Parent
+        $source = Split-Path $filename -Leaf
+
+        # ignore special cases
+        if ($source -like "Cargo.*") { continue }
+
+        # remove accents
+        $normalized = $source.Normalize([Text.NormalizationForm]::FormD)
+        $target = -join ($normalized.ToCharArray() | Where-Object {
+            [Globalization.CharUnicodeInfo]::GetUnicodeCategory($_) -ne
+            [Globalization.UnicodeCategory]::NonSpacingMark
+        })
+
+        # lower
+        $target = $target.ToLower()
+
+        # remove spaces / dashes
+        $target = $target -replace ' ', '-'
+        $target = $target -replace '_', '-'
+        $target = $target -replace '---', '-'
+        $target = $target -replace '--', '-'
+
+        # rename if changed
+        Rename-Item "$dir\$source" "$dir\__$target"
+        Rename-Item "$dir\__$target" "$dir\$target"
     }
 }
 
@@ -497,37 +538,37 @@ function Invoke-Install {
 function SortSize {
     param(
         [Parameter(ValueFromPipeline=$true)]
-        $input
+        $Input
     )
-    $input | Sort-Object Length
+    $Input | Sort-Object Length
 }
 function SortSizeDesc {
     param(
         [Parameter(ValueFromPipeline=$true)]
-        $input
+        $Input
     )
-    $input | Sort-Object Length -Descending
+    $Input | Sort-Object Length -Descending
 }
 function Top {
     param(
         [Parameter(ValueFromPipeline=$true)]
-        $input,
+        $Input,
 
         [Parameter(Position = 1, Mandatory = $false)]
-        [int]$n = 10
+        [int]$N = 10
     )
-    $input | Select-Object -First $n
+    $Input | Select-Object -First $N
 }
 
 function Skip {
     param(
         [Parameter(ValueFromPipeline=$true)]
-        $input,
+        $Input,
 
         [Parameter(Position = 1, Mandatory = $false)]
-        [int]$n = 10
+        [int]$N = 10
     )
-    $input | Select-Object -Skip $n
+    $Input | Select-Object -Skip $N
 }
 
 # Function aliases
@@ -539,6 +580,7 @@ Set-Alias hash       Invoke-Hash
 Set-Alias dup        Invoke-FindDuplicates
 Set-Alias add        Invoke-Install
 Set-Alias media      Invoke-Media
+Set-Alias mvascii    Invoke-RenameAscii
 Set-Alias zzz        Invoke-ZipTo7z
 
 # Git aliases
