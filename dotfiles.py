@@ -4,6 +4,8 @@ import shutil
 import sys
 from pathlib import Path
 
+import questionary
+
 # ------------------------------------------------------------------------------
 # Classes
 # ------------------------------------------------------------------------------
@@ -19,20 +21,31 @@ class File(Path):
     def cp_dir(self, target: Path) -> None:
         """Copy a local directory to a local target."""
         try:
-            log_transfer("Dir", "Dir", self, target)
+            self.log_transfer("Dir", "Dir", target)
             target.mkdir(parents=True, exist_ok=True)
             shutil.copytree(self, target, dirs_exist_ok=True)
         except Exception as e:
-            log_error("Failed to copy directory", e)
+            self.log_error("Failed to copy directory", e)
 
     def cp_file(self, target: Path) -> None:
         """Copy a local file to a local target."""
         try:
-            log_transfer("File", "File", self, target)
+            self.log_transfer("File", "File", target)
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(self, target)
         except Exception as e:
-            log_error("Failed to copy file", e)
+            self.log_error("Failed to copy file", e)
+
+    def log_transfer(self, kind_source, kind_target, target) -> None:
+        """Log a transfer operation."""
+        print()
+        print(f"{kind_source} -> {kind_target}")
+        print(f"  {self} -> {target}")
+
+    @staticmethod
+    def log_error(message, exception) -> None:
+        """Log an error message."""
+        print(f"  [!] {message}: {exception}")
 
 # ------------------------------------------------------------------------------
 # Functions - OS/Directories
@@ -90,149 +103,168 @@ def dotfiles(path: str = "") -> File:
     return File("dotfiles", path)
 
 # ------------------------------------------------------------------------------
-# Functions - Transfer
+# Items - Ghostty
 # ------------------------------------------------------------------------------
-
-def log_transfer(kind_source, kind_target, source_file, target_file):
-    """Log a transfer operation."""
-    print()
-    print(f"{kind_source} -> {kind_target}")
-    print(f"  {source_file} -> {target_file}")
-
-def log_error(message, exception):
-    """Log an error message."""
-    print(f"  [!] {message}: {exception}")
-
-# ------------------------------------------------------------------------------
-# Execution
-# ------------------------------------------------------------------------------
-
-def backup():
-    """Backup dotfiles from machine to local directory."""
-
-    # remove synced files
-    if dotfiles().exists():
-        shutil.rmtree(dotfiles())
-
-    # --------------------------------------------------------------------------
-    # Unix
-    # --------------------------------------------------------------------------
-    # Ghostty
+def backup_ghostty():
     unix_home(".config/ghostty/config") >> dotfiles("ghostty/config")
 
-    # Helix
+def restore_ghostty():
+    dotfiles("ghostty") >> unix_home(".config/ghostty")
+
+# ------------------------------------------------------------------------------
+# Items - Helix
+# ------------------------------------------------------------------------------
+def backup_helix():
     unix_home(".config/helix/config.toml") >> dotfiles("helix/config.toml")
     unix_home(".config/helix/languages.toml") >> dotfiles("helix/languages.toml")
 
-    # Starship
+def restore_helix():
+    dotfiles("helix") >> unix_home(".config/helix")
+    if is_win():
+        dotfiles("helix") >> win_roaming("helix")
+
+# ------------------------------------------------------------------------------
+# Items - Starship
+# ------------------------------------------------------------------------------
+def backup_starship():
     unix_home(".config/starship.toml") >> dotfiles("starship/starship.toml")
 
-    # VIM
+def restore_starship():
+    dotfiles("starship/starship.toml") >> unix_home(".config/starship.toml")
+
+# ------------------------------------------------------------------------------
+# Items - VIM
+# ------------------------------------------------------------------------------
+def backup_vim():
     unix_home(".vimrc") >> dotfiles("vim/.vimrc")
 
-    # --------------------------------------------------------------------------
-    # Windows
-    # --------------------------------------------------------------------------
+def restore_vim():
+    dotfiles("vim/.vimrc") >> unix_home(".vimrc")
+
+# ------------------------------------------------------------------------------
+# Items - PowerShell
+# ------------------------------------------------------------------------------
+def backup_powershell():
     if is_win():
-        # Aliases
         win_home("Documents/PowerShell/Microsoft.PowerShell_profile.ps1") >> dotfiles("powershell/Microsoft.PowerShell_profile.ps1")
 
-        # Devices
+def restore_powershell():
+    if is_win():
+        dotfiles("powershell/Microsoft.PowerShell_profile.ps1") >> win_home("Documents/PowerShell/Microsoft.PowerShell_profile.ps1")
+
+# ------------------------------------------------------------------------------
+# Items - Flydigi
+# ------------------------------------------------------------------------------
+def backup_flydigi():
+    if is_win():
         win_prog64("FlydigiSpaceStation/config/share/") >> dotfiles("flydigi/share")
 
-        # IntelliJ
+def restore_flydigi():
+    if is_win():
+        dotfiles("flydigi") >> win_prog64("FlydigiSpaceStation/config")
+
+# ------------------------------------------------------------------------------
+# Items - IntelliJ
+# ------------------------------------------------------------------------------
+def backup_intellij():
+    if is_win():
         win_roaming("JetBrains/IntelliJIdea2025.3/keymaps") >> dotfiles("intellij/keymaps")
         win_roaming("JetBrains/IntelliJIdea2025.3/options/editor.xml") >> dotfiles("intellij/options/editor.xml")
         win_roaming("JetBrains/IntelliJIdea2025.3/options/editor-font.xml") >> dotfiles("intellij/options/editor-font.xml")
         win_roaming("JetBrains/IntelliJIdea2025.3/options/window.layouts.xml") >> dotfiles("intellij/options/window.layouts.xml")
 
-        # Notable
+def restore_intellij():
+    if is_win():
+        dotfiles("intellij") >> win_roaming("JetBrains/IntelliJIdea2025.3")
+    if is_mac():
+        dotfiles("intellij") >> mac_app_support("JetBrains/IntelliJIdea2025.3")
+
+# ------------------------------------------------------------------------------
+# Items - Notable
+# ------------------------------------------------------------------------------
+def backup_notable():
+    if is_win():
         win_home(".notable.json") >> dotfiles("notable/.notable.json")
 
-        # RStudio
+def restore_notable():
+    if is_win():
+        dotfiles("notable/.notable.json") >> win_home(".notable.json")
+
+# ------------------------------------------------------------------------------
+# Items - RStudio
+# ------------------------------------------------------------------------------
+def backup_rstudio():
+    if is_win():
         win_roaming("RStudio/config.json") >> dotfiles("rstudio/config.json")
         win_roaming("RStudio/keybindings") >> dotfiles("rstudio/keybindings")
 
-        # VSCode
+def restore_rstudio():
+    if is_win():
+        dotfiles("rstudio") >> win_roaming("RStudio")
+
+# ------------------------------------------------------------------------------
+# Items - VSCode / Cursor
+# ------------------------------------------------------------------------------
+def backup_vscode():
+    if is_win():
         win_roaming("Code/User/keybindings.json") >> dotfiles("vscode/keybindings.json")
         win_roaming("Code/User/settings.json") >> dotfiles("vscode/settings.json")
 
-        # Terminal
-        win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json") >> dotfiles("windows-terminal/settings.json")
-
-def restore():
-    """Restore dotfiles from local directory to machine."""
-
-    # --------------------------------------------------------------------------
-    # Unix
-    # --------------------------------------------------------------------------
-    # Ghostty
-    dotfiles("ghostty") >> unix_home(".config/ghostty")
-
-    # Helix
-    dotfiles("helix") >> unix_home(".config/helix")
-
-    # Starship
-    dotfiles("starship/starship.toml") >> unix_home(".config/starship.toml")
-
-    # VIM
-    dotfiles("vim/.vimrc") >> unix_home(".vimrc")
-
-    # --------------------------------------------------------------------------
-    # Windows
-    # --------------------------------------------------------------------------
+def restore_vscode():
     if is_win():
-        # Aliases
-        dotfiles("powershell/Microsoft.PowerShell_profile.ps1") >> win_home("Documents/PowerShell/Microsoft.PowerShell_profile.ps1")
-
-        # Devices
-        dotfiles("flydigi") >> win_prog64("FlydigiSpaceStation/config")
-
-        # Helix
-        dotfiles("helix") >> win_roaming("helix")
-
-        # IntelliJ
-        dotfiles("intellij") >> win_roaming("JetBrains/IntelliJIdea2025.3")
-
-        # Notable
-        dotfiles("notable/.notable.json") >> win_home(".notable.json")
-
-        # RStudio
-        dotfiles("rstudio") >> win_roaming("RStudio")
-
-        # Terminal
-        dotfiles("windows-terminal") >> win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/")
-
-        # VSCode / Cursor
         dotfiles("vscode") >> win_roaming("Code/User")
         dotfiles("vscode") >> win_roaming("Cursor/User")
-
-    # --------------------------------------------------------------------------
-    # Mac
-    # --------------------------------------------------------------------------
     if is_mac():
-        # IntelliJ
-        dotfiles("intellij") >> mac_app_support("JetBrains/IntelliJIdea2025.3")
-
-        # VSCode / Cursor
         dotfiles("vscode") >> mac_app_support("Code/User")
         dotfiles("vscode") >> mac_app_support("Cursor/User")
+
+# ------------------------------------------------------------------------------
+# Items - Windows Terminal
+# ------------------------------------------------------------------------------
+def backup_windows_terminal():
+    if is_win():
+        win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json") >> dotfiles("windows-terminal/settings.json")
+
+def restore_windows_terminal():
+    if is_win():
+        dotfiles("windows-terminal") >> win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/")
+
+# ------------------------------------------------------------------------------
+# Registry
+# ------------------------------------------------------------------------------
+ITEMS = {
+    "Ghostty":          (backup_ghostty,          restore_ghostty),
+    "Helix":            (backup_helix,            restore_helix),
+    "Starship":         (backup_starship,         restore_starship),
+    "VIM":              (backup_vim,              restore_vim),
+    "PowerShell":       (backup_powershell,       restore_powershell),
+    "Flydigi":          (backup_flydigi,          restore_flydigi),
+    "IntelliJ":         (backup_intellij,         restore_intellij),
+    "Notable":          (backup_notable,          restore_notable),
+    "RStudio":          (backup_rstudio,          restore_rstudio),
+    "VSCode / Cursor":  (backup_vscode,           restore_vscode),
+    "Windows Terminal": (backup_windows_terminal, restore_windows_terminal),
+}
 
 # ------------------------------------------------------------------------------
 # Main
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
-    # parse command
-    if len(sys.argv) < 2:
-        print("Command not specified. Pass `backup` or `restore` as argument.")
-        exit(0)
-    command = sys.argv[1]
-    if command not in ["backup", "restore"]:
-        print(f"Unknown command: {command}")
+    operation = questionary.select(
+        "Operation:",
+        choices=["backup", "restore"],
+    ).ask()
+    if operation is None:
+        sys.exit(0)
 
-    # execute command
-    match command:
-        case "backup":
-            backup()
-        case "restore":
-            restore()
+    selected = questionary.checkbox(
+        f"Select items to {operation}:",
+        choices=list(ITEMS.keys()),
+    ).ask()
+    if not selected:
+        sys.exit(0)
+
+    for name in selected:
+        backup_fn, restore_fn = ITEMS[name]
+        fn = backup_fn if operation == "backup" else restore_fn
+        fn()
