@@ -33,7 +33,7 @@ class File(Path):
     def _copy_dir(self, target: Path) -> None:
         """Copy a local directory to a local target."""
         try:
-            log_transfer("Dir", "Dir", self, target)
+            log_transfer("dir", self, target)
             target.mkdir(parents=True, exist_ok=True)
             shutil.copytree(self, target, dirs_exist_ok=True)
         except Exception as e:
@@ -42,7 +42,7 @@ class File(Path):
     def _copy_file(self, target: Path) -> None:
         """Copy a local file to a local target."""
         try:
-            log_transfer("File", "File", self, target)
+            log_transfer("file", self, target)
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(self, target)
         except Exception as e:
@@ -66,20 +66,23 @@ class File(Path):
 # ------------------------------------------------------------------------------
 # Functions - Log
 # ------------------------------------------------------------------------------
-def log_transfer(kind_source: str, kind_target: str, source: Path, target: Path) -> None:
-    """Log a transfer operation."""
-    print()
-    print(f"{kind_source} -> {kind_target}")
-    print(f"  {source} -> {target}")
+COLOR_RESET  = "\033[0m"
+COLOR_RED    = "\033[91m"
+COLOR_GREEN  = "\033[92m"
+COLOR_YELLOW = "\033[93m"
+COLOR_CYAN   = "\033[96m"
+
+def log_transfer(kind: str, source: Path, target: Path) -> None:
+    print("")
+    print(f"{COLOR_GREEN}{kind:<4}{COLOR_RESET}  {source} {COLOR_CYAN}→{COLOR_RESET} {target}")
 
 def log_error(message: str, exception: Exception) -> None:
-    """Log an error message."""
-    print(f"  [!] {message}: {exception}")
+    print("")
+    print(f"{COLOR_RED}err {COLOR_RESET}  {message}: {exception}")
 
 def log_unsupported(item: str) -> None:
-    """Log that an item is not supported on the current platform."""
-    print()
-    print(f"[skip] {item}: unsupported on {CURRENT_OS}")
+    print("")
+    print(f"{COLOR_YELLOW}skip{COLOR_RESET}  {item}: unsupported on {CURRENT_OS}")
 
 # ------------------------------------------------------------------------------
 # Platform
