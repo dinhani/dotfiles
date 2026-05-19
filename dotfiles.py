@@ -73,6 +73,10 @@ def is_win() -> bool:
     """Check if current system is Windows."""
     return platform.system() == "Windows"
 
+def is_unix() -> bool:
+    """Check if current system is Unix-like (Linux or Mac)."""
+    return is_unix()
+
 def unix_home(path: str = "") -> File:
     """Path of Unix home directory (Linux and Mac)."""
     return File(Path.home(), path)
@@ -117,13 +121,13 @@ def dotfiles(path: str = "") -> File:
 # Items - Ghostty
 # ------------------------------------------------------------------------------
 def backup_ghostty():
-    if is_linux() or is_mac():
+    if is_unix():
         unix_home(".config/ghostty/config") >> dotfiles("ghostty/config")
     else:
         log_unsupported("Ghostty")
 
 def restore_ghostty():
-    if is_linux() or is_mac():
+    if is_unix():
         dotfiles("ghostty") >> unix_home(".config/ghostty")
     else:
         log_unsupported("Ghostty")
@@ -132,7 +136,7 @@ def restore_ghostty():
 # Items - Helix
 # ------------------------------------------------------------------------------
 def backup_helix():
-    if is_win() or is_linux() or is_mac():
+    if is_win() or is_unix():
         unix_home(".config/helix/config.toml") >> dotfiles("helix/config.toml")
         unix_home(".config/helix/languages.toml") >> dotfiles("helix/languages.toml")
     else:
@@ -142,7 +146,7 @@ def restore_helix():
     if is_win():
         dotfiles("helix") >> unix_home(".config/helix")
         dotfiles("helix") >> win_roaming("helix")
-    elif is_linux() or is_mac():
+    elif is_unix():
         dotfiles("helix") >> unix_home(".config/helix")
     else:
         log_unsupported("Helix")
@@ -217,13 +221,13 @@ def restore_rstudio():
 # Items - Starship
 # ------------------------------------------------------------------------------
 def backup_starship():
-    if is_linux() or is_mac():
+    if is_unix():
         unix_home(".config/starship.toml") >> dotfiles("starship/starship.toml")
     else:
         log_unsupported("Starship")
 
 def restore_starship():
-    if is_linux() or is_mac():
+    if is_unix():
         dotfiles("starship/starship.toml") >> unix_home(".config/starship.toml")
     else:
         log_unsupported("Starship")
@@ -232,13 +236,13 @@ def restore_starship():
 # Items - VIM
 # ------------------------------------------------------------------------------
 def backup_vim():
-    if is_linux() or is_mac():
+    if is_unix():
         unix_home(".vimrc") >> dotfiles("vim/.vimrc")
     else:
         log_unsupported("VIM")
 
 def restore_vim():
-    if is_linux() or is_mac():
+    if is_unix():
         dotfiles("vim/.vimrc") >> unix_home(".vimrc")
     else:
         log_unsupported("VIM")
