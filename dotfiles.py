@@ -25,31 +25,38 @@ class File(Path):
     def cp_dir(self, target: Path) -> None:
         """Copy a local directory to a local target."""
         try:
-            self.log_transfer("Dir", "Dir", target)
+            log_transfer("Dir", "Dir", self, target)
             target.mkdir(parents=True, exist_ok=True)
             shutil.copytree(self, target, dirs_exist_ok=True)
         except Exception as e:
-            self.log_error("Failed to copy directory", e)
+            log_error("Failed to copy directory", e)
 
     def cp_file(self, target: Path) -> None:
         """Copy a local file to a local target."""
         try:
-            self.log_transfer("File", "File", target)
+            log_transfer("File", "File", self, target)
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(self, target)
         except Exception as e:
-            self.log_error("Failed to copy file", e)
+            log_error("Failed to copy file", e)
 
-    def log_transfer(self, kind_source, kind_target, target) -> None:
-        """Log a transfer operation."""
-        print()
-        print(f"{kind_source} -> {kind_target}")
-        print(f"  {self} -> {target}")
+# ------------------------------------------------------------------------------
+# Functions - Log
+# ------------------------------------------------------------------------------
+def log_transfer(kind_source: str, kind_target: str, source: Path, target: Path) -> None:
+    """Log a transfer operation."""
+    print()
+    print(f"{kind_source} -> {kind_target}")
+    print(f"  {source} -> {target}")
 
-    @staticmethod
-    def log_error(message, exception) -> None:
-        """Log an error message."""
-        print(f"  [!] {message}: {exception}")
+def log_error(message: str, exception: Exception) -> None:
+    """Log an error message."""
+    print(f"  [!] {message}: {exception}")
+
+def log_unsupported(item: str) -> None:
+    """Log that an item is not supported on the current platform."""
+    print()
+    print(f"[skip] {item}: unsupported on {platform.system()}")
 
 # ------------------------------------------------------------------------------
 # Functions - OS/Directories
@@ -65,11 +72,6 @@ def is_mac() -> bool:
 def is_win() -> bool:
     """Check if current system is Windows."""
     return platform.system() == "Windows"
-
-def log_unsupported(item: str) -> None:
-    """Log that an item is not supported on the current platform."""
-    print()
-    print(f"[skip] {item}: unsupported on {platform.system()}")
 
 def unix_home(path: str = "") -> File:
     """Path of Unix home directory (Linux and Mac)."""
