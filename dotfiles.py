@@ -15,16 +15,22 @@ from InquirerPy.separator import Separator
 # ------------------------------------------------------------------------------
 # Classes
 # ------------------------------------------------------------------------------
+DIR_DOTFILES = Path(__file__).parent / "dotfiles"
+
 class File(Path):
+    # track dotfiles dirs that we already deleted
+    _deleted: set = set()
+
     def __rshift__(self, other) -> None:
         """Copy a source to a target. Automatically detects if source is a file or directory."""
-        target = Path(other)
+        target = File(other)
+        target._delete_dotfiles_root_once()
         if self.is_file():
-            self.cp_file(target)
+            self._copy_file(target)
         else:
-            self.cp_dir(target)
+            self._copy_dir(target)
 
-    def cp_dir(self, target: Path) -> None:
+    def _copy_dir(self, target: Path) -> None:
         """Copy a local directory to a local target."""
         try:
             log_transfer("Dir", "Dir", self, target)
@@ -33,7 +39,7 @@ class File(Path):
         except Exception as e:
             log_error("Failed to copy directory", e)
 
-    def cp_file(self, target: Path) -> None:
+    def _copy_file(self, target: Path) -> None:
         """Copy a local file to a local target."""
         try:
             log_transfer("File", "File", self, target)
@@ -41,6 +47,21 @@ class File(Path):
             shutil.copy2(self, target)
         except Exception as e:
             log_error("Failed to copy file", e)
+
+    def _delete_dotfiles_root_once(self) -> None:
+        """First write into dotfiles/<app>/... deletes <app> once per session."""
+        # check if inside dotfiles dir
+        if not self.is_relative_to(DIR_DOTFILES):
+            return
+
+        # check if already deleted
+        root = DIR_DOTFILES / self.relative_to(DIR_DOTFILES).parts[0]
+        if root in File._deleted:
+            return
+
+        # delete and track
+        shutil.rmtree(root, ignore_errors=True)
+        File._deleted.add(root)
 
 # ------------------------------------------------------------------------------
 # Functions - Log
@@ -111,7 +132,7 @@ def mac_app_support(path: str = "") -> File:
 
 def dotfiles(path: str = "") -> File:
     """Path of dotfiles backup directory."""
-    return File(Path(__file__).parent, "dotfiles", path)
+    return File(DIR_DOTFILES, path)
 
 # ------------------------------------------------------------------------------
 # Decorator
