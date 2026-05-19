@@ -119,14 +119,14 @@ def backup_ghostty():
     match CURRENT_OS:
         case OS.WIN:
             log_unsupported("Ghostty")
-        case OS.MAC | OS.LINUX:
+        case OS.LINUX | OS.MAC:
             unix_home(".config/ghostty/config") >> dotfiles("ghostty/config")
 
 def restore_ghostty():
     match CURRENT_OS:
         case OS.WIN:
             log_unsupported("Ghostty")
-        case OS.MAC | OS.LINUX:
+        case OS.LINUX | OS.MAC:
             dotfiles("ghostty") >> unix_home(".config/ghostty")
 
 # ------------------------------------------------------------------------------
@@ -135,18 +135,17 @@ def restore_ghostty():
 def backup_helix():
     match CURRENT_OS:
         case OS.WIN:
-            unix_home(".config/helix/config.toml") >> dotfiles("helix/config.toml")
-            unix_home(".config/helix/languages.toml") >> dotfiles("helix/languages.toml")
-        case OS.MAC | OS.LINUX:
+            win_roaming("helix/config.toml") >> dotfiles("helix/config.toml")
+            win_roaming("helix/languages.toml") >> dotfiles("helix/languages.toml")
+        case OS.LINUX | OS.MAC:
             unix_home(".config/helix/config.toml") >> dotfiles("helix/config.toml")
             unix_home(".config/helix/languages.toml") >> dotfiles("helix/languages.toml")
 
 def restore_helix():
     match CURRENT_OS:
         case OS.WIN:
-            dotfiles("helix") >> unix_home(".config/helix")
             dotfiles("helix") >> win_roaming("helix")
-        case OS.MAC | OS.LINUX:
+        case OS.LINUX | OS.MAC:
             dotfiles("helix") >> unix_home(".config/helix")
 
 # ------------------------------------------------------------------------------
@@ -159,17 +158,17 @@ def backup_intellij():
             win_roaming("JetBrains/IntelliJIdea2025.3/options/editor.xml") >> dotfiles("intellij/options/editor.xml")
             win_roaming("JetBrains/IntelliJIdea2025.3/options/editor-font.xml") >> dotfiles("intellij/options/editor-font.xml")
             win_roaming("JetBrains/IntelliJIdea2025.3/options/window.layouts.xml") >> dotfiles("intellij/options/window.layouts.xml")
-        case OS.MAC | OS.LINUX:
+        case OS.LINUX | OS.MAC:
             log_unsupported("IntelliJ")
 
 def restore_intellij():
     match CURRENT_OS:
         case OS.WIN:
             dotfiles("intellij") >> win_roaming("JetBrains/IntelliJIdea2025.3")
-        case OS.MAC:
-            dotfiles("intellij") >> mac_app_support("JetBrains/IntelliJIdea2025.3")
         case OS.LINUX:
             log_unsupported("IntelliJ")
+        case OS.MAC:
+            dotfiles("intellij") >> mac_app_support("JetBrains/IntelliJIdea2025.3")
 
 # ------------------------------------------------------------------------------
 # Items - Notable
@@ -178,14 +177,14 @@ def backup_notable():
     match CURRENT_OS:
         case OS.WIN:
             win_home(".notable.json") >> dotfiles("notable/.notable.json")
-        case OS.MAC | OS.LINUX:
+        case OS.LINUX | OS.MAC:
             log_unsupported("Notable")
 
 def restore_notable():
     match CURRENT_OS:
         case OS.WIN:
             dotfiles("notable/.notable.json") >> win_home(".notable.json")
-        case OS.MAC | OS.LINUX:
+        case OS.LINUX | OS.MAC:
             log_unsupported("Notable")
 
 # ------------------------------------------------------------------------------
@@ -195,14 +194,14 @@ def backup_powershell():
     match CURRENT_OS:
         case OS.WIN:
             win_home("Documents/PowerShell/Microsoft.PowerShell_profile.ps1") >> dotfiles("powershell/Microsoft.PowerShell_profile.ps1")
-        case OS.MAC | OS.LINUX:
+        case OS.LINUX | OS.MAC:
             log_unsupported("PowerShell")
 
 def restore_powershell():
     match CURRENT_OS:
         case OS.WIN:
             dotfiles("powershell/Microsoft.PowerShell_profile.ps1") >> win_home("Documents/PowerShell/Microsoft.PowerShell_profile.ps1")
-        case OS.MAC | OS.LINUX:
+        case OS.LINUX | OS.MAC:
             log_unsupported("PowerShell")
 
 # ------------------------------------------------------------------------------
@@ -213,14 +212,14 @@ def backup_rstudio():
         case OS.WIN:
             win_roaming("RStudio/config.json") >> dotfiles("rstudio/config.json")
             win_roaming("RStudio/keybindings") >> dotfiles("rstudio/keybindings")
-        case OS.MAC | OS.LINUX:
+        case OS.LINUX | OS.MAC:
             log_unsupported("RStudio")
 
 def restore_rstudio():
     match CURRENT_OS:
         case OS.WIN:
             dotfiles("rstudio") >> win_roaming("RStudio")
-        case OS.MAC | OS.LINUX:
+        case OS.LINUX | OS.MAC:
             log_unsupported("RStudio")
 
 # ------------------------------------------------------------------------------
@@ -230,14 +229,14 @@ def backup_starship():
     match CURRENT_OS:
         case OS.WIN:
             log_unsupported("Starship")
-        case OS.MAC | OS.LINUX:
+        case OS.LINUX | OS.MAC:
             unix_home(".config/starship.toml") >> dotfiles("starship/starship.toml")
 
 def restore_starship():
     match CURRENT_OS:
         case OS.WIN:
             log_unsupported("Starship")
-        case OS.MAC | OS.LINUX:
+        case OS.LINUX | OS.MAC:
             dotfiles("starship/starship.toml") >> unix_home(".config/starship.toml")
 
 # ------------------------------------------------------------------------------
@@ -247,14 +246,14 @@ def backup_vim():
     match CURRENT_OS:
         case OS.WIN:
             log_unsupported("VIM")
-        case OS.MAC | OS.LINUX:
+        case OS.LINUX | OS.MAC:
             unix_home(".vimrc") >> dotfiles("vim/.vimrc")
 
 def restore_vim():
     match CURRENT_OS:
         case OS.WIN:
             log_unsupported("VIM")
-        case OS.MAC | OS.LINUX:
+        case OS.LINUX | OS.MAC:
             dotfiles("vim/.vimrc") >> unix_home(".vimrc")
 
 # ------------------------------------------------------------------------------
@@ -265,7 +264,7 @@ def backup_vscode():
         case OS.WIN:
             win_roaming("Code/User/keybindings.json") >> dotfiles("vscode/keybindings.json")
             win_roaming("Code/User/settings.json") >> dotfiles("vscode/settings.json")
-        case OS.MAC | OS.LINUX:
+        case OS.LINUX | OS.MAC:
             log_unsupported("VSCode / Cursor")
 
 def restore_vscode():
@@ -273,11 +272,11 @@ def restore_vscode():
         case OS.WIN:
             dotfiles("vscode") >> win_roaming("Code/User")
             dotfiles("vscode") >> win_roaming("Cursor/User")
+        case OS.LINUX:
+            log_unsupported("VSCode / Cursor")
         case OS.MAC:
             dotfiles("vscode") >> mac_app_support("Code/User")
             dotfiles("vscode") >> mac_app_support("Cursor/User")
-        case OS.LINUX:
-            log_unsupported("VSCode / Cursor")
 
 # ------------------------------------------------------------------------------
 # Items - Windows Terminal
@@ -286,14 +285,14 @@ def backup_windows_terminal():
     match CURRENT_OS:
         case OS.WIN:
             win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json") >> dotfiles("windows-terminal/settings.json")
-        case OS.MAC | OS.LINUX:
+        case OS.LINUX | OS.MAC:
             log_unsupported("Windows Terminal")
 
 def restore_windows_terminal():
     match CURRENT_OS:
         case OS.WIN:
             dotfiles("windows-terminal") >> win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/")
-        case OS.MAC | OS.LINUX:
+        case OS.LINUX | OS.MAC:
             log_unsupported("Windows Terminal")
 
 # ------------------------------------------------------------------------------
