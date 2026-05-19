@@ -121,26 +121,27 @@ def dotfiles(path: str = "") -> File:
 # Items - Ghostty
 # ------------------------------------------------------------------------------
 def backup_ghostty():
-    if is_unix():
-        unix_home(".config/ghostty/config") >> dotfiles("ghostty/config")
-    else:
+    if is_win():
         log_unsupported("Ghostty")
+    elif is_unix():
+        unix_home(".config/ghostty/config") >> dotfiles("ghostty/config")
 
 def restore_ghostty():
-    if is_unix():
-        dotfiles("ghostty") >> unix_home(".config/ghostty")
-    else:
+    if is_win():
         log_unsupported("Ghostty")
+    elif is_unix():
+        dotfiles("ghostty") >> unix_home(".config/ghostty")
 
 # ------------------------------------------------------------------------------
 # Items - Helix
 # ------------------------------------------------------------------------------
 def backup_helix():
-    if is_win() or is_unix():
+    if is_win():
         unix_home(".config/helix/config.toml") >> dotfiles("helix/config.toml")
         unix_home(".config/helix/languages.toml") >> dotfiles("helix/languages.toml")
-    else:
-        log_unsupported("Helix")
+    elif is_unix():
+        unix_home(".config/helix/config.toml") >> dotfiles("helix/config.toml")
+        unix_home(".config/helix/languages.toml") >> dotfiles("helix/languages.toml")
 
 def restore_helix():
     if is_win():
@@ -148,8 +149,6 @@ def restore_helix():
         dotfiles("helix") >> win_roaming("helix")
     elif is_unix():
         dotfiles("helix") >> unix_home(".config/helix")
-    else:
-        log_unsupported("Helix")
 
 # ------------------------------------------------------------------------------
 # Items - IntelliJ
@@ -160,7 +159,7 @@ def backup_intellij():
         win_roaming("JetBrains/IntelliJIdea2025.3/options/editor.xml") >> dotfiles("intellij/options/editor.xml")
         win_roaming("JetBrains/IntelliJIdea2025.3/options/editor-font.xml") >> dotfiles("intellij/options/editor-font.xml")
         win_roaming("JetBrains/IntelliJIdea2025.3/options/window.layouts.xml") >> dotfiles("intellij/options/window.layouts.xml")
-    else:
+    elif is_unix():
         log_unsupported("IntelliJ")
 
 def restore_intellij():
@@ -168,7 +167,7 @@ def restore_intellij():
         dotfiles("intellij") >> win_roaming("JetBrains/IntelliJIdea2025.3")
     elif is_mac():
         dotfiles("intellij") >> mac_app_support("JetBrains/IntelliJIdea2025.3")
-    else:
+    elif is_linux():
         log_unsupported("IntelliJ")
 
 # ------------------------------------------------------------------------------
@@ -177,13 +176,13 @@ def restore_intellij():
 def backup_notable():
     if is_win():
         win_home(".notable.json") >> dotfiles("notable/.notable.json")
-    else:
+    elif is_unix():
         log_unsupported("Notable")
 
 def restore_notable():
     if is_win():
         dotfiles("notable/.notable.json") >> win_home(".notable.json")
-    else:
+    elif is_unix():
         log_unsupported("Notable")
 
 # ------------------------------------------------------------------------------
@@ -192,13 +191,13 @@ def restore_notable():
 def backup_powershell():
     if is_win():
         win_home("Documents/PowerShell/Microsoft.PowerShell_profile.ps1") >> dotfiles("powershell/Microsoft.PowerShell_profile.ps1")
-    else:
+    elif is_unix():
         log_unsupported("PowerShell")
 
 def restore_powershell():
     if is_win():
         dotfiles("powershell/Microsoft.PowerShell_profile.ps1") >> win_home("Documents/PowerShell/Microsoft.PowerShell_profile.ps1")
-    else:
+    elif is_unix():
         log_unsupported("PowerShell")
 
 # ------------------------------------------------------------------------------
@@ -208,44 +207,44 @@ def backup_rstudio():
     if is_win():
         win_roaming("RStudio/config.json") >> dotfiles("rstudio/config.json")
         win_roaming("RStudio/keybindings") >> dotfiles("rstudio/keybindings")
-    else:
+    elif is_unix():
         log_unsupported("RStudio")
 
 def restore_rstudio():
     if is_win():
         dotfiles("rstudio") >> win_roaming("RStudio")
-    else:
+    elif is_unix():
         log_unsupported("RStudio")
 
 # ------------------------------------------------------------------------------
 # Items - Starship
 # ------------------------------------------------------------------------------
 def backup_starship():
-    if is_unix():
-        unix_home(".config/starship.toml") >> dotfiles("starship/starship.toml")
-    else:
+    if is_win():
         log_unsupported("Starship")
+    elif is_unix():
+        unix_home(".config/starship.toml") >> dotfiles("starship/starship.toml")
 
 def restore_starship():
-    if is_unix():
-        dotfiles("starship/starship.toml") >> unix_home(".config/starship.toml")
-    else:
+    if is_win():
         log_unsupported("Starship")
+    elif is_unix():
+        dotfiles("starship/starship.toml") >> unix_home(".config/starship.toml")
 
 # ------------------------------------------------------------------------------
 # Items - VIM
 # ------------------------------------------------------------------------------
 def backup_vim():
-    if is_unix():
-        unix_home(".vimrc") >> dotfiles("vim/.vimrc")
-    else:
+    if is_win():
         log_unsupported("VIM")
+    elif is_unix():
+        unix_home(".vimrc") >> dotfiles("vim/.vimrc")
 
 def restore_vim():
-    if is_unix():
-        dotfiles("vim/.vimrc") >> unix_home(".vimrc")
-    else:
+    if is_win():
         log_unsupported("VIM")
+    elif is_unix():
+        dotfiles("vim/.vimrc") >> unix_home(".vimrc")
 
 # ------------------------------------------------------------------------------
 # Items - VSCode / Cursor
@@ -254,7 +253,7 @@ def backup_vscode():
     if is_win():
         win_roaming("Code/User/keybindings.json") >> dotfiles("vscode/keybindings.json")
         win_roaming("Code/User/settings.json") >> dotfiles("vscode/settings.json")
-    else:
+    elif is_unix():
         log_unsupported("VSCode / Cursor")
 
 def restore_vscode():
@@ -264,7 +263,7 @@ def restore_vscode():
     elif is_mac():
         dotfiles("vscode") >> mac_app_support("Code/User")
         dotfiles("vscode") >> mac_app_support("Cursor/User")
-    else:
+    elif is_linux():
         log_unsupported("VSCode / Cursor")
 
 # ------------------------------------------------------------------------------
@@ -273,13 +272,13 @@ def restore_vscode():
 def backup_windows_terminal():
     if is_win():
         win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json") >> dotfiles("windows-terminal/settings.json")
-    else:
+    elif is_unix():
         log_unsupported("Windows Terminal")
 
 def restore_windows_terminal():
     if is_win():
         dotfiles("windows-terminal") >> win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/")
-    else:
+    elif is_unix():
         log_unsupported("Windows Terminal")
 
 # ------------------------------------------------------------------------------
