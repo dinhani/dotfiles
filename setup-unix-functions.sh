@@ -84,17 +84,17 @@ function install_apt() {
         log "APT installing: $1"
         sudo apt-get install -y $1
     else
-        log "APT skipping: $1"
+        log_skip "APT skipping: $1"
     fi
 }
 
 # Install something with brew.
 function install_brew() {
     if ! brew list -1 | grep -q "^$1\$"; then
-            log "Homebrew installing: $1"
+        log "Homebrew installing: $1"
         brew install $1
     else
-        log "Homebrew skipping: $1"
+        log_skip "Homebrew skipping: $1"
     fi
 }
 
@@ -105,29 +105,53 @@ function install_asdf() {
 
     # install plugin and lang
     log "ASDF installing: $lang $version"
-    asdf plugin add $lang
-    asdf install $lang $version
+    if ! asdf plugin list 2>/dev/null | grep -qw "$lang"; then
+        asdf plugin add $lang
+    else
+        log_skip "ASDF plugin skipping: $lang"
+    fi
+    if ! asdf list $lang 2>/dev/null | grep -qw "$version"; then
+        asdf install $lang $version
+    else
+        log_skip "ASDF version skipping: $lang $version"
+    fi
     asdf set -u $lang $version
     reload
+}
+
+# Install something from the App Store with mas.
+function install_mas() {
+    if ! mas list | awk '{print $1}' | grep -qw "$1"; then
+        log "MAS installing: $1"
+        mas install $1
+    else
+        log_skip "MAS skipping: $1"
+    fi
 }
 
 # Install something for VSCode or Cursor
 function install_vscode() {
     if installed "code"; then
-        if ! code --list-extensions | grep -qi "^$1\$"; then
+        if [ -z "$CACHE_VSCODE_EXTENSIONS" ]; then
+            CACHE_VSCODE_EXTENSIONS=$(code --list-extensions)
+        fi
+        if ! echo "$CACHE_VSCODE_EXTENSIONS" | grep -qi "^$1\$"; then
             log "Installing VSCode extension: $1"
             code --install-extension $1
         else
-            log "VSCode skipping: $1"
+            log_skip "VSCode skipping: $1"
         fi
     fi
 
     if installed "cursor"; then
-        if ! cursor --list-extensions | grep -qi "^$1\$"; then
+        if [ -z "$CACHE_CURSOR_EXTENSIONS" ]; then
+            CACHE_CURSOR_EXTENSIONS=$(cursor --list-extensions)
+        fi
+        if ! echo "$CACHE_CURSOR_EXTENSIONS" | grep -qi "^$1\$"; then
             log "Installing Cursor extension: $1"
             cursor --install-extension $1
         else
-            log "Cursor skipping: $1"
+            log_skip "Cursor skipping: $1"
         fi
     fi
 }
@@ -182,20 +206,28 @@ function extract() {
 
 # Log a formatted message to stderr.
 function log() {
-    local cyan="\033[1;36m"
+    local blue="\033[1;34m"
     local reset="\033[0m"
     echo "" 1>&2
-    echo -e "${cyan}* [$(date +"%Y-%m-%d %H:%M:%S")] $@${reset}" 1>&2;
+    echo -e "${blue}* [$(date +"%Y-%m-%d %H:%M:%S")] $@${reset}" 1>&2;
+}
+
+# Log a formatted skip message to stderr.
+function log_skip() {
+    local yellow="\033[1;33m"
+    local reset="\033[0m"
+    echo "" 1>&2
+    echo -e "${yellow}* [$(date +"%Y-%m-%d %H:%M:%S")] $@${reset}" 1>&2;
 }
 
 # Reload .bashrc
 function reload() {
     if is_bash; then
-        log "Reloading .bashrc"
+        # log "Reloading .bashrc"
         source ~/.bashrc
     fi
     if is_zsh; then
-        log "Reloading .zshrc"
+        # log "Reloading .zshrc"
         source ~/.zshrc
     fi
 }

@@ -71,7 +71,7 @@ eval "\$(ssh-agent -s)"
 ssh-add $HOME/.ssh/dinhani
 
 # asdf
-source $(brew_dir)/opt/asdf/libexec/asdf.sh
+export PATH=\$HOME/.asdf/shims:\$PATH
 
 # rust
 source $HOME/.cargo/env
@@ -157,7 +157,7 @@ if is_linux; then
 fi
 
 # config: gpg
-if [ ! -e ~/.gnupg/pubring.kbx ]; then
+if ! gpg --list-secret-keys "$EMAIL" >/dev/null 2>&1; then
     log "Configuring GPG key"
 gpg --batch --gen-key <<EOF
     Key-Type: 1
@@ -207,6 +207,13 @@ if not_installed "brew"; then
 fi
 
 # ------------------------------------------------------------------------------
+# Install MAS (Mac App Store CLI)
+# ------------------------------------------------------------------------------
+if is_mac; then
+    install_brew mas
+fi
+
+# ------------------------------------------------------------------------------
 # Install Desktop tools
 # ------------------------------------------------------------------------------
 if is_mac; then
@@ -215,28 +222,43 @@ if is_mac; then
     install_brew logitech-g-hub
     install_brew linearmouse
 
+    # docs
+    install_brew notable
+    install_brew obsidian
+
     # media
     install_brew spotify
 
     # terminal
     install_brew ghostty
 
-    # editors
+    # dev editors
+    if not_installed "code"; then
+        install_brew visual-studio-code
+    fi
+    if not_installed "cursor"; then
+        install_brew "cursor"
+    fi
+    install_brew intellij-idea
+    install_brew rider
+    install_brew pycharm
+    install_brew datagrip
     install_brew rstudio
-    install_brew visual-studio-code
 
-    # dev stuff
-    install_brew devtoys
-    install_brew notable
+    # dev tools
+    install_brew bruno
+    install_brew devtoys    
 
     # utils
     install_brew google-chrome
 
+    # app store
+    install_mas 937984704  # Amphetamine
+    install_mas 441258766  # Magnet
+    install_mas 1606145041 # Sleeve
+    
     # work only
     if is_work; then
-        install_brew bruno
-        install_brew github
-        install_brew intellij-idea
         install_brew slack
     fi
 fi
@@ -258,8 +280,31 @@ install_brew gettext
 install_brew just
 install_brew llvm
 install_brew make
+install_brew pkgconf
 install_brew protobuf
 install_brew re2c
+
+log "Installing build tools libraries"
+install_brew bzip2
+install_brew freetype
+install_brew gmp
+install_brew icu4c@78
+install_brew jpeg
+install_brew krb5
+install_brew libffi
+install_brew libiconv
+install_brew libpng
+install_brew libsodium
+install_brew libxml2
+install_brew libyaml
+install_brew libzip
+install_brew oniguruma
+install_brew openssl@3
+install_brew readline
+install_brew sqlite
+install_brew webp
+install_brew xz
+install_brew zlib
 
 # ------------------------------------------------------------------------------
 # Install CLI tools
@@ -300,6 +345,10 @@ install_brew ripgrep
 install_brew sd
 install_brew speedtest-cli
 install_brew subversion
+if not_installed "tsv-pretty"; then
+    log "Installing tsv-utils"
+    brew install rothgar/tap/tsv-utils
+fi
 install_brew unzip
 install_brew util-linux
 install_brew w3m
@@ -331,37 +380,20 @@ fi
 # ------------------------------------------------------------------------------
 # Install programming languages
 # ------------------------------------------------------------------------------
-install_asdf bun             1.2.0
-install_asdf clojure         1.12.0.1530
-install_asdf crystal         1.14.0
-install_asdf dotnet-core     9.0.100
-install_asdf elixir          1.18.1
-install_asdf erlang          27.2
-install_asdf gleam           1.7.0
-install_asdf golang          1.23.4
-install_asdf gradle          8.11.1
-install_asdf groovy          4.0.24
-install_asdf haskell         9.10.1
-install_asdf java            openjdk-21.0.2
-install_asdf julia           1.11.2
-install_asdf kotlin          2.1.0
-install_asdf leiningen       2.11.2
-install_asdf lua             5.4.7
-install_asdf maven           3.9.9
-install_asdf nodejs          22.12.0
-install_asdf ocaml           5.2.0
-install_asdf odin            dev-2025-01
-install_asdf perl            5.40.0
-install_asdf powershell-core 7.4.6
-install_asdf python          3.13.1
-install_asdf R               4.4.2
-install_asdf racket          8.15
-install_asdf raku            2024.10
-install_asdf ruby            3.4.1
-install_asdf scala           3.6.2
-install_asdf solidity        0.8.28
-install_asdf v               0.4.8
-install_asdf zig             0.13.0
+install_asdf dotnet          10.0.300
+install_asdf golang          1.26.3
+install_asdf gradle          9.5.1
+install_asdf java            openjdk-26.0.1
+install_asdf julia           1.12.6
+install_asdf kotlin          2.3.21
+install_asdf lua             5.5.0
+install_asdf maven           3.9.16
+install_asdf nodejs          26.1.0
+install_asdf powershell-core 7.6.1
+install_asdf python          3.14.5
+install_asdf R               4.6.0
+install_asdf ruby            4.0.4
+install_asdf zig             0.16.0
 
 # ------------------------------------------------------------------------------
 # Install Rust
@@ -377,10 +409,10 @@ fi
 
 # Golang
 log "Installing Golang extensions"
-go install github.com/go-delve/delve/cmd/dlv@latest
-go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-go install github.com/nametake/golangci-lint-langserver@latest
-go install golang.org/x/tools/gopls@latest
+not_installed "dlv"                      && go install github.com/go-delve/delve/cmd/dlv@latest
+not_installed "golangci-lint"            && go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+not_installed "golangci-lint-langserver" && go install github.com/nametake/golangci-lint-langserver@latest
+not_installed "gopls"                    && go install golang.org/x/tools/gopls@latest
 
 # Python
 log "Installing Python extensions and tools"
@@ -388,24 +420,22 @@ pip3 install --break-system-packages bs4 dpath httpie lxml matplotlib mycli netw
 
 # Ruby
 log "Installing Ruby extensions and tools"
-gem install --conservative activesupport eth pry nokogiri pp puma rails rufo sinatra solargraph webrick tomlrb tomlib
+gem install --conservative activesupport pry nokogiri pp puma rails rufo sinatra solargraph webrick tomlrb tomlib
 
 # Rust
 log "Installing Rust toolchains"
 rustup toolchain install stable
 rustup toolchain install nightly
 
-rustup component add clippy
-rustup component add rustfmt
-rustup component add rust-analyzer
-rustup +nightly component add clippy
-rustup +nightly component add rustfmt
-rustup +nightly component add rust-analyzer
+for component in clippy rustfmt rust-analyzer; do
+    rustup component add "$component"
+    rustup +nightly component add "$component"
+done
 
 log "Installing Rust extensions"
-cargo install cargo-expand
-cargo install wait-service
-cargo install watchexec
+not_installed "cargo-expand" && cargo install --locked cargo-expand
+not_installed "wait-service" && cargo install --locked wait-service
+not_installed "watchexec"    && cargo install --locked watchexec
 
 # ------------------------------------------------------------------------------
 # Install VSCode extensions
@@ -417,7 +447,6 @@ install_vscode ms-vscode-remote.remote-wsl         # WSL
 install_vscode ms-vscode-remote.remote-ssh         # SSH
 
 # General
-install_vscode github.copilot                      # Copilot
 install_vscode dinhani.divider                     # Divider
 install_vscode vscode-icons-team.vscode-icons      # Icons
 install_vscode oderwat.indent-rainbow              # Indent Rainbow
@@ -429,9 +458,12 @@ install_vscode mechatroner.rainbow-csv             # CSV
 install_vscode golang.Go                           # Go
 install_vscode ZainChen.json                       # JSON
 install_vscode yzhang.markdown-all-in-one          # Markdown
+install_vscode bierner.markdown-mermaid            # Mermaid
 install_vscode ms-vscode.PowerShell                # PowerShell
+install_vscode ms-python.python                    # Python
 install_vscode rust-lang.rust-analyzer             # Rust
 install_vscode tamasfe.even-better-toml            # TOML
+install_vscode redhat.vscode-xml                   # XML
 
 # ------------------------------------------------------------------------------
 # Install pre-compiled tools
@@ -450,20 +482,6 @@ if not_installed "plantuml.jar"; then
     rm $DIR_DOWNLOADS/plantuml.jar
     download https://github.com/plantuml/plantuml/releases/download/v1.2024.6/plantuml-mit-1.2024.6.jar plantuml.jar
     cp $DIR_DOWNLOADS/plantuml.jar $DIR_TOOLS/plantuml.jar
-fi
-
-if not_installed "tsv-pretty"; then
-    log "Installing tsv-utils"
-
-    rm $DIR_DOWNLOADS/tsv-utils.tar.gz
-    rm -rf $DIR_DOWNLOADS/tsv-utils
-    download https://github.com/eBay/tsv-utils/releases/download/v2.2.0/tsv-utils-v2.2.0_linux-x86_64_ldc2.tar.gz tsv-utils.tar.gz
-
-    mkdir -p $DIR_DOWNLOADS/tsv-utils
-    tar -xzvf $DIR_DOWNLOADS/tsv-utils.tar.gz -C $DIR_DOWNLOADS/tsv-utils --strip-components=2
-
-    mv $DIR_DOWNLOADS/tsv-utils/* $DIR_TOOLS
-    rm -rf $DIR_DOWNLOADS/tsv-utils
 fi
 
 # ------------------------------------------------------------------------------
