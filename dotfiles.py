@@ -4,7 +4,9 @@ import shutil
 import sys
 from pathlib import Path
 
-import questionary
+from InquirerPy import inquirer
+from InquirerPy.base.control import Choice
+from InquirerPy.separator import Separator
 
 # ------------------------------------------------------------------------------
 # Classes
@@ -103,6 +105,17 @@ def dotfiles(path: str = "") -> File:
     return File("dotfiles", path)
 
 # ------------------------------------------------------------------------------
+# Items - Flydigi
+# ------------------------------------------------------------------------------
+def backup_flydigi():
+    if is_win():
+        win_prog64("FlydigiSpaceStation/config/share/") >> dotfiles("flydigi/share")
+
+def restore_flydigi():
+    if is_win():
+        dotfiles("flydigi") >> win_prog64("FlydigiSpaceStation/config")
+
+# ------------------------------------------------------------------------------
 # Items - Ghostty
 # ------------------------------------------------------------------------------
 def backup_ghostty():
@@ -122,46 +135,6 @@ def restore_helix():
     dotfiles("helix") >> unix_home(".config/helix")
     if is_win():
         dotfiles("helix") >> win_roaming("helix")
-
-# ------------------------------------------------------------------------------
-# Items - Starship
-# ------------------------------------------------------------------------------
-def backup_starship():
-    unix_home(".config/starship.toml") >> dotfiles("starship/starship.toml")
-
-def restore_starship():
-    dotfiles("starship/starship.toml") >> unix_home(".config/starship.toml")
-
-# ------------------------------------------------------------------------------
-# Items - VIM
-# ------------------------------------------------------------------------------
-def backup_vim():
-    unix_home(".vimrc") >> dotfiles("vim/.vimrc")
-
-def restore_vim():
-    dotfiles("vim/.vimrc") >> unix_home(".vimrc")
-
-# ------------------------------------------------------------------------------
-# Items - PowerShell
-# ------------------------------------------------------------------------------
-def backup_powershell():
-    if is_win():
-        win_home("Documents/PowerShell/Microsoft.PowerShell_profile.ps1") >> dotfiles("powershell/Microsoft.PowerShell_profile.ps1")
-
-def restore_powershell():
-    if is_win():
-        dotfiles("powershell/Microsoft.PowerShell_profile.ps1") >> win_home("Documents/PowerShell/Microsoft.PowerShell_profile.ps1")
-
-# ------------------------------------------------------------------------------
-# Items - Flydigi
-# ------------------------------------------------------------------------------
-def backup_flydigi():
-    if is_win():
-        win_prog64("FlydigiSpaceStation/config/share/") >> dotfiles("flydigi/share")
-
-def restore_flydigi():
-    if is_win():
-        dotfiles("flydigi") >> win_prog64("FlydigiSpaceStation/config")
 
 # ------------------------------------------------------------------------------
 # Items - IntelliJ
@@ -191,6 +164,17 @@ def restore_notable():
         dotfiles("notable/.notable.json") >> win_home(".notable.json")
 
 # ------------------------------------------------------------------------------
+# Items - PowerShell
+# ------------------------------------------------------------------------------
+def backup_powershell():
+    if is_win():
+        win_home("Documents/PowerShell/Microsoft.PowerShell_profile.ps1") >> dotfiles("powershell/Microsoft.PowerShell_profile.ps1")
+
+def restore_powershell():
+    if is_win():
+        dotfiles("powershell/Microsoft.PowerShell_profile.ps1") >> win_home("Documents/PowerShell/Microsoft.PowerShell_profile.ps1")
+
+# ------------------------------------------------------------------------------
 # Items - RStudio
 # ------------------------------------------------------------------------------
 def backup_rstudio():
@@ -201,6 +185,24 @@ def backup_rstudio():
 def restore_rstudio():
     if is_win():
         dotfiles("rstudio") >> win_roaming("RStudio")
+
+# ------------------------------------------------------------------------------
+# Items - Starship
+# ------------------------------------------------------------------------------
+def backup_starship():
+    unix_home(".config/starship.toml") >> dotfiles("starship/starship.toml")
+
+def restore_starship():
+    dotfiles("starship/starship.toml") >> unix_home(".config/starship.toml")
+
+# ------------------------------------------------------------------------------
+# Items - VIM
+# ------------------------------------------------------------------------------
+def backup_vim():
+    unix_home(".vimrc") >> dotfiles("vim/.vimrc")
+
+def restore_vim():
+    dotfiles("vim/.vimrc") >> unix_home(".vimrc")
 
 # ------------------------------------------------------------------------------
 # Items - VSCode / Cursor
@@ -232,39 +234,42 @@ def restore_windows_terminal():
 # ------------------------------------------------------------------------------
 # Registry
 # ------------------------------------------------------------------------------
+CATEGORY_ORDER = ["Terminal", "Editor", "Notes", "Device"]
+
 ITEMS = {
-    "Ghostty":          (backup_ghostty,          restore_ghostty),
-    "Helix":            (backup_helix,            restore_helix),
-    "Starship":         (backup_starship,         restore_starship),
-    "VIM":              (backup_vim,              restore_vim),
-    "PowerShell":       (backup_powershell,       restore_powershell),
-    "Flydigi":          (backup_flydigi,          restore_flydigi),
-    "IntelliJ":         (backup_intellij,         restore_intellij),
-    "Notable":          (backup_notable,          restore_notable),
-    "RStudio":          (backup_rstudio,          restore_rstudio),
-    "VSCode / Cursor":  (backup_vscode,           restore_vscode),
-    "Windows Terminal": (backup_windows_terminal, restore_windows_terminal),
+    "Flydigi":          ("Device",   backup_flydigi,          restore_flydigi),
+    "Ghostty":          ("Terminal", backup_ghostty,          restore_ghostty),
+    "Helix":            ("Editor",   backup_helix,            restore_helix),
+    "IntelliJ":         ("Editor",   backup_intellij,         restore_intellij),
+    "Notable":          ("Notes",    backup_notable,          restore_notable),
+    "PowerShell":       ("Terminal", backup_powershell,       restore_powershell),
+    "RStudio":          ("Editor",   backup_rstudio,          restore_rstudio),
+    "Starship":         ("Terminal", backup_starship,         restore_starship),
+    "VIM":              ("Editor",   backup_vim,              restore_vim),
+    "VSCode / Cursor":  ("Editor",   backup_vscode,           restore_vscode),
+    "Windows Terminal": ("Terminal", backup_windows_terminal, restore_windows_terminal),
 }
 
 # ------------------------------------------------------------------------------
 # Main
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
-    operation = questionary.select(
-        "Operation:",
-        choices=["backup", "restore"],
-    ).ask()
-    if operation is None:
-        sys.exit(0)
+    ordered = sorted(ITEMS.items(), key=lambda kv: (CATEGORY_ORDER.index(kv[1][0]), kv[0]))
+    labeled = [(name, f"{category:<8} / {name}") for name, (category, _, _) in ordered]
 
-    selected = questionary.checkbox(
-        f"Select items to {operation}:",
-        choices=list(ITEMS.keys()),
-    ).ask()
+    choices = [Separator("=== Backup ===")]
+    choices += [Choice(("backup", name), name=label) for name, label in labeled]
+    choices.append(Separator("=== Restore ==="))
+    choices += [Choice(("restore", name), name=label) for name, label in labeled]
+
+    selected = inquirer.checkbox(
+        message="Select operations:",
+        choices=choices,
+    ).execute()
     if not selected:
         sys.exit(0)
 
-    for name in selected:
-        backup_fn, restore_fn = ITEMS[name]
+    for operation, name in selected:
+        _, backup_fn, restore_fn = ITEMS[name]
         fn = backup_fn if operation == "backup" else restore_fn
         fn()
