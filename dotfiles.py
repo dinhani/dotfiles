@@ -37,7 +37,7 @@ class File(Path):
         try:
             log_transfer("File", "File", self, target)
             target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(self, target)
+            shutil.copy2(self, target)
         except Exception as e:
             log_error("Failed to copy file", e)
 
@@ -110,7 +110,7 @@ def mac_app_support(path: str = "") -> File:
 
 def dotfiles(path: str = "") -> File:
     """Path of dotfiles backup directory."""
-    return File("dotfiles", path)
+    return File(Path(__file__).parent, "dotfiles", path)
 
 # ------------------------------------------------------------------------------
 # Items - Ghostty
@@ -291,7 +291,7 @@ def backup_windows_terminal():
 def restore_windows_terminal():
     match CURRENT_OS:
         case OS.WIN:
-            dotfiles("windows-terminal") >> win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/")
+            dotfiles("windows-terminal") >> win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState")
         case OS.LINUX | OS.MAC:
             log_unsupported("Windows Terminal")
 
