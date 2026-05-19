@@ -56,7 +56,7 @@ class File(os.PathLike):
 USER = None
 
 def is_linux() -> bool:
-    """Check if current system is WSL / Linux."""
+    """Check if current system is Linux (includes WSL)."""
     return platform.system() == "Linux"
 
 def is_mac() -> bool:
@@ -65,47 +65,41 @@ def is_mac() -> bool:
 
 def is_win() -> bool:
     """Check if current system is Windows."""
-    return os.path.exists("/mnt/c/")
-
-def user() -> str:
-    global USER
-    """Username executing this script."""
-    if USER is None:
-        USER = os.popen("whoami").read().strip()
-    return USER
+    return platform.system() == "Windows"
 
 def unix_home(path: str) -> File:
     """Path of Unix home directory (Linux and Mac)."""
     home = os.environ["HOME"]
     return File(f"{home}/{path}")
 
-def win_root(path: str) -> File:
-    """Path of Windows root directory."""
-    return File(f"/mnt/c/{path}")
-
 def win_home(path: str) -> File:
     """Path of Windows home directory."""
-    return File(f"/mnt/c/Users/{user()}/{path}")
+    home = os.environ["USERPROFILE"].replace("\\", "/")
+    return File(f"{home}/{path}")
+
+def win_root(path: str) -> File:
+    """Path of Windows root directory."""
+    return File(f"C:/{path}")
 
 def win_docs(path: str) -> File:
     """Path of Windows Documents directory."""
-    return File(f"/mnt/c/Users/{user()}/Documents/{path}")
+    return win_home(f"Documents/{path}")
 
 def win_roaming(path: str) -> File:
     """Path of Windows AppData/Roaming directory."""
-    return File(f"/mnt/c/Users/{user()}/AppData/Roaming/{path}")
+    return win_home(f"AppData/Roaming/{path}")
 
 def win_local(path: str) -> File:
     """Path of Windows AppData/Local directory."""
-    return File(f"/mnt/c/Users/{user()}/AppData/Local/{path}")
+    return win_home(f"AppData/Local/{path}")
 
 def win_prog32(path: str) -> File:
     """Path of Windows Program Files (x86) directory."""
-    return File(f"/mnt/c/Program Files (x86)/{path}")
+    return File(f"C:/Program Files (x86)/{path}")
 
 def win_prog64(path: str) -> File:
     """Path of Windows Program Files (x64) directory."""
-    return File(f"/mnt/c/Program Files/{path}")
+    return File(f"C:/Program Files/{path}")
 
 def mac_app_support(path: str) -> File:
     """Path of Mac Application Support directory."""
@@ -267,7 +261,3 @@ if __name__ == "__main__":
             backup()
         case "restore":
             restore()
-
-    # remove temp files created
-    if os.path.exists("out"):
-        os.remove("out")
