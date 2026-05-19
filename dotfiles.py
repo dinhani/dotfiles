@@ -296,41 +296,38 @@ def restore_windows_terminal():
 # ------------------------------------------------------------------------------
 # Registry
 # ------------------------------------------------------------------------------
-CATEGORY_ORDER = ["Terminal", "Editor", "Notes", "Device"]
-
 ITEMS = {
-    "Flydigi":          ("Device",   backup_flydigi,          restore_flydigi),
     "Ghostty":          ("Terminal", backup_ghostty,          restore_ghostty),
+    "PowerShell":       ("Terminal", backup_powershell,       restore_powershell),
+    "Starship":         ("Terminal", backup_starship,         restore_starship),
+    "Windows Terminal": ("Terminal", backup_windows_terminal, restore_windows_terminal),
     "Helix":            ("Editor",   backup_helix,            restore_helix),
     "IntelliJ":         ("Editor",   backup_intellij,         restore_intellij),
-    "Notable":          ("Notes",    backup_notable,          restore_notable),
-    "PowerShell":       ("Terminal", backup_powershell,       restore_powershell),
     "RStudio":          ("Editor",   backup_rstudio,          restore_rstudio),
-    "Starship":         ("Terminal", backup_starship,         restore_starship),
     "VIM":              ("Editor",   backup_vim,              restore_vim),
     "VSCode / Cursor":  ("Editor",   backup_vscode,           restore_vscode),
-    "Windows Terminal": ("Terminal", backup_windows_terminal, restore_windows_terminal),
+    "Notable":          ("Notes",    backup_notable,          restore_notable),
+    "Flydigi":          ("Device",   backup_flydigi,          restore_flydigi),
 }
 
 # ------------------------------------------------------------------------------
 # Main
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
-    ordered = sorted(ITEMS.items(), key=lambda kv: (CATEGORY_ORDER.index(kv[1][0]), kv[0]))
-    labeled = [(name, f"{category:<8} / {name}") for name, (category, _, _) in ordered]
 
+    # prepare menu
+    labeled = [(name, f"{category:<8} / {name}") for name, (category, _, _) in ITEMS.items()]
     choices = [Separator("=== Backup ===")]
     choices += [Choice(("backup", name), name=label) for name, label in labeled]
     choices.append(Separator("=== Restore ==="))
     choices += [Choice(("restore", name), name=label) for name, label in labeled]
 
-    selected = inquirer.checkbox(
-        message="Select operations:",
-        choices=choices,
-    ).execute()
+    # show menu
+    selected = inquirer.checkbox(message="Select operations:", choices=choices).execute()
     if not selected:
         sys.exit(0)
 
+    # execute operations
     for operation, name in selected:
         _, backup_fn, restore_fn = ITEMS[name]
         fn = backup_fn if operation == "backup" else restore_fn
