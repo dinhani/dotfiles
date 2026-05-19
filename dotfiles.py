@@ -114,21 +114,6 @@ def dotfiles(path: str = "") -> File:
     return File("dotfiles", path)
 
 # ------------------------------------------------------------------------------
-# Items - Flydigi
-# ------------------------------------------------------------------------------
-def backup_flydigi():
-    if is_win():
-        win_prog64("FlydigiSpaceStation/config/share/") >> dotfiles("flydigi/share")
-    else:
-        log_unsupported("Flydigi")
-
-def restore_flydigi():
-    if is_win():
-        dotfiles("flydigi") >> win_prog64("FlydigiSpaceStation/config")
-    else:
-        log_unsupported("Flydigi")
-
-# ------------------------------------------------------------------------------
 # Items - Ghostty
 # ------------------------------------------------------------------------------
 def backup_ghostty():
@@ -307,7 +292,6 @@ ITEMS = {
     "VIM":              ("Editor",   backup_vim,              restore_vim),
     "VSCode / Cursor":  ("Editor",   backup_vscode,           restore_vscode),
     "Notable":          ("Notes",    backup_notable,          restore_notable),
-    "Flydigi":          ("Device",   backup_flydigi,          restore_flydigi),
 }
 
 # ------------------------------------------------------------------------------
