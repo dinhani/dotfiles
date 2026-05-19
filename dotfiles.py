@@ -116,12 +116,13 @@ def dotfiles(path: str = "") -> File:
 # ------------------------------------------------------------------------------
 # Decorator
 # ------------------------------------------------------------------------------
-def operation(name: str, target_dir: str):
-    """Wrap a backup/restore function. `target_dir` is the path under `dotfiles/`."""
+def operation(app, target_dir: str):
+    """Wrap a backup/restore function, injecting the app name and the resolved `dotfiles/<target_dir>` path."""
     def decorator(fn):
         @functools.wraps(fn)
         def wrapper(*args, **kwargs):
-            return fn(*args, **kwargs)
+            dotfiles_dir = dotfiles(target_dir)
+            return fn(app, dotfiles_dir, *args, **kwargs)
         return wrapper
     return decorator
 
@@ -129,204 +130,204 @@ def operation(name: str, target_dir: str):
 # Items - Ghostty
 # ------------------------------------------------------------------------------
 @operation("Ghostty", "ghostty")
-def backup_ghostty():
+def backup_ghostty(app, dotfiles_dir: File):
     match CURRENT_OS:
         case OS.WIN:
-            log_unsupported("Ghostty")
+            log_unsupported(app)
         case OS.LINUX | OS.MAC:
-            unix_home(".config/ghostty/config") >> dotfiles("ghostty/config")
+            unix_home(".config/ghostty/config") >> dotfiles_dir / "config"
 
 @operation("Ghostty", "ghostty")
-def restore_ghostty():
+def restore_ghostty(app, dotfiles_dir: File):
     match CURRENT_OS:
         case OS.WIN:
-            log_unsupported("Ghostty")
+            log_unsupported(app)
         case OS.LINUX | OS.MAC:
-            dotfiles("ghostty") >> unix_home(".config/ghostty")
+            dotfiles_dir >> unix_home(".config/ghostty")
 
 # ------------------------------------------------------------------------------
 # Items - Helix
 # ------------------------------------------------------------------------------
 @operation("Helix", "helix")
-def backup_helix():
+def backup_helix(app, dotfiles_dir: File):
     match CURRENT_OS:
         case OS.WIN:
-            win_roaming("helix/config.toml") >> dotfiles("helix/config.toml")
-            win_roaming("helix/languages.toml") >> dotfiles("helix/languages.toml")
+            win_roaming("helix/config.toml") >> dotfiles_dir / "config.toml"
+            win_roaming("helix/languages.toml") >> dotfiles_dir / "languages.toml"
         case OS.LINUX | OS.MAC:
-            unix_home(".config/helix/config.toml") >> dotfiles("helix/config.toml")
-            unix_home(".config/helix/languages.toml") >> dotfiles("helix/languages.toml")
+            unix_home(".config/helix/config.toml") >> dotfiles_dir / "config.toml"
+            unix_home(".config/helix/languages.toml") >> dotfiles_dir / "languages.toml"
 
 @operation("Helix", "helix")
-def restore_helix():
+def restore_helix(app, dotfiles_dir: File):
     match CURRENT_OS:
         case OS.WIN:
-            dotfiles("helix") >> win_roaming("helix")
+            dotfiles_dir >> win_roaming("helix")
         case OS.LINUX | OS.MAC:
-            dotfiles("helix") >> unix_home(".config/helix")
+            dotfiles_dir >> unix_home(".config/helix")
 
 # ------------------------------------------------------------------------------
 # Items - IntelliJ
 # ------------------------------------------------------------------------------
 @operation("IntelliJ", "intellij")
-def backup_intellij():
+def backup_intellij(app, dotfiles_dir: File):
     match CURRENT_OS:
         case OS.WIN:
-            win_roaming("JetBrains/IntelliJIdea2025.3/keymaps") >> dotfiles("intellij/keymaps")
-            win_roaming("JetBrains/IntelliJIdea2025.3/options/editor.xml") >> dotfiles("intellij/options/editor.xml")
-            win_roaming("JetBrains/IntelliJIdea2025.3/options/editor-font.xml") >> dotfiles("intellij/options/editor-font.xml")
-            win_roaming("JetBrains/IntelliJIdea2025.3/options/window.layouts.xml") >> dotfiles("intellij/options/window.layouts.xml")
+            win_roaming("JetBrains/IntelliJIdea2025.3/keymaps") >> dotfiles_dir / "keymaps"
+            win_roaming("JetBrains/IntelliJIdea2025.3/options/editor.xml") >> dotfiles_dir / "options/editor.xml"
+            win_roaming("JetBrains/IntelliJIdea2025.3/options/editor-font.xml") >> dotfiles_dir / "options/editor-font.xml"
+            win_roaming("JetBrains/IntelliJIdea2025.3/options/window.layouts.xml") >> dotfiles_dir / "options/window.layouts.xml"
         case OS.LINUX | OS.MAC:
-            log_unsupported("IntelliJ")
+            log_unsupported(app)
 
 @operation("IntelliJ", "intellij")
-def restore_intellij():
+def restore_intellij(app, dotfiles_dir: File):
     match CURRENT_OS:
         case OS.WIN:
-            dotfiles("intellij") >> win_roaming("JetBrains/IntelliJIdea2025.3")
+            dotfiles_dir >> win_roaming("JetBrains/IntelliJIdea2025.3")
         case OS.LINUX:
-            log_unsupported("IntelliJ")
+            log_unsupported(app)
         case OS.MAC:
-            dotfiles("intellij") >> mac_app_support("JetBrains/IntelliJIdea2025.3")
+            dotfiles_dir >> mac_app_support("JetBrains/IntelliJIdea2025.3")
 
 # ------------------------------------------------------------------------------
 # Items - Notable
 # ------------------------------------------------------------------------------
 @operation("Notable", "notable")
-def backup_notable():
+def backup_notable(app, dotfiles_dir: File):
     match CURRENT_OS:
         case OS.WIN:
-            win_home(".notable.json") >> dotfiles("notable/.notable.json")
+            win_home(".notable.json") >> dotfiles_dir / ".notable.json"
         case OS.LINUX | OS.MAC:
-            log_unsupported("Notable")
+            log_unsupported(app)
 
 @operation("Notable", "notable")
-def restore_notable():
+def restore_notable(app, dotfiles_dir: File):
     match CURRENT_OS:
         case OS.WIN:
-            dotfiles("notable/.notable.json") >> win_home(".notable.json")
+            dotfiles_dir / ".notable.json" >> win_home(".notable.json")
         case OS.LINUX | OS.MAC:
-            log_unsupported("Notable")
+            log_unsupported(app)
 
 # ------------------------------------------------------------------------------
 # Items - PowerShell
 # ------------------------------------------------------------------------------
 @operation("PowerShell", "powershell")
-def backup_powershell():
+def backup_powershell(app, dotfiles_dir: File):
     match CURRENT_OS:
         case OS.WIN:
-            win_home("Documents/PowerShell/Microsoft.PowerShell_profile.ps1") >> dotfiles("powershell/Microsoft.PowerShell_profile.ps1")
+            win_home("Documents/PowerShell/Microsoft.PowerShell_profile.ps1") >> dotfiles_dir / "Microsoft.PowerShell_profile.ps1"
         case OS.LINUX | OS.MAC:
-            log_unsupported("PowerShell")
+            log_unsupported(app)
 
 @operation("PowerShell", "powershell")
-def restore_powershell():
+def restore_powershell(app, dotfiles_dir: File):
     match CURRENT_OS:
         case OS.WIN:
-            dotfiles("powershell/Microsoft.PowerShell_profile.ps1") >> win_home("Documents/PowerShell/Microsoft.PowerShell_profile.ps1")
+            dotfiles_dir / "Microsoft.PowerShell_profile.ps1" >> win_home("Documents/PowerShell/Microsoft.PowerShell_profile.ps1")
         case OS.LINUX | OS.MAC:
-            log_unsupported("PowerShell")
+            log_unsupported(app)
 
 # ------------------------------------------------------------------------------
 # Items - RStudio
 # ------------------------------------------------------------------------------
 @operation("RStudio", "rstudio")
-def backup_rstudio():
+def backup_rstudio(app, dotfiles_dir: File):
     match CURRENT_OS:
         case OS.WIN:
-            win_roaming("RStudio/config.json") >> dotfiles("rstudio/config.json")
-            win_roaming("RStudio/keybindings") >> dotfiles("rstudio/keybindings")
+            win_roaming("RStudio/config.json") >> dotfiles_dir / "config.json"
+            win_roaming("RStudio/keybindings") >> dotfiles_dir / "keybindings"
         case OS.LINUX | OS.MAC:
-            log_unsupported("RStudio")
+            log_unsupported(app)
 
 @operation("RStudio", "rstudio")
-def restore_rstudio():
+def restore_rstudio(app, dotfiles_dir: File):
     match CURRENT_OS:
         case OS.WIN:
-            dotfiles("rstudio") >> win_roaming("RStudio")
+            dotfiles_dir >> win_roaming("RStudio")
         case OS.LINUX | OS.MAC:
-            log_unsupported("RStudio")
+            log_unsupported(app)
 
 # ------------------------------------------------------------------------------
 # Items - Starship
 # ------------------------------------------------------------------------------
 @operation("Starship", "starship")
-def backup_starship():
+def backup_starship(app, dotfiles_dir: File):
     match CURRENT_OS:
         case OS.WIN:
-            log_unsupported("Starship")
+            log_unsupported(app)
         case OS.LINUX | OS.MAC:
-            unix_home(".config/starship.toml") >> dotfiles("starship/starship.toml")
+            unix_home(".config/starship.toml") >> dotfiles_dir / "starship.toml"
 
 @operation("Starship", "starship")
-def restore_starship():
+def restore_starship(app, dotfiles_dir: File):
     match CURRENT_OS:
         case OS.WIN:
-            log_unsupported("Starship")
+            log_unsupported(app)
         case OS.LINUX | OS.MAC:
-            dotfiles("starship/starship.toml") >> unix_home(".config/starship.toml")
+            dotfiles_dir / "starship.toml" >> unix_home(".config/starship.toml")
 
 # ------------------------------------------------------------------------------
 # Items - VIM
 # ------------------------------------------------------------------------------
 @operation("VIM", "vim")
-def backup_vim():
+def backup_vim(app, dotfiles_dir: File):
     match CURRENT_OS:
         case OS.WIN:
-            log_unsupported("VIM")
+            log_unsupported(app)
         case OS.LINUX | OS.MAC:
-            unix_home(".vimrc") >> dotfiles("vim/.vimrc")
+            unix_home(".vimrc") >> dotfiles_dir / ".vimrc"
 
 @operation("VIM", "vim")
-def restore_vim():
+def restore_vim(app, dotfiles_dir: File):
     match CURRENT_OS:
         case OS.WIN:
-            log_unsupported("VIM")
+            log_unsupported(app)
         case OS.LINUX | OS.MAC:
-            dotfiles("vim/.vimrc") >> unix_home(".vimrc")
+            dotfiles_dir / ".vimrc" >> unix_home(".vimrc")
 
 # ------------------------------------------------------------------------------
 # Items - VSCode / Cursor
 # ------------------------------------------------------------------------------
 @operation("VSCode / Cursor", "vscode")
-def backup_vscode():
+def backup_vscode(app, dotfiles_dir: File):
     match CURRENT_OS:
         case OS.WIN:
-            win_roaming("Code/User/keybindings.json") >> dotfiles("vscode/keybindings.json")
-            win_roaming("Code/User/settings.json") >> dotfiles("vscode/settings.json")
+            win_roaming("Code/User/keybindings.json") >> dotfiles_dir / "keybindings.json"
+            win_roaming("Code/User/settings.json") >> dotfiles_dir / "settings.json"
         case OS.LINUX | OS.MAC:
-            log_unsupported("VSCode / Cursor")
+            log_unsupported(app)
 
 @operation("VSCode / Cursor", "vscode")
-def restore_vscode():
+def restore_vscode(app, dotfiles_dir: File):
     match CURRENT_OS:
         case OS.WIN:
-            dotfiles("vscode") >> win_roaming("Code/User")
-            dotfiles("vscode") >> win_roaming("Cursor/User")
+            dotfiles_dir >> win_roaming("Code/User")
+            dotfiles_dir >> win_roaming("Cursor/User")
         case OS.LINUX:
-            log_unsupported("VSCode / Cursor")
+            log_unsupported(app)
         case OS.MAC:
-            dotfiles("vscode") >> mac_app_support("Code/User")
-            dotfiles("vscode") >> mac_app_support("Cursor/User")
+            dotfiles_dir >> mac_app_support("Code/User")
+            dotfiles_dir >> mac_app_support("Cursor/User")
 
 # ------------------------------------------------------------------------------
 # Items - Windows Terminal
 # ------------------------------------------------------------------------------
 @operation("Windows Terminal", "windows-terminal")
-def backup_windows_terminal():
+def backup_windows_terminal(app, dotfiles_dir: File):
     match CURRENT_OS:
         case OS.WIN:
-            win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json") >> dotfiles("windows-terminal/settings.json")
+            win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json") >> dotfiles_dir / "settings.json"
         case OS.LINUX | OS.MAC:
-            log_unsupported("Windows Terminal")
+            log_unsupported(app)
 
 @operation("Windows Terminal", "windows-terminal")
-def restore_windows_terminal():
+def restore_windows_terminal(app, dotfiles_dir: File):
     match CURRENT_OS:
         case OS.WIN:
-            dotfiles("windows-terminal") >> win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState")
+            dotfiles_dir >> win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState")
         case OS.LINUX | OS.MAC:
-            log_unsupported("Windows Terminal")
+            log_unsupported(app)
 
 # ------------------------------------------------------------------------------
 # Registry
@@ -357,12 +358,12 @@ if __name__ == "__main__":
     choices += [Choice(("restore", name), name=label) for name, label in labeled]
 
     # show menu
-    selected = inquirer.checkbox(message="Select operations:", choices=choices).execute()
-    if not selected:
+    selection = inquirer.checkbox(message="Select operations:", choices=choices).execute()
+    if not selection:
         sys.exit(0)
 
     # execute operations
-    for operation, name in selected:
+    for op, name in selection:
         _, backup_fn, restore_fn = ITEMS[name]
-        fn = backup_fn if operation == "backup" else restore_fn
+        fn = backup_fn if op == "backup" else restore_fn
         fn()
