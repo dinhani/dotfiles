@@ -2,50 +2,34 @@ import os
 import platform
 import shutil
 import sys
+from pathlib import Path
 
 # ------------------------------------------------------------------------------
 # Classes
 # ------------------------------------------------------------------------------
-class File(os.PathLike):
-    def __init__(self, path: str) -> None:
-        self.path = path
-
-    def __fspath__(self) -> str:
-        return str(self)
-
-    def __str__(self) -> str:
-        return self.path
-
+class File(Path):
     def __rshift__(self, other) -> None:
         """Copy a source to a target. Automatically detects if source is a file or directory."""
-        if os.path.isfile(self):
-            self.cp_file(other)
+        target = Path(other)
+        if self.is_file():
+            self.cp_file(target)
         else:
-            self.cp_dir(other)
+            self.cp_dir(target)
 
-    def cp_dir(self, target: str):
+    def cp_dir(self, target: Path) -> None:
         """Copy a local directory to a local target."""
         try:
             log_transfer("Dir", "Dir", self, target)
-
-            # create directory if necessary
-            if not os.path.exists(target):
-                os.makedirs(target)
-
+            target.mkdir(parents=True, exist_ok=True)
             shutil.copytree(self, target, dirs_exist_ok=True)
         except Exception as e:
             log_error("Failed to copy directory", e)
 
-    def cp_file(self, target: str):
+    def cp_file(self, target: Path) -> None:
         """Copy a local file to a local target."""
         try:
             log_transfer("File", "File", self, target)
-
-            # create directory if necessary
-            target_dirname = os.path.dirname(target)
-            if not os.path.exists(target_dirname):
-                os.makedirs(target_dirname)
-
+            target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(self, target)
         except Exception as e:
             log_error("Failed to copy file", e)
@@ -53,8 +37,6 @@ class File(os.PathLike):
 # ------------------------------------------------------------------------------
 # Functions - OS/Directories
 # ------------------------------------------------------------------------------
-USER = None
-
 def is_linux() -> bool:
     """Check if current system is Linux (includes WSL)."""
     return platform.system() == "Linux"
@@ -67,52 +49,45 @@ def is_win() -> bool:
     """Check if current system is Windows."""
     return platform.system() == "Windows"
 
-def unix_home(path: str) -> File:
+def unix_home(path: str = "") -> File:
     """Path of Unix home directory (Linux and Mac)."""
-    home = os.environ["HOME"]
-    return File(f"{home}/{path}")
+    return File(Path.home(), path)
 
-def win_home(path: str) -> File:
+def win_home(path: str = "") -> File:
     """Path of Windows home directory."""
-    home = os.environ["USERPROFILE"].replace("\\", "/")
-    return File(f"{home}/{path}")
+    return File(os.environ["USERPROFILE"], path)
 
-def win_root(path: str) -> File:
+def win_root(path: str = "") -> File:
     """Path of Windows root directory."""
-    return File(f"C:/{path}")
+    return File("C:/", path)
 
-def win_docs(path: str) -> File:
+def win_docs(path: str = "") -> File:
     """Path of Windows Documents directory."""
     return win_home(f"Documents/{path}")
 
-def win_roaming(path: str) -> File:
+def win_roaming(path: str = "") -> File:
     """Path of Windows AppData/Roaming directory."""
     return win_home(f"AppData/Roaming/{path}")
 
-def win_local(path: str) -> File:
+def win_local(path: str = "") -> File:
     """Path of Windows AppData/Local directory."""
     return win_home(f"AppData/Local/{path}")
 
-def win_prog32(path: str) -> File:
+def win_prog32(path: str = "") -> File:
     """Path of Windows Program Files (x86) directory."""
-    return File(f"C:/Program Files (x86)/{path}")
+    return File("C:/Program Files (x86)", path)
 
-def win_prog64(path: str) -> File:
+def win_prog64(path: str = "") -> File:
     """Path of Windows Program Files (x64) directory."""
-    return File(f"C:/Program Files/{path}")
+    return File("C:/Program Files", path)
 
-def mac_app_support(path: str) -> File:
+def mac_app_support(path: str = "") -> File:
     """Path of Mac Application Support directory."""
-    base = unix_home("Library/Application Support/")
-    return File(f"{base}/{path}")
+    return File(Path.home(), "Library/Application Support", path)
 
-def dotfiles(path: str = None) -> File:
+def dotfiles(path: str = "") -> File:
     """Path of dotfiles backup directory."""
-    base = "./dotfiles"
-    if path is None:
-        return File(base)
-    else:
-        return File(f"{base}/{path}")
+    return File("dotfiles", path)
 
 # ------------------------------------------------------------------------------
 # Functions - Transfer
@@ -136,7 +111,7 @@ def backup():
     """Backup dotfiles from machine to local directory."""
 
     # remove synced files
-    if os.path.exists(dotfiles()):
+    if dotfiles().exists():
         shutil.rmtree(dotfiles())
 
     # --------------------------------------------------------------------------
