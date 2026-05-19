@@ -64,22 +64,22 @@ class File(Path):
 # ------------------------------------------------------------------------------
 # Constants - Directories
 # ------------------------------------------------------------------------------
-DOTFILES = Path(__file__).parent / "dotfiles"
+DOTFILES: File = File(Path(__file__).parent / "dotfiles")
 """Path of local dotfiles directory (relative to this script)."""
 
-UNIX_HOME = File(Path.home())
+UNIX_HOME: File = File(Path.home())
 """Path of Unix home directory (Linux and Mac)."""
 
-WIN_HOME = File(os.environ.get("USERPROFILE", ""))
+WIN_HOME: File = File(os.environ.get("USERPROFILE", ""))
 """Path of Windows home directory."""
 
-WIN_ROAMING = WIN_HOME / "AppData" / "Roaming"
+WIN_ROAMING: File = WIN_HOME / "AppData" / "Roaming"
 """Path of Windows AppData/Roaming directory."""
 
-WIN_LOCAL = WIN_HOME / "AppData" / "Local"
+WIN_LOCAL: File = WIN_HOME / "AppData" / "Local"
 """Path of Windows AppData/Local directory."""
 
-MAC_APP_SUPPORT = Path.home() / "Library" / "Application Support"
+MAC_APP_SUPPORT: File = File(Path.home() / "Library" / "Application Support")
 """Path of Mac Application Support directory."""
 
 # ------------------------------------------------------------------------------
