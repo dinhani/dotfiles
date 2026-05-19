@@ -2,6 +2,7 @@ import os
 import platform
 import shutil
 import sys
+from enum import StrEnum
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent / "vendor"))
@@ -56,27 +57,21 @@ def log_error(message: str, exception: Exception) -> None:
 def log_unsupported(item: str) -> None:
     """Log that an item is not supported on the current platform."""
     print()
-    print(f"[skip] {item}: unsupported on {platform.system()}")
+    print(f"[skip] {item}: unsupported on {CURRENT_OS}")
 
 # ------------------------------------------------------------------------------
-# Functions - OS/Directories
+# Platform
 # ------------------------------------------------------------------------------
-def is_linux() -> bool:
-    """Check if current system is Linux (includes WSL)."""
-    return platform.system() == "Linux"
+class OS(StrEnum):
+    WIN   = "Windows"
+    MAC   = "Darwin"
+    LINUX = "Linux"
 
-def is_mac() -> bool:
-    """Check if current system is MacOs."""
-    return platform.system() == "Darwin"
+CURRENT_OS = OS(platform.system())
 
-def is_win() -> bool:
-    """Check if current system is Windows."""
-    return platform.system() == "Windows"
-
-def is_unix() -> bool:
-    """Check if current system is Unix-like (Linux or Mac)."""
-    return is_unix()
-
+# ------------------------------------------------------------------------------
+# Functions - Directories
+# ------------------------------------------------------------------------------
 def unix_home(path: str = "") -> File:
     """Path of Unix home directory (Linux and Mac)."""
     return File(Path.home(), path)
@@ -121,165 +116,185 @@ def dotfiles(path: str = "") -> File:
 # Items - Ghostty
 # ------------------------------------------------------------------------------
 def backup_ghostty():
-    if is_win():
-        log_unsupported("Ghostty")
-    elif is_unix():
-        unix_home(".config/ghostty/config") >> dotfiles("ghostty/config")
+    match CURRENT_OS:
+        case OS.WIN:
+            log_unsupported("Ghostty")
+        case OS.MAC | OS.LINUX:
+            unix_home(".config/ghostty/config") >> dotfiles("ghostty/config")
 
 def restore_ghostty():
-    if is_win():
-        log_unsupported("Ghostty")
-    elif is_unix():
-        dotfiles("ghostty") >> unix_home(".config/ghostty")
+    match CURRENT_OS:
+        case OS.WIN:
+            log_unsupported("Ghostty")
+        case OS.MAC | OS.LINUX:
+            dotfiles("ghostty") >> unix_home(".config/ghostty")
 
 # ------------------------------------------------------------------------------
 # Items - Helix
 # ------------------------------------------------------------------------------
 def backup_helix():
-    if is_win():
-        unix_home(".config/helix/config.toml") >> dotfiles("helix/config.toml")
-        unix_home(".config/helix/languages.toml") >> dotfiles("helix/languages.toml")
-    elif is_unix():
-        unix_home(".config/helix/config.toml") >> dotfiles("helix/config.toml")
-        unix_home(".config/helix/languages.toml") >> dotfiles("helix/languages.toml")
+    match CURRENT_OS:
+        case OS.WIN:
+            unix_home(".config/helix/config.toml") >> dotfiles("helix/config.toml")
+            unix_home(".config/helix/languages.toml") >> dotfiles("helix/languages.toml")
+        case OS.MAC | OS.LINUX:
+            unix_home(".config/helix/config.toml") >> dotfiles("helix/config.toml")
+            unix_home(".config/helix/languages.toml") >> dotfiles("helix/languages.toml")
 
 def restore_helix():
-    if is_win():
-        dotfiles("helix") >> unix_home(".config/helix")
-        dotfiles("helix") >> win_roaming("helix")
-    elif is_unix():
-        dotfiles("helix") >> unix_home(".config/helix")
+    match CURRENT_OS:
+        case OS.WIN:
+            dotfiles("helix") >> unix_home(".config/helix")
+            dotfiles("helix") >> win_roaming("helix")
+        case OS.MAC | OS.LINUX:
+            dotfiles("helix") >> unix_home(".config/helix")
 
 # ------------------------------------------------------------------------------
 # Items - IntelliJ
 # ------------------------------------------------------------------------------
 def backup_intellij():
-    if is_win():
-        win_roaming("JetBrains/IntelliJIdea2025.3/keymaps") >> dotfiles("intellij/keymaps")
-        win_roaming("JetBrains/IntelliJIdea2025.3/options/editor.xml") >> dotfiles("intellij/options/editor.xml")
-        win_roaming("JetBrains/IntelliJIdea2025.3/options/editor-font.xml") >> dotfiles("intellij/options/editor-font.xml")
-        win_roaming("JetBrains/IntelliJIdea2025.3/options/window.layouts.xml") >> dotfiles("intellij/options/window.layouts.xml")
-    elif is_unix():
-        log_unsupported("IntelliJ")
+    match CURRENT_OS:
+        case OS.WIN:
+            win_roaming("JetBrains/IntelliJIdea2025.3/keymaps") >> dotfiles("intellij/keymaps")
+            win_roaming("JetBrains/IntelliJIdea2025.3/options/editor.xml") >> dotfiles("intellij/options/editor.xml")
+            win_roaming("JetBrains/IntelliJIdea2025.3/options/editor-font.xml") >> dotfiles("intellij/options/editor-font.xml")
+            win_roaming("JetBrains/IntelliJIdea2025.3/options/window.layouts.xml") >> dotfiles("intellij/options/window.layouts.xml")
+        case OS.MAC | OS.LINUX:
+            log_unsupported("IntelliJ")
 
 def restore_intellij():
-    if is_win():
-        dotfiles("intellij") >> win_roaming("JetBrains/IntelliJIdea2025.3")
-    elif is_mac():
-        dotfiles("intellij") >> mac_app_support("JetBrains/IntelliJIdea2025.3")
-    elif is_linux():
-        log_unsupported("IntelliJ")
+    match CURRENT_OS:
+        case OS.WIN:
+            dotfiles("intellij") >> win_roaming("JetBrains/IntelliJIdea2025.3")
+        case OS.MAC:
+            dotfiles("intellij") >> mac_app_support("JetBrains/IntelliJIdea2025.3")
+        case OS.LINUX:
+            log_unsupported("IntelliJ")
 
 # ------------------------------------------------------------------------------
 # Items - Notable
 # ------------------------------------------------------------------------------
 def backup_notable():
-    if is_win():
-        win_home(".notable.json") >> dotfiles("notable/.notable.json")
-    elif is_unix():
-        log_unsupported("Notable")
+    match CURRENT_OS:
+        case OS.WIN:
+            win_home(".notable.json") >> dotfiles("notable/.notable.json")
+        case OS.MAC | OS.LINUX:
+            log_unsupported("Notable")
 
 def restore_notable():
-    if is_win():
-        dotfiles("notable/.notable.json") >> win_home(".notable.json")
-    elif is_unix():
-        log_unsupported("Notable")
+    match CURRENT_OS:
+        case OS.WIN:
+            dotfiles("notable/.notable.json") >> win_home(".notable.json")
+        case OS.MAC | OS.LINUX:
+            log_unsupported("Notable")
 
 # ------------------------------------------------------------------------------
 # Items - PowerShell
 # ------------------------------------------------------------------------------
 def backup_powershell():
-    if is_win():
-        win_home("Documents/PowerShell/Microsoft.PowerShell_profile.ps1") >> dotfiles("powershell/Microsoft.PowerShell_profile.ps1")
-    elif is_unix():
-        log_unsupported("PowerShell")
+    match CURRENT_OS:
+        case OS.WIN:
+            win_home("Documents/PowerShell/Microsoft.PowerShell_profile.ps1") >> dotfiles("powershell/Microsoft.PowerShell_profile.ps1")
+        case OS.MAC | OS.LINUX:
+            log_unsupported("PowerShell")
 
 def restore_powershell():
-    if is_win():
-        dotfiles("powershell/Microsoft.PowerShell_profile.ps1") >> win_home("Documents/PowerShell/Microsoft.PowerShell_profile.ps1")
-    elif is_unix():
-        log_unsupported("PowerShell")
+    match CURRENT_OS:
+        case OS.WIN:
+            dotfiles("powershell/Microsoft.PowerShell_profile.ps1") >> win_home("Documents/PowerShell/Microsoft.PowerShell_profile.ps1")
+        case OS.MAC | OS.LINUX:
+            log_unsupported("PowerShell")
 
 # ------------------------------------------------------------------------------
 # Items - RStudio
 # ------------------------------------------------------------------------------
 def backup_rstudio():
-    if is_win():
-        win_roaming("RStudio/config.json") >> dotfiles("rstudio/config.json")
-        win_roaming("RStudio/keybindings") >> dotfiles("rstudio/keybindings")
-    elif is_unix():
-        log_unsupported("RStudio")
+    match CURRENT_OS:
+        case OS.WIN:
+            win_roaming("RStudio/config.json") >> dotfiles("rstudio/config.json")
+            win_roaming("RStudio/keybindings") >> dotfiles("rstudio/keybindings")
+        case OS.MAC | OS.LINUX:
+            log_unsupported("RStudio")
 
 def restore_rstudio():
-    if is_win():
-        dotfiles("rstudio") >> win_roaming("RStudio")
-    elif is_unix():
-        log_unsupported("RStudio")
+    match CURRENT_OS:
+        case OS.WIN:
+            dotfiles("rstudio") >> win_roaming("RStudio")
+        case OS.MAC | OS.LINUX:
+            log_unsupported("RStudio")
 
 # ------------------------------------------------------------------------------
 # Items - Starship
 # ------------------------------------------------------------------------------
 def backup_starship():
-    if is_win():
-        log_unsupported("Starship")
-    elif is_unix():
-        unix_home(".config/starship.toml") >> dotfiles("starship/starship.toml")
+    match CURRENT_OS:
+        case OS.WIN:
+            log_unsupported("Starship")
+        case OS.MAC | OS.LINUX:
+            unix_home(".config/starship.toml") >> dotfiles("starship/starship.toml")
 
 def restore_starship():
-    if is_win():
-        log_unsupported("Starship")
-    elif is_unix():
-        dotfiles("starship/starship.toml") >> unix_home(".config/starship.toml")
+    match CURRENT_OS:
+        case OS.WIN:
+            log_unsupported("Starship")
+        case OS.MAC | OS.LINUX:
+            dotfiles("starship/starship.toml") >> unix_home(".config/starship.toml")
 
 # ------------------------------------------------------------------------------
 # Items - VIM
 # ------------------------------------------------------------------------------
 def backup_vim():
-    if is_win():
-        log_unsupported("VIM")
-    elif is_unix():
-        unix_home(".vimrc") >> dotfiles("vim/.vimrc")
+    match CURRENT_OS:
+        case OS.WIN:
+            log_unsupported("VIM")
+        case OS.MAC | OS.LINUX:
+            unix_home(".vimrc") >> dotfiles("vim/.vimrc")
 
 def restore_vim():
-    if is_win():
-        log_unsupported("VIM")
-    elif is_unix():
-        dotfiles("vim/.vimrc") >> unix_home(".vimrc")
+    match CURRENT_OS:
+        case OS.WIN:
+            log_unsupported("VIM")
+        case OS.MAC | OS.LINUX:
+            dotfiles("vim/.vimrc") >> unix_home(".vimrc")
 
 # ------------------------------------------------------------------------------
 # Items - VSCode / Cursor
 # ------------------------------------------------------------------------------
 def backup_vscode():
-    if is_win():
-        win_roaming("Code/User/keybindings.json") >> dotfiles("vscode/keybindings.json")
-        win_roaming("Code/User/settings.json") >> dotfiles("vscode/settings.json")
-    elif is_unix():
-        log_unsupported("VSCode / Cursor")
+    match CURRENT_OS:
+        case OS.WIN:
+            win_roaming("Code/User/keybindings.json") >> dotfiles("vscode/keybindings.json")
+            win_roaming("Code/User/settings.json") >> dotfiles("vscode/settings.json")
+        case OS.MAC | OS.LINUX:
+            log_unsupported("VSCode / Cursor")
 
 def restore_vscode():
-    if is_win():
-        dotfiles("vscode") >> win_roaming("Code/User")
-        dotfiles("vscode") >> win_roaming("Cursor/User")
-    elif is_mac():
-        dotfiles("vscode") >> mac_app_support("Code/User")
-        dotfiles("vscode") >> mac_app_support("Cursor/User")
-    elif is_linux():
-        log_unsupported("VSCode / Cursor")
+    match CURRENT_OS:
+        case OS.WIN:
+            dotfiles("vscode") >> win_roaming("Code/User")
+            dotfiles("vscode") >> win_roaming("Cursor/User")
+        case OS.MAC:
+            dotfiles("vscode") >> mac_app_support("Code/User")
+            dotfiles("vscode") >> mac_app_support("Cursor/User")
+        case OS.LINUX:
+            log_unsupported("VSCode / Cursor")
 
 # ------------------------------------------------------------------------------
 # Items - Windows Terminal
 # ------------------------------------------------------------------------------
 def backup_windows_terminal():
-    if is_win():
-        win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json") >> dotfiles("windows-terminal/settings.json")
-    elif is_unix():
-        log_unsupported("Windows Terminal")
+    match CURRENT_OS:
+        case OS.WIN:
+            win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json") >> dotfiles("windows-terminal/settings.json")
+        case OS.MAC | OS.LINUX:
+            log_unsupported("Windows Terminal")
 
 def restore_windows_terminal():
-    if is_win():
-        dotfiles("windows-terminal") >> win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/")
-    elif is_unix():
-        log_unsupported("Windows Terminal")
+    match CURRENT_OS:
+        case OS.WIN:
+            dotfiles("windows-terminal") >> win_local("Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/")
+        case OS.MAC | OS.LINUX:
+            log_unsupported("Windows Terminal")
 
 # ------------------------------------------------------------------------------
 # Registry
