@@ -70,7 +70,7 @@ DOTFILES = Path(__file__).parent / "dotfiles"
 UNIX_HOME = File(Path.home())
 """Path of Unix home directory (Linux and Mac)."""
 
-WIN_HOME = File(os.environ["USERPROFILE"])
+WIN_HOME = File(os.environ.get("USERPROFILE", ""))
 """Path of Windows home directory."""
 
 WIN_ROAMING = WIN_HOME / "AppData" / "Roaming"
