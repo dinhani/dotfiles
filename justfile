@@ -1,3 +1,5 @@
+python := if os() == "windows" { "py" } else { "python3" }
+
 # Show available tasks
 [group("project")]
 default:
@@ -8,15 +10,10 @@ default:
 lint:
     yapf -i dotfiles.py
 
-# Backup dotfiles
+# Backup or restore dotfiles (interactive selection)
 [group("dotfiles")]
-backup:
-    python3 dotfiles.py backup
-
-# Restore dotfiles
-[group("dotfiles")]
-restore:
-    python3 dotfiles.py restore
+dotfiles:
+    {{python}} dotfiles.py
 
 # Setup a Linux or MacOs system from scratch
 [group("system")]
