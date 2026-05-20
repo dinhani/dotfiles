@@ -14,6 +14,7 @@ lint:
 [group("dotfiles")]
 dotfiles:
     {{python}} dotfiles.py
+alias dot := dotfiles
 
 # Setup a Linux or MacOs system from scratch
 [group("system")]
