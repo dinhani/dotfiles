@@ -1,18 +1,25 @@
 {
+  "[dockercompose]": {
+    "editor.autoIndent": "advanced",
+    "editor.defaultFormatter": "redhat.vscode-yaml",
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2
+  },
   "[json]": {
     "editor.defaultFormatter": "vscode.json-language-features"
+  },
+  "[plaintext]": {
+    "editor.wordWrap": "on"
   },
   "[typescript]": {
     "editor.defaultFormatter": "vscode.typescript-language-features"
   },
-  "remote.SSH.serverInstallPath": {
-    "192.168.0.2": "/tools/"
+  "[xml]": {
+    "editor.defaultFormatter": "redhat.vscode-xml"
   },
-  "cSpell.enabled": false,
-  "cSpell.language": "en",
-  "cSpell.userWords": [
-    "openssl"
-  ],
+  "chat.tools.terminal.autoApprove": {
+    "npm install": true
+  },
   "diffEditor.ignoreTrimWhitespace": false,
   "editor.fontFamily": "JetBrains Mono",
   "editor.fontLigatures": true,
@@ -32,7 +39,6 @@
   "git.blame.editorDecoration.enabled": true,
   "git.ignoreMissingGitWarning": true,
   "git.openRepositoryInParentFolders": "never",
-  "github.copilot.editor.enableAutoCompletions": true,
   "github.copilot.enable": {
     "*": true,
     "markdown": false,
@@ -40,9 +46,6 @@
     "yaml": false
   },
   "python.createEnvironment.trigger": "off",
-  "python.analysis.extraPaths": [
-    "//nas/codigos/_shared"
-  ],
   "remote.autoForwardPortsSource": "hybrid",
   "rust-analyzer.imports.prefix": "crate",
   "rust-analyzer.inlayHints.chainingHints.enable": false,
@@ -50,16 +53,13 @@
   "rust-analyzer.inlayHints.typeHints.enable": false,
   "security.allowedUNCHosts": [
     "wsl$",
-    "nas"
+    "nas",
+    "192.168.0.3",
+    "192.168.100.3"
   ],
   "security.workspace.trust.untrustedFiles": "open",
-  "sort-json.settings.defaultCustomSort": "",
-  "typescript.updateImportsOnFileMove.enabled": "always",
   "vsicons.dontShowNewVersionMessage": true,
-  "workbench.colorTheme": "Default Light+",
+  "workbench.colorTheme": "Light+",
   "workbench.editor.enablePreview": false,
-  "workbench.iconTheme": "vscode-icons",
-  "remote.SSH.remotePlatform": {
-    "192.168.0.2": "linux"
-  }
+  "workbench.iconTheme": "vscode-icons"
 }
