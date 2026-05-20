@@ -17,10 +17,11 @@
   "[xml]": {
     "editor.defaultFormatter": "redhat.vscode-xml"
   },
-  "chat.tools.terminal.autoApprove": {
-    "npm install": true
-  },
+  "breadcrumbs.enabled": true,
+  "breadcrumbs.icons": true,
   "diffEditor.ignoreTrimWhitespace": false,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.copyWithSyntaxHighlighting": false,
   "editor.fontFamily": "JetBrains Mono",
   "editor.fontLigatures": true,
   "editor.fontWeight": 400,
@@ -28,15 +29,20 @@
   "editor.minimap.enabled": false,
   "editor.renderControlCharacters": true,
   "editor.renderWhitespace": "all",
+  "editor.stickyScroll.enabled": true,
   "editor.unicodeHighlight.allowedCharacters": {
     "–": true
   },
+  "explorer.compactFolders": true,
+  "explorer.sortOrder": "type",
   "files.autoSave": "afterDelay",
+  "files.eol": "\n",
   "files.exclude": {
     "**/__pycache__": true
   },
+  "files.insertFinalNewline": true,
   "files.trimTrailingWhitespace": true,
-  "git.blame.editorDecoration.enabled": true,
+  "git.blame.editorDecoration.enabled": false,
   "git.ignoreMissingGitWarning": true,
   "git.openRepositoryInParentFolders": "never",
   "github.copilot.enable": {
@@ -51,6 +57,7 @@
   "rust-analyzer.inlayHints.chainingHints.enable": false,
   "rust-analyzer.inlayHints.parameterHints.enable": false,
   "rust-analyzer.inlayHints.typeHints.enable": false,
+  "search.smartCase": true,
   "security.allowedUNCHosts": [
     "wsl$",
     "nas",
@@ -58,8 +65,13 @@
     "192.168.100.3"
   ],
   "security.workspace.trust.untrustedFiles": "open",
+  "terminal.integrated.fontFamily": "JetBrains Mono",
+  "terminal.integrated.fontLigatures.enabled": true,
+  "terminal.integrated.fontWeight": "200",
+  "terminal.integrated.scrollback": 10000,
   "vsicons.dontShowNewVersionMessage": true,
   "workbench.colorTheme": "Light+",
   "workbench.editor.enablePreview": false,
-  "workbench.iconTheme": "vscode-icons"
+  "workbench.iconTheme": "vscode-icons",
+  "workbench.settings.editor": "json"
 }
