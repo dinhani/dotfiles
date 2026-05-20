@@ -126,6 +126,25 @@ def operation(app: str, dir: str):
     return decorator
 
 # ------------------------------------------------------------------------------
+# Items - Claude Code
+# ------------------------------------------------------------------------------
+@operation("Claude Code", "claude-code")
+def backup_claude_code(app: str, dir: File):
+    match SYSTEM:
+        case OS.WIN:
+            WIN_HOME / ".claude/settings.json" >> dir / "settings.json"
+        case OS.LINUX | OS.MAC:
+            UNIX_HOME / ".claude/settings.json" >> dir / "settings.json"
+
+@operation("Claude Code", "claude-code")
+def restore_claude_code(app: str, dir: File):
+    match SYSTEM:
+        case OS.WIN:
+            dir / "settings.json" >> WIN_HOME / ".claude/settings.json"
+        case OS.LINUX | OS.MAC:
+            dir / "settings.json" >> UNIX_HOME / ".claude/settings.json"
+
+# ------------------------------------------------------------------------------
 # Items - Ghostty
 # ------------------------------------------------------------------------------
 @operation("Ghostty", "ghostty")
@@ -337,6 +356,7 @@ def restore_windows_terminal(app: str, dir: File):
 # Registry
 # ------------------------------------------------------------------------------
 ITEMS = {
+    "Claude Code":      ("AI",       backup_claude_code,      restore_claude_code),
     "Ghostty":          ("Terminal", backup_ghostty,          restore_ghostty),
     "PowerShell":       ("Terminal", backup_powershell,       restore_powershell),
     "Starship":         ("Terminal", backup_starship,         restore_starship),
