@@ -294,8 +294,12 @@ def backup_vscode(app: str, dir: File):
         case OS.WIN:
             WIN_ROAMING / "Code/User/keybindings.json" >> dir / "keybindings.json"
             WIN_ROAMING / "Code/User/settings.json" >> dir / "settings.json"
-        case OS.LINUX | OS.MAC:
-            log_unsupported(app)
+        case OS.LINUX:
+            UNIX_HOME / ".config/Code/User/keybindings.json" >> dir / "keybindings.json"
+            UNIX_HOME / ".config/Code/User/settings.json" >> dir / "settings.json"
+        case OS.MAC:
+            MAC_APP_SUPPORT / "Code/User/keybindings.json" >> dir / "keybindings.json"
+            MAC_APP_SUPPORT / "Code/User/settings.json" >> dir / "settings.json"
 
 @operation("VSCode / Cursor", "vscode")
 def restore_vscode(app: str, dir: File):
@@ -304,7 +308,8 @@ def restore_vscode(app: str, dir: File):
             dir >> WIN_ROAMING / "Code/User"
             dir >> WIN_ROAMING / "Cursor/User"
         case OS.LINUX:
-            log_unsupported(app)
+            dir >> UNIX_HOME / ".config/Code/User"
+            dir >> UNIX_HOME / ".config/Cursor/User"
         case OS.MAC:
             dir >> MAC_APP_SUPPORT / "Code/User"
             dir >> MAC_APP_SUPPORT / "Cursor/User"
