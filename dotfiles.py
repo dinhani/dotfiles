@@ -101,7 +101,7 @@ def log_error(message: str, exception: Exception) -> None:
 
 def log_unsupported(item: str) -> None:
     print("")
-    print(f"{COLOR_YELLOW}skip{COLOR_RESET}  {item}: unsupported on {CURRENT_OS}")
+    print(f"{COLOR_YELLOW}skip{COLOR_RESET}  {item}: unsupported on {SYSTEM}")
 
 # ------------------------------------------------------------------------------
 # Platform
@@ -111,7 +111,7 @@ class OS(StrEnum):
     MAC   = "Darwin"
     LINUX = "Linux"
 
-CURRENT_OS = OS(platform.system())
+SYSTEM = OS(platform.system())
 
 # ------------------------------------------------------------------------------
 # Decorator
@@ -130,7 +130,7 @@ def operation(app: str, dir: str):
 # ------------------------------------------------------------------------------
 @operation("Ghostty", "ghostty")
 def backup_ghostty(app: str, dir: File):
-    match CURRENT_OS:
+    match SYSTEM:
         case OS.WIN:
             log_unsupported(app)
         case OS.LINUX | OS.MAC:
@@ -138,7 +138,7 @@ def backup_ghostty(app: str, dir: File):
 
 @operation("Ghostty", "ghostty")
 def restore_ghostty(app: str, dir: File):
-    match CURRENT_OS:
+    match SYSTEM:
         case OS.WIN:
             log_unsupported(app)
         case OS.LINUX | OS.MAC:
@@ -149,7 +149,7 @@ def restore_ghostty(app: str, dir: File):
 # ------------------------------------------------------------------------------
 @operation("Helix", "helix")
 def backup_helix(app: str, dir: File):
-    match CURRENT_OS:
+    match SYSTEM:
         case OS.WIN:
             WIN_ROAMING / "helix/config.toml" >> dir / "config.toml"
             WIN_ROAMING / "helix/languages.toml" >> dir / "languages.toml"
@@ -159,7 +159,7 @@ def backup_helix(app: str, dir: File):
 
 @operation("Helix", "helix")
 def restore_helix(app: str, dir: File):
-    match CURRENT_OS:
+    match SYSTEM:
         case OS.WIN:
             dir >> WIN_ROAMING / "helix"
         case OS.LINUX | OS.MAC:
@@ -170,7 +170,7 @@ def restore_helix(app: str, dir: File):
 # ------------------------------------------------------------------------------
 @operation("IntelliJ", "intellij")
 def backup_intellij(app: str, dir: File):
-    match CURRENT_OS:
+    match SYSTEM:
         case OS.WIN:
             WIN_ROAMING / "JetBrains/IntelliJIdea2025.3/keymaps" >> dir / "keymaps"
             WIN_ROAMING / "JetBrains/IntelliJIdea2025.3/options/editor.xml" >> dir / "options/editor.xml"
@@ -181,7 +181,7 @@ def backup_intellij(app: str, dir: File):
 
 @operation("IntelliJ", "intellij")
 def restore_intellij(app: str, dir: File):
-    match CURRENT_OS:
+    match SYSTEM:
         case OS.WIN:
             dir >> WIN_ROAMING / "JetBrains/IntelliJIdea2025.3"
         case OS.LINUX:
@@ -194,7 +194,7 @@ def restore_intellij(app: str, dir: File):
 # ------------------------------------------------------------------------------
 @operation("Notable", "notable")
 def backup_notable(app: str, dir: File):
-    match CURRENT_OS:
+    match SYSTEM:
         case OS.WIN:
             WIN_HOME / ".notable.json" >> dir / ".notable.json"
         case OS.LINUX | OS.MAC:
@@ -202,7 +202,7 @@ def backup_notable(app: str, dir: File):
 
 @operation("Notable", "notable")
 def restore_notable(app: str, dir: File):
-    match CURRENT_OS:
+    match SYSTEM:
         case OS.WIN:
             dir / ".notable.json" >> WIN_HOME / ".notable.json"
         case OS.LINUX | OS.MAC:
@@ -213,7 +213,7 @@ def restore_notable(app: str, dir: File):
 # ------------------------------------------------------------------------------
 @operation("PowerShell", "powershell")
 def backup_powershell(app: str, dir: File):
-    match CURRENT_OS:
+    match SYSTEM:
         case OS.WIN:
             WIN_HOME / "Documents/PowerShell/Microsoft.PowerShell_profile.ps1" >> dir / "Microsoft.PowerShell_profile.ps1"
         case OS.LINUX | OS.MAC:
@@ -221,7 +221,7 @@ def backup_powershell(app: str, dir: File):
 
 @operation("PowerShell", "powershell")
 def restore_powershell(app: str, dir: File):
-    match CURRENT_OS:
+    match SYSTEM:
         case OS.WIN:
             dir / "Microsoft.PowerShell_profile.ps1" >> WIN_HOME / "Documents/PowerShell/Microsoft.PowerShell_profile.ps1"
         case OS.LINUX | OS.MAC:
@@ -232,7 +232,7 @@ def restore_powershell(app: str, dir: File):
 # ------------------------------------------------------------------------------
 @operation("RStudio", "rstudio")
 def backup_rstudio(app: str, dir: File):
-    match CURRENT_OS:
+    match SYSTEM:
         case OS.WIN:
             WIN_ROAMING / "RStudio/config.json" >> dir / "config.json"
             WIN_ROAMING / "RStudio/keybindings" >> dir / "keybindings"
@@ -241,7 +241,7 @@ def backup_rstudio(app: str, dir: File):
 
 @operation("RStudio", "rstudio")
 def restore_rstudio(app: str, dir: File):
-    match CURRENT_OS:
+    match SYSTEM:
         case OS.WIN:
             dir >> WIN_ROAMING / "RStudio"
         case OS.LINUX | OS.MAC:
@@ -252,7 +252,7 @@ def restore_rstudio(app: str, dir: File):
 # ------------------------------------------------------------------------------
 @operation("Starship", "starship")
 def backup_starship(app: str, dir: File):
-    match CURRENT_OS:
+    match SYSTEM:
         case OS.WIN:
             log_unsupported(app)
         case OS.LINUX | OS.MAC:
@@ -260,7 +260,7 @@ def backup_starship(app: str, dir: File):
 
 @operation("Starship", "starship")
 def restore_starship(app: str, dir: File):
-    match CURRENT_OS:
+    match SYSTEM:
         case OS.WIN:
             log_unsupported(app)
         case OS.LINUX | OS.MAC:
@@ -271,7 +271,7 @@ def restore_starship(app: str, dir: File):
 # ------------------------------------------------------------------------------
 @operation("VIM", "vim")
 def backup_vim(app: str, dir: File):
-    match CURRENT_OS:
+    match SYSTEM:
         case OS.WIN:
             log_unsupported(app)
         case OS.LINUX | OS.MAC:
@@ -279,7 +279,7 @@ def backup_vim(app: str, dir: File):
 
 @operation("VIM", "vim")
 def restore_vim(app: str, dir: File):
-    match CURRENT_OS:
+    match SYSTEM:
         case OS.WIN:
             log_unsupported(app)
         case OS.LINUX | OS.MAC:
@@ -290,7 +290,7 @@ def restore_vim(app: str, dir: File):
 # ------------------------------------------------------------------------------
 @operation("VSCode / Cursor", "vscode")
 def backup_vscode(app: str, dir: File):
-    match CURRENT_OS:
+    match SYSTEM:
         case OS.WIN:
             WIN_ROAMING / "Code/User/keybindings.json" >> dir / "keybindings.json"
             WIN_ROAMING / "Code/User/settings.json" >> dir / "settings.json"
@@ -299,7 +299,7 @@ def backup_vscode(app: str, dir: File):
 
 @operation("VSCode / Cursor", "vscode")
 def restore_vscode(app: str, dir: File):
-    match CURRENT_OS:
+    match SYSTEM:
         case OS.WIN:
             dir >> WIN_ROAMING / "Code/User"
             dir >> WIN_ROAMING / "Cursor/User"
@@ -314,7 +314,7 @@ def restore_vscode(app: str, dir: File):
 # ------------------------------------------------------------------------------
 @operation("Windows Terminal", "windows-terminal")
 def backup_windows_terminal(app: str, dir: File):
-    match CURRENT_OS:
+    match SYSTEM:
         case OS.WIN:
             WIN_LOCAL / "Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json" >> dir / "settings.json"
         case OS.LINUX | OS.MAC:
@@ -322,7 +322,7 @@ def backup_windows_terminal(app: str, dir: File):
 
 @operation("Windows Terminal", "windows-terminal")
 def restore_windows_terminal(app: str, dir: File):
-    match CURRENT_OS:
+    match SYSTEM:
         case OS.WIN:
             dir >> WIN_LOCAL / "Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState"
         case OS.LINUX | OS.MAC:
