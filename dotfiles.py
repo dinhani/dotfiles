@@ -52,8 +52,15 @@ class File(Path):
         if not self.is_relative_to(DOTFILES):
             return
 
+        # extract root to delete
+        # jetbrains is a special case because we delete the inner tool directory, not the whole jetbrains dir
+        parts = self.relative_to(DOTFILES).parts
+        if parts[0] == "jetbrains":
+            root = DOTFILES / parts[0] / parts[1]
+        else:
+            root = DOTFILES / parts[0]
+
         # check if already deleted
-        root = DOTFILES / self.relative_to(DOTFILES).parts[0]
         if root in File._deleted:
             return
 
