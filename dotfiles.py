@@ -133,16 +133,20 @@ def backup_claude_code(app: str, dir: File):
     match SYSTEM:
         case OS.WIN:
             WIN_HOME / ".claude/settings.json" >> dir / "settings.json"
+            WIN_HOME / ".claude/CLAUDE.md" >> dir / "CLAUDE.md"
         case OS.LINUX | OS.MAC:
             UNIX_HOME / ".claude/settings.json" >> dir / "settings.json"
+            UNIX_HOME / ".claude/CLAUDE.md" >> dir / "CLAUDE.md"
 
 @operation("Claude Code", "claude-code")
 def restore_claude_code(app: str, dir: File):
     match SYSTEM:
         case OS.WIN:
             dir / "settings.json" >> WIN_HOME / ".claude/settings.json"
+            dir / "CLAUDE.md" >> WIN_HOME / ".claude/CLAUDE.md"
         case OS.LINUX | OS.MAC:
             dir / "settings.json" >> UNIX_HOME / ".claude/settings.json"
+            dir / "CLAUDE.md" >> UNIX_HOME / ".claude/CLAUDE.md"
 
 # ------------------------------------------------------------------------------
 # Items - Ghostty
