@@ -1,13 +1,28 @@
 # theme
 theme = Atom One Light
-font-family = Jetbrains Mono
+
+# font
+font-family = JetBrains Mono
+font-size = 13
+adjust-underline-thickness = 3
+
+# cursor
 cursor-style = bar
 cursor-style-blink = true
-adjust-cursor-thickness=3
-adjust-underline-thickness=3
+adjust-cursor-thickness = 3
 shell-integration-features = no-cursor
 
-# keybings: new_split / close_surface
+# window
+window-padding-x = 4
+window-padding-y = 4
+
+# selection
+copy-on-select = clipboard
+
+# macos
+macos-option-as-alt = true
+
+# keybinds: new_split / close_surface
 keybind = ctrl+shift+right=new_split:right
 keybind = ctrl+shift+left=new_split:left
 keybind = ctrl+shift+up=new_split:up
