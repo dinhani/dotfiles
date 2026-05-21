@@ -338,6 +338,26 @@ def restore_vscode(app: str, dir: File):
             dir >> MAC_APP_SUPPORT / "Cursor/User"
 
 # ------------------------------------------------------------------------------
+# Items - Warp
+# ------------------------------------------------------------------------------
+@operation("Warp", "warp")
+def backup_warp(app: str, dir: File):
+    match SYSTEM:
+        case OS.WIN:
+            log_unsupported(app)
+        case OS.LINUX | OS.MAC:
+            UNIX_HOME / ".warp/keybindings.yaml" >> dir / "keybindings.yaml"
+            UNIX_HOME / ".warp/settings.toml" >> dir / "settings.toml"
+
+@operation("Warp", "warp")
+def restore_warp(app: str, dir: File):
+    match SYSTEM:
+        case OS.WIN:
+            log_unsupported(app)
+        case OS.LINUX | OS.MAC:
+            dir >> UNIX_HOME / ".warp"
+
+# ------------------------------------------------------------------------------
 # Items - Windows Terminal
 # ------------------------------------------------------------------------------
 @operation("Windows Terminal", "windows-terminal")
@@ -364,6 +384,7 @@ ITEMS = {
     "Ghostty":          ("Terminal", backup_ghostty,          restore_ghostty),
     "PowerShell":       ("Terminal", backup_powershell,       restore_powershell),
     "Starship":         ("Terminal", backup_starship,         restore_starship),
+    "Warp":             ("Terminal", backup_warp,             restore_warp),
     "Windows Terminal": ("Terminal", backup_windows_terminal, restore_windows_terminal),
     "Helix":            ("Editor",   backup_helix,            restore_helix),
     "IntelliJ":         ("Editor",   backup_intellij,         restore_intellij),
