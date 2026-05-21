@@ -2,7 +2,7 @@
   <component name="AdvancedSettings">
     <option name="settings">
       <map>
-        <entry key="gradle.download.sources" value="true" />
+        <entry key="project.view.show.scratches.and.consoles" value="false" />
       </map>
     </option>
   </component>

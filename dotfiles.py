@@ -241,13 +241,19 @@ def jetbrains_installs() -> dict[str, File]:
 def backup_jetbrains(app: str, dir: File):
     for tool, install in jetbrains_installs().items():
         for file in JETBRAINS_FILES:
-            install / file >> dir / tool / file
+            source = install / file
+            if not source.exists():
+                continue
+            source >> dir / tool / file
 
 @operation("JetBrains", "jetbrains")
 def restore_jetbrains(app: str, dir: File):
     for tool, install in jetbrains_installs().items():
         for file in JETBRAINS_FILES:
-            dir / tool / file >> install / file
+            source = dir / tool / file
+            if not source.exists():
+                continue
+            source >> install / file
 
 # ------------------------------------------------------------------------------
 # Items - Notable

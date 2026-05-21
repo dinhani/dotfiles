@@ -1,0 +1,6 @@
+<keymap version="1" name="VSCode copy" parent="VSCode">
+  <action id="GotoClass">
+    <keyboard-shortcut first-keystroke="ctrl t" />
+  </action>
+  <action id="GotoSymbol" />
+</keymap>
