@@ -1,0 +1,15 @@
+---
+"pane_group:add_right": ctrl-shift-right
+"pane_group:add_left": ctrl-shift-left
+"pane_group:resize_down": none
+"pane_group:navigate_left": ctrl-cmd-left
+"pane_group:navigate_up": ctrl-cmd-up
+"input:open_completion_suggestions": tab
+"pane_group:resize_right": none
+"pane_group:navigate_down": ctrl-cmd-down
+"workspace:new_tab": cmd-t
+"pane_group:add_up": ctrl-shift-up
+"pane_group:add_down": ctrl-shift-down
+"pane_group:resize_up": none
+"pane_group:resize_left": none
+"pane_group:navigate_right": ctrl-cmd-right

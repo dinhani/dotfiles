@@ -27,7 +27,6 @@ keybind = ctrl+shift+right=new_split:right
 keybind = ctrl+shift+left=new_split:left
 keybind = ctrl+shift+up=new_split:up
 keybind = ctrl+shift+down=new_split:down
-keybind = ctrl+shift+w=close_surface
 
 # keybinds: goto_split
 keybind = ctrl+super+right=goto_split:right
