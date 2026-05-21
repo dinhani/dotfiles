@@ -1,0 +1,12 @@
+<application>
+  <component name="AdvancedSettings">
+    <option name="settings">
+      <map>
+        <entry key="gateway.wsl.open.projects.natively" value="true" />
+        <entry key="gradle.download.sources" value="true" />
+        <entry key="open.devcontainer.projects.natively" value="true" />
+        <entry key="welcome.screen.non.modal.enabled" value="false" />
+      </map>
+    </option>
+  </component>
+</application>

@@ -1,0 +1,10 @@
+<keymap version="1" name="VSCode (macOS) copy" parent="VSCode OSX">
+  <action id="FileStructurePopup">
+    <keyboard-shortcut first-keystroke="shift meta o" />
+    <keyboard-shortcut first-keystroke="alt p" />
+  </action>
+  <action id="GotoClass">
+    <keyboard-shortcut first-keystroke="meta t" />
+  </action>
+  <action id="GotoSymbol" />
+</keymap>
