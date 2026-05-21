@@ -189,28 +189,56 @@ def restore_helix(app: str, dir: File):
             dir >> UNIX_HOME / ".config/helix"
 
 # ------------------------------------------------------------------------------
-# Items - IntelliJ
+# Items - JetBrains
 # ------------------------------------------------------------------------------
-@operation("IntelliJ", "intellij")
-def backup_intellij(app: str, dir: File):
-    match SYSTEM:
-        case OS.WIN:
-            WIN_ROAMING / "JetBrains/IntelliJIdea2025.3/keymaps" >> dir / "keymaps"
-            WIN_ROAMING / "JetBrains/IntelliJIdea2025.3/options/editor.xml" >> dir / "options/editor.xml"
-            WIN_ROAMING / "JetBrains/IntelliJIdea2025.3/options/editor-font.xml" >> dir / "options/editor-font.xml"
-            WIN_ROAMING / "JetBrains/IntelliJIdea2025.3/options/window.layouts.xml" >> dir / "options/window.layouts.xml"
-        case OS.LINUX | OS.MAC:
-            log_unsupported(app)
+JETBRAINS_TOOLS = (
+    "CLion",
+    "DataGrip",
+    "DataSpell",
+    "GoLand",
+    "IntelliJIdea",
+    "PhpStorm",
+    "PyCharm",
+    "Rider",
+    "RubyMine",
+    "RustRover",
+    "WebStorm",
+)
 
-@operation("IntelliJ", "intellij")
-def restore_intellij(app: str, dir: File):
+JETBRAINS_FILES = (
+    "keymaps",
+    "options/editor.xml",
+    "options/editor-font.xml",
+    "options/window.layouts.xml",
+)
+
+def jetbrains_installs() -> dict[str, File]:
+    """Latest install folder for each installed JetBrains tool."""
     match SYSTEM:
         case OS.WIN:
-            dir >> WIN_ROAMING / "JetBrains/IntelliJIdea2025.3"
-        case OS.LINUX:
-            log_unsupported(app)
+            root = WIN_ROAMING / "JetBrains"
         case OS.MAC:
-            dir >> MAC_APP_SUPPORT / "JetBrains/IntelliJIdea2025.3"
+            root = MAC_APP_SUPPORT / "JetBrains"
+        case OS.LINUX:
+            root = UNIX_HOME / ".config/JetBrains"
+    installs: dict[str, File] = {}
+    for tool in JETBRAINS_TOOLS:
+        versions = sorted(root.glob(f"{tool}[0-9]*"))
+        if versions:
+            installs[tool] = File(versions[-1])
+    return installs
+
+@operation("JetBrains", "jetbrains")
+def backup_jetbrains(app: str, dir: File):
+    for tool, install in jetbrains_installs().items():
+        for file in JETBRAINS_FILES:
+            install / file >> dir / tool / file
+
+@operation("JetBrains", "jetbrains")
+def restore_jetbrains(app: str, dir: File):
+    for tool, install in jetbrains_installs().items():
+        for file in JETBRAINS_FILES:
+            dir / tool / file >> install / file
 
 # ------------------------------------------------------------------------------
 # Items - Notable
@@ -387,7 +415,7 @@ ITEMS = {
     "Warp":             ("Terminal", backup_warp,             restore_warp),
     "Windows Terminal": ("Terminal", backup_windows_terminal, restore_windows_terminal),
     "Helix":            ("Editor",   backup_helix,            restore_helix),
-    "IntelliJ":         ("Editor",   backup_intellij,         restore_intellij),
+    "JetBrains":        ("Editor",   backup_jetbrains,        restore_jetbrains),
     "RStudio":          ("Editor",   backup_rstudio,          restore_rstudio),
     "VIM":              ("Editor",   backup_vim,              restore_vim),
     "VSCode / Cursor":  ("Editor",   backup_vscode,           restore_vscode),
