@@ -7,11 +7,12 @@ adjust-cursor-thickness=3
 adjust-underline-thickness=3
 shell-integration-features = no-cursor
 
-# keybings: new_split
+# keybings: new_split / close_surface
 keybind = ctrl+shift+right=new_split:right
 keybind = ctrl+shift+left=new_split:left
 keybind = ctrl+shift+up=new_split:up
 keybind = ctrl+shift+down=new_split:down
+keybind = ctrl+shift+w=close_surface
 
 # keybinds: goto_split
 keybind = ctrl+super+right=goto_split:right
