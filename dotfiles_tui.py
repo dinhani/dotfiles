@@ -8,101 +8,90 @@ from prompt_toolkit.styles import Style
 from prompt_toolkit.widgets import Frame
 
 
-def show_tui(items: dict[str, dict[str, object]], panels: tuple[str, str]) -> list[tuple[str, str]]:
+def show_tui(items: dict[str, dict[str, object]], left_panel: str, right_panel: str) -> list[tuple[str, str]]:
     """Two-panel picker over `items` (category → name → ...).
 
-    `panels` provides the labels of the left and right panel (e.g. ("Backup", "Restore")).
-    Returns a list of (panel_label, item_name), in menu order, with left-panel picks before right-panel picks.
+    Returns (panel_label, item_name) pairs in menu order.
     """
-    LEFT, RIGHT = panels
-
-    def other(panel: str) -> str:
-        return RIGHT if panel == LEFT else LEFT
-
-    # flatten items into a row list shared by both panels
-    rows: list[tuple[str, str]] = []  # (kind, label) where kind is "category" or "item"
+    # --- state ---
+    # menu_rows: (label, is_item). Categories are headers, items are selectable.
+    menu_rows: list[tuple[str, bool]] = []
     for category, members in items.items():
-        rows.append(("category", category))
+        menu_rows.append((category, False))
         for name in members:
-            rows.append(("item", name))
+            menu_rows.append((name, True))
 
-    item_indexes = [i for i, (kind, _) in enumerate(rows) if kind == "item"]
-    first_item = item_indexes[0]
+    selectable_indexes = [i for i, (_, is_item) in enumerate(menu_rows) if is_item]
 
-    # state, keyed by panel label
-    active: list[str] = [LEFT]
-    cursors:  dict[str, int]      = {LEFT: first_item, RIGHT: first_item}
-    selected: dict[str, set[str]] = {LEFT: set(),      RIGHT: set()}
+    active_panel = [left_panel]
+    cursors  = {left_panel: selectable_indexes[0], right_panel: selectable_indexes[0]}
+    selected: dict[str, set[str]] = {left_panel: set(), right_panel: set()}
+    kb = KeyBindings()
 
+    # --- functions & handlers ---
     def render(panel: str) -> FormattedText:
-        out: list[tuple[str, str]] = []
-        is_active_panel = (active[0] == panel)
-        for i, (kind, label) in enumerate(rows):
-            if kind == "category":
-                out.append(("class:category", f" {label}\n"))
+        fragments: list[tuple[str, str]] = []
+        is_active_panel = active_panel[0] == panel
+        for row_index, (label, is_item) in enumerate(menu_rows):
+            if not is_item:
+                fragments.append(("class:category", f" {label}\n"))
                 continue
             marker = "[x]" if label in selected[panel] else "[ ]"
-            on_cursor = (i == cursors[panel])
+            on_cursor = row_index == cursors[panel]
             if on_cursor and is_active_panel:
-                style = "class:focused"
-                prefix = "▶"
+                row_style, prefix = "class:focused", "▶"
             elif on_cursor:
-                style = "class:cursor-inactive"
-                prefix = "·"
+                row_style, prefix = "class:cursor-inactive", "·"
             else:
-                style = "class:item"
-                prefix = " "
-            out.append((style, f" {prefix} {marker} {label}\n"))
-        return FormattedText(out)
+                row_style, prefix = "class:item", " "
+            fragments.append((row_style, f" {prefix} {marker} {label}\n"))
+        return FormattedText(fragments)
 
-    def move(delta: int) -> None:
-        panel = active[0]
-        try:
-            pos = item_indexes.index(cursors[panel])
-        except ValueError:
-            pos = 0
-        pos = max(0, min(len(item_indexes) - 1, pos + delta))
-        cursors[panel] = item_indexes[pos]
+    def move_cursor(delta: int) -> None:
+        panel = active_panel[0]
+        current_position = selectable_indexes.index(cursors[panel])
+        new_position = max(0, min(len(selectable_indexes) - 1, current_position + delta))
+        cursors[panel] = selectable_indexes[new_position]
 
-    kb = KeyBindings()
+    def panel_title(panel: str) -> str:
+        return f"{'●' if active_panel[0] == panel else ' '} {panel}"
 
     @kb.add("tab")
     @kb.add("s-tab")
     @kb.add("right")
     @kb.add("left")
     def _(event):
-        active[0] = other(active[0])
+        active_panel[0] = right_panel if active_panel[0] == left_panel else left_panel
 
     @kb.add("up")
     def _(event):
-        move(-1)
+        move_cursor(-1)
 
     @kb.add("down")
     def _(event):
-        move(1)
+        move_cursor(1)
 
     @kb.add("home")
     def _(event):
-        cursors[active[0]] = item_indexes[0]
+        cursors[active_panel[0]] = selectable_indexes[0]
 
     @kb.add("end")
     def _(event):
-        cursors[active[0]] = item_indexes[-1]
+        cursors[active_panel[0]] = selectable_indexes[-1]
 
     @kb.add("space")
     def _(event):
-        panel = active[0]
-        name = rows[cursors[panel]][1]
-        bucket = selected[panel]
-        bucket.discard(name) if name in bucket else bucket.add(name)
+        panel = active_panel[0]
+        name = menu_rows[cursors[panel]][0]
+        selected[panel] ^= {name}
 
     @kb.add("a")
     def _(event):
-        selected[active[0]] = {label for kind, label in rows if kind == "item"}
+        selected[active_panel[0]] = {label for label, is_item in menu_rows if is_item}
 
     @kb.add("n")
     def _(event):
-        selected[active[0]].clear()
+        selected[active_panel[0]].clear()
 
     @kb.add("enter")
     def _(event):
@@ -110,46 +99,37 @@ def show_tui(items: dict[str, dict[str, object]], panels: tuple[str, str]) -> li
 
     @kb.add("c-c")
     @kb.add("escape")
+    @kb.add("q")
     def _(event):
         event.app.exit(result=False)
 
-    def title(panel: str) -> str:
-        marker = "●" if active[0] == panel else " "
-        return f"{marker} {panel}"
-
-    height = Dimension(preferred=len(rows), min=len(rows))
-    left_window  = Window(content=FormattedTextControl(lambda: render(LEFT)),  height=height)
-    right_window = Window(content=FormattedTextControl(lambda: render(RIGHT)), height=height)
-
-    body = VSplit([
-        Frame(left_window,  title=lambda: title(LEFT)),
-        Frame(right_window, title=lambda: title(RIGHT)),
+    # --- build & run ---
+    panel_height = Dimension(preferred=len(menu_rows), min=len(menu_rows))
+    panels_area = VSplit([
+        Frame(Window(FormattedTextControl(lambda: render(left_panel)),  height=panel_height), title=lambda: panel_title(left_panel)),
+        Frame(Window(FormattedTextControl(lambda: render(right_panel)), height=panel_height), title=lambda: panel_title(right_panel)),
     ], padding=1)
 
-    help_text = "[Tab/←→] switch panel  [↑↓] move  [Space] toggle  [a] all  [n] none  [Enter] confirm  [Esc] cancel"
-    help_window = Window(content=FormattedTextControl(help_text), height=1, style="class:help")
+    help_text = "[Tab/←→] switch panel  [↑↓] move  [Space] toggle  [a] all  [n] none  [Enter] confirm  [q/Esc] cancel"
+    help_bar = Window(FormattedTextControl(help_text), height=1, style="class:help")
+    app_layout = Layout(HSplit([panels_area, help_bar]))
 
-    layout = Layout(HSplit([body, help_window]))
-
-    style = Style.from_dict({
+    app_theme = Style.from_dict({
         "category":         "bold ansicyan",
-        "item":             "",
         "focused":          "reverse bold",
         "cursor-inactive":  "ansiblue",
         "help":             "ansibrightblack",
         "frame.label":      "bold",
     })
 
-    app = Application(layout=layout, key_bindings=kb, style=style, full_screen=True, mouse_support=False)
-    confirmed = app.run()
-    if not confirmed:
+    application = Application(layout=app_layout, key_bindings=kb, style=app_theme, full_screen=True, mouse_support=False)
+    if not application.run():
         return []
 
-    # preserve menu order: left picks before right picks
-    result: list[tuple[str, str]] = []
-    for members in items.values():
-        for name in members:
-            for panel in (LEFT, RIGHT):
-                if name in selected[panel]:
-                    result.append((panel, name))
-    return result
+    return [
+        (panel, name)
+        for members in items.values()
+        for name in members
+        for panel in (left_panel, right_panel)
+        if name in selected[panel]
+    ]

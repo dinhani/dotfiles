@@ -489,7 +489,7 @@ REGISTRY_BY_APP: dict[str, dict[Op, Callable[[], None]]] = {
 # Main
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
-    selections = show_tui(REGISTRY_BY_CATEGORY, (Op.BACKUP, Op.RESTORE))
+    selections = show_tui(REGISTRY_BY_CATEGORY, Op.BACKUP, Op.RESTORE)
     if not selections:
         sys.exit(0)
 
