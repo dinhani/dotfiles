@@ -451,6 +451,10 @@ not_installed "cargo-expand" && cargo install --locked cargo-expand
 # ------------------------------------------------------------------------------
 # Install VSCode extensions
 # ------------------------------------------------------------------------------
+if not_installed "code" && not_installed "cursor"; then
+    log_skip "VSCode and Cursor not installed, skipping extensions"
+fi
+
 # General
 
 # WSL / SSH
