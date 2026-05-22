@@ -363,6 +363,8 @@ fi
 install_brew unzip
 install_brew util-linux
 install_brew w3m
+install_brew wait4x
+install_brew watchexec
 install_brew websocat
 install_brew zoxide
 
@@ -445,8 +447,6 @@ done
 
 log "Installing Rust extensions"
 not_installed "cargo-expand" && cargo install --locked cargo-expand
-not_installed "wait-service" && cargo install --locked wait-service
-not_installed "watchexec"    && cargo install --locked watchexec
 
 # ------------------------------------------------------------------------------
 # Install VSCode extensions
