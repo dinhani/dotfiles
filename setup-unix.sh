@@ -232,22 +232,33 @@ if is_mac; then
     # terminal
     install_brew ghostty
 
-    # dev editors
+    # dev editors (individual)
     if not_installed "code"; then
         install_brew visual-studio-code
     fi
     if not_installed "cursor"; then
         install_brew "cursor"
     fi
-    install_brew intellij-idea
-    install_brew rider
-    install_brew pycharm
-    install_brew datagrip
     install_brew rstudio
+
+    # dev editors (jetbrains)
+    install_brew jetbrains-toolbox
+    install_brew clion
+    install_brew datagrip
+    install_brew dataspell
+    install_brew goland
+    install_brew intellij-idea
+    install_brew mps
+    install_brew phpstorm
+    install_brew pycharm
+    install_brew rider
+    install_brew rubymine
+    install_brew rustrover
+    install_brew webstorm
 
     # dev tools
     install_brew bruno
-    install_brew devtoys    
+    install_brew devtoys
 
     # utils
     install_brew google-chrome
@@ -256,7 +267,7 @@ if is_mac; then
     install_mas 937984704  # Amphetamine
     install_mas 441258766  # Magnet
     install_mas 1606145041 # Sleeve
-    
+
     # work only
     if is_work; then
         install_brew slack
