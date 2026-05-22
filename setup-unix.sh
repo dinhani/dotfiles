@@ -231,6 +231,7 @@ if is_mac; then
 
     # terminal
     install_brew ghostty
+    install_brew warp
 
     # dev editors (individual)
     if not_installed "code"; then
