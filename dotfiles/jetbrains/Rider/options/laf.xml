@@ -1,8 +1,5 @@
 <application>
   <component name="LafManager">
     <laf themeId="Islands Light" />
-    <lafs-to-previous-schemes>
-      <laf-to-scheme laf="Islands Light" scheme="_@user_Light" />
-    </lafs-to-previous-schemes>
   </component>
 </application>

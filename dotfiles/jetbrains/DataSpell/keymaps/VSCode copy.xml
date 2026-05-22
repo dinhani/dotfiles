@@ -1,4 +1,8 @@
 <keymap version="1" name="VSCode copy" parent="VSCode">
+  <action id="FileStructurePopup">
+    <keyboard-shortcut first-keystroke="shift ctrl o" />
+    <keyboard-shortcut first-keystroke="alt p" />
+  </action>
   <action id="GotoClass">
     <keyboard-shortcut first-keystroke="ctrl t" />
   </action>

@@ -6,6 +6,5 @@
     <entry key="switched.from.classic.to.islands" value="false" source="SYSTEM" />
     <entry key="ide.experimental.ui" value="true" source="SYSTEM" />
     <entry key="trace.state.event.service.url" value="https://api.jetbrains.cloud/trace-status" source="SYSTEM" />
-    <entry key="python.scientific.always_use_sci_view" value="true" source="SYSTEM" />
   </component>
 </application>
