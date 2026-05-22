@@ -249,7 +249,6 @@ if is_mac; then
     install_brew dataspell
     install_brew goland
     install_brew intellij-idea
-    install_brew mps
     install_brew phpstorm
     install_brew pycharm
     install_brew rider
