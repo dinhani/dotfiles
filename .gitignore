@@ -2,5 +2,7 @@
 __pycache__/
 *.pyc
 
-# Editors
+# Editors / AI
+.claude
 .idea
+
