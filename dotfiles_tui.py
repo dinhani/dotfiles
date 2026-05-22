@@ -1,16 +1,12 @@
-from dataclasses import dataclass, field
-
 from prompt_toolkit import Application
 from prompt_toolkit.formatted_text import FormattedText
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import HSplit, Layout, VSplit, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
-from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.styles import Style
 from prompt_toolkit.widgets import Frame
 
 
-@dataclass
 class TuiState:
     # panels
     panel_left: str # label for left panel
@@ -163,11 +159,9 @@ def show_tui(items: dict[str, dict[str, object]], left_panel: str, right_panel: 
     def tui_panel_title(panel: str) -> str:
         return f"{'●' if state.is_active(panel) else ' '} {panel}"
 
-    tui_panels_height = Dimension(preferred=len(state.menu_rows), min=len(state.menu_rows))
-
     tui_panels = VSplit([
-        Frame(Window(FormattedTextControl(lambda: tui_panel(left_panel)),  height=tui_panels_height), title=lambda: tui_panel_title(left_panel)),
-        Frame(Window(FormattedTextControl(lambda: tui_panel(right_panel)), height=tui_panels_height), title=lambda: tui_panel_title(right_panel)),
+        Frame(Window(FormattedTextControl(lambda: tui_panel(left_panel)),  height=len(state.menu_rows)), title=lambda: tui_panel_title(left_panel)),
+        Frame(Window(FormattedTextControl(lambda: tui_panel(right_panel)), height=len(state.menu_rows)), title=lambda: tui_panel_title(right_panel)),
     ], padding=1)
 
     tui_help = Window(FormattedTextControl("[Tab/←→] switch panel  [↑↓] move  [Space] toggle  [a] all  [n] none  [Enter] confirm  [q/Esc] cancel"), height=1, style="class:help")
@@ -191,8 +185,7 @@ def show_tui(items: dict[str, dict[str, object]], left_panel: str, right_panel: 
 
     return [
         (panel, name)
-        for members in items.values()
-        for name in members
         for panel in (left_panel, right_panel)
-        if name in state.panel_selected[panel]
+        for name, is_item in state.menu_rows
+        if is_item and name in state.panel_selected[panel]
     ]
