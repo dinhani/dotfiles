@@ -28,28 +28,38 @@ class File(Path):
         else:
             self._copy_dir(target)
 
-    def _copy_dir(self, target: Path) -> None:
+    def _copy_dir(self, target: "File") -> None:
         """Copy a local directory to a local target."""
         try:
             log_transfer("dir", self, target)
             target.mkdir(parents=True, exist_ok=True)
             shutil.copytree(self, target, dirs_exist_ok=True)
+            if target._is_backup():
+                for path in target.rglob("*"):
+                    if path.is_file():
+                        _ensure_trailing_newline(path)
         except Exception as e:
             log_error("Failed to copy directory", e)
 
-    def _copy_file(self, target: Path) -> None:
+    def _copy_file(self, target: "File") -> None:
         """Copy a local file to a local target."""
         try:
             log_transfer("file", self, target)
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(self, target)
+            if target._is_backup():
+                _ensure_trailing_newline(target)
         except Exception as e:
             log_error("Failed to copy file", e)
+
+    def _is_backup(self) -> bool:
+        """True when this path is a backup target (inside the dotfiles dir)."""
+        return self.is_relative_to(DOTFILES)
 
     def _delete_dotfiles_root_once(self) -> None:
         """First write into dotfiles/<app>/... deletes <app> once per session."""
         # check if inside dotfiles dir
-        if not self.is_relative_to(DOTFILES):
+        if not self._is_backup():
             return
 
         # extract root to delete
@@ -67,6 +77,19 @@ class File(Path):
         # delete and track
         shutil.rmtree(root, ignore_errors=True)
         File._deleted.add(root)
+
+def _ensure_trailing_newline(path: Path) -> None:
+    """Append a newline if the file is non-empty and doesn't already end with one."""
+    try:
+        with open(path, "rb+") as f:
+            f.seek(0, os.SEEK_END)
+            if f.tell() == 0:
+                return
+            f.seek(-1, os.SEEK_END)
+            if f.read(1) != b"\n":
+                f.write(b"\n")
+    except Exception as e:
+        log_error("Failed to ensure trailing newline", e)
 
 # ------------------------------------------------------------------------------
 # Constants - Directories
