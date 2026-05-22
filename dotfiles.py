@@ -456,7 +456,7 @@ def restore_windows_terminal(app: str, dir: File):
 # ------------------------------------------------------------------------------
 # Registry
 # ------------------------------------------------------------------------------
-ITEMS: dict[str, dict[str, dict[Op, Callable[[], None]]]] = {
+REGISTRY_BY_CATEGORY: dict[str, dict[str, dict[Op, Callable[[], None]]]] = {
     "AI": {
         "Claude Code": {Op.BACKUP: backup_claude_code, Op.RESTORE: restore_claude_code},
     },
@@ -479,14 +479,21 @@ ITEMS: dict[str, dict[str, dict[Op, Callable[[], None]]]] = {
     },
 }
 
+REGISTRY_BY_APP: dict[str, dict[Op, Callable[[], None]]] = {
+    app: handlers
+    for category in REGISTRY_BY_CATEGORY.values()
+    for app, handlers in category.items()
+}
+
 # ------------------------------------------------------------------------------
 # Main
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
-    operations = show_tui(ITEMS, (Op.BACKUP, Op.RESTORE))
-    if not operations:
+    selections = show_tui(REGISTRY_BY_CATEGORY, (Op.BACKUP, Op.RESTORE))
+    if not selections:
         sys.exit(0)
 
-    fns = {name: handlers for items in ITEMS.values() for name, handlers in items.items()}
-    for label, name in operations:
-        fns[name][Op(label)]()
+    for op_label, app in selections:
+        op = Op(op_label)
+        handler = REGISTRY_BY_APP[app][op]
+        handler()

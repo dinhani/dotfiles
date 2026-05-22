@@ -8,30 +8,25 @@ Cross-platform (Windows / Linux / Mac) Python script that backs up app config fi
 
 ### Module split
 
-- `dotfiles.py` — **core / domain**: file-copy primitives, OS dispatch, the `Op` enum (`BACKUP` / `RESTORE`), per-app `backup_<app>` / `restore_<app>` functions, the `ITEMS` registry, and `__main__`.
-- `dotfiles_tui.py` — **UI only**: `show_tui(items, panels)`, a generic two-panel picker built on vendored `prompt_toolkit`. Knows nothing about backup/restore — it takes the two panel labels as a parameter and returns `(panel_label, item_name)` tuples. The TUI never imports from `dotfiles.py` (avoids a cycle); the caller maps panel labels back to `Op` via `Op(label)`.
+- `dotfiles.py` — core/domain: file-copy primitives, OS dispatch, per-app backup/restore handlers, and the registry mapping categories → apps → handlers.
+- `dotfiles_tui.py` — UI only: a generic two-panel picker built on vendored `prompt_toolkit`. Knows nothing about backup/restore — it takes panel labels as a parameter and returns `(panel_label, item_name)` selections. The TUI never imports from `dotfiles.py` (avoids a cycle).
 
 ### Core (`dotfiles.py`)
 
-- Entry point. Calls `show_tui(ITEMS, (Op.BACKUP, Op.RESTORE))`, then dispatches `fns[name][Op(label)]()`.
-- Each app has a `backup_<app>` and `restore_<app>` pair, decorated with `@operation("AppName", "subdir")` which injects the app name and resolved `dotfiles/<subdir>` path.
-- Path operations use the `File` class (subclass of `pathlib.Path`) with a `>>` operator: `source >> target` copies file or directory. First write into a `dotfiles/<app>/` subtree deletes that subtree once per session to avoid stale files.
-- OS dispatch uses `match SYSTEM` against the `OS` StrEnum (`WIN`, `MAC`, `LINUX`). Unsupported combos call `log_unsupported(app)`.
-- `Op` is a `StrEnum` (`BACKUP = "Backup"`, `RESTORE = "Restore"`) — values double as the user-facing panel labels.
-- Registry: `ITEMS: dict[str, dict[str, dict[Op, Callable[[], None]]]]` — `category → name → {Op.BACKUP: fn, Op.RESTORE: fn}`. Add new apps there.
-- Path constants: `WIN_HOME`, `WIN_ROAMING`, `WIN_LOCAL`, `UNIX_HOME`, `MAC_APP_SUPPORT`, `DOTFILES`.
+- Each app has a backup/restore pair decorated with `@operation`, which injects the app name and resolved `dotfiles/<subdir>` path.
+- File copies use a `>>` operator on a `Path` subclass: `source >> target`. First write into a `dotfiles/<app>/` subtree deletes that subtree once per session to avoid stale files.
+- OS dispatch is via `match` on a `SYSTEM` enum; unsupported combos call `log_unsupported`.
 - Dependencies are vendored under `vendor/` and added to `sys.path` at import time.
 
 ### TUI (`dotfiles_tui.py`)
 
-- `show_tui(items, panels)` — generic two-panel picker. `panels` is a `tuple[str, str]` of left/right labels; the function has no knowledge of the domain those labels represent.
 - Keyboard: `Tab` / `←` / `→` switches panel · `↑` / `↓` moves cursor (skips category headers) · `Space` toggles · `a` selects all · `n` clears all · `Enter` confirms · `Esc` / `Ctrl-C` cancels.
-- Returns `list[tuple[str, str]]` of `(panel_label, item_name)` in menu order, left-panel picks before right-panel picks.
+- Returns selections in menu order, left-panel picks before right-panel picks.
 
 ### Adding a new app
-1. Write `backup_<app>` and `restore_<app>` in `dotfiles.py`, both decorated with `@operation("Display Name", "subdir")`.
-2. Handle each `OS` case explicitly; use `log_unsupported(app)` for unsupported platforms.
-3. Register in `ITEMS` under a category (`Terminal`, `Editor`, `Notes`, ...) as `"Name": {Op.BACKUP: backup_<app>, Op.RESTORE: restore_<app>}`.
+1. Write the backup/restore pair, decorated with `@operation`.
+2. Handle each OS case explicitly; use `log_unsupported` for unsupported platforms.
+3. Register the app under a category (`Terminal`, `Editor`, `Notes`, ...).
 
 ## Goal 2: Unix machine setup (`setup-unix.sh` + `setup-unix-functions.sh`)
 
