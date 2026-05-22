@@ -452,19 +452,27 @@ def restore_windows_terminal(app: str, dir: File):
 # ------------------------------------------------------------------------------
 # Registry
 # ------------------------------------------------------------------------------
-ITEMS = {
-    "Claude Code":      ("AI",       backup_claude_code,      restore_claude_code),
-    "Ghostty":          ("Terminal", backup_ghostty,          restore_ghostty),
-    "PowerShell":       ("Terminal", backup_powershell,       restore_powershell),
-    "Starship":         ("Terminal", backup_starship,         restore_starship),
-    "Warp":             ("Terminal", backup_warp,             restore_warp),
-    "Windows Terminal": ("Terminal", backup_windows_terminal, restore_windows_terminal),
-    "Helix":            ("Editor",   backup_helix,            restore_helix),
-    "JetBrains":        ("Editor",   backup_jetbrains,        restore_jetbrains),
-    "RStudio":          ("Editor",   backup_rstudio,          restore_rstudio),
-    "VIM":              ("Editor",   backup_vim,              restore_vim),
-    "VSCode / Cursor":  ("Editor",   backup_vscode,           restore_vscode),
-    "Notable":          ("Notes",    backup_notable,          restore_notable),
+ITEMS: dict[str, dict[str, tuple]] = {
+    "AI": {
+        "Claude Code": (backup_claude_code, restore_claude_code),
+    },
+    "Terminal": {
+        "Ghostty":          (backup_ghostty,          restore_ghostty),
+        "PowerShell":       (backup_powershell,       restore_powershell),
+        "Starship":         (backup_starship,         restore_starship),
+        "Warp":             (backup_warp,             restore_warp),
+        "Windows Terminal": (backup_windows_terminal, restore_windows_terminal),
+    },
+    "Editor": {
+        "Helix":           (backup_helix,   restore_helix),
+        "JetBrains":       (backup_jetbrains, restore_jetbrains),
+        "RStudio":         (backup_rstudio, restore_rstudio),
+        "VIM":             (backup_vim,     restore_vim),
+        "VSCode / Cursor": (backup_vscode,  restore_vscode),
+    },
+    "Notes": {
+        "Notable": (backup_notable, restore_notable),
+    },
 }
 
 # ------------------------------------------------------------------------------
@@ -472,12 +480,15 @@ ITEMS = {
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
 
+    def section(title: str, op: str) -> list:
+        entries = [Separator(f"=== {title} ===")]
+        for category, items in ITEMS.items():
+            entries.append(Separator(category))
+            entries += [Choice((op, name), name=f"    {name}") for name in items]
+        return entries
+
     # prepare menu
-    labeled = [(name, f"{category:<8} / {name}") for name, (category, _, _) in ITEMS.items()]
-    choices = [Separator("=== Backup ===")]
-    choices += [Choice(("backup", name), name=label) for name, label in labeled]
-    choices.append(Separator("=== Restore ==="))
-    choices += [Choice(("restore", name), name=label) for name, label in labeled]
+    choices = section("Backup", "backup") + section("Restore", "restore")
 
     # show menu
     selection = inquirer.checkbox(message="Select operations:", choices=choices).execute()
@@ -485,7 +496,8 @@ if __name__ == "__main__":
         sys.exit(0)
 
     # execute operations
+    fns = {name: pair for items in ITEMS.values() for name, pair in items.items()}
     for op, name in selection:
-        _, backup_fn, restore_fn = ITEMS[name]
+        backup_fn, restore_fn = fns[name]
         fn = backup_fn if op == "backup" else restore_fn
         fn()
