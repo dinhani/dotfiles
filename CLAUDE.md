@@ -44,3 +44,11 @@ Idempotent provisioning script for fresh Linux / Mac machines. Installs shells, 
 - No Windows setup script — only dotfiles backup/restore covers Windows.
 - Bash uses Unix syntax (forward slashes, `/dev/null`).
 - Keep operations idempotent: every install path must check first and skip if already present.
+
+## JetBrains consistency rules
+
+Files live under `dotfiles/jetbrains/<IDE>/{keymaps,options}/`. When auditing or modifying them, enforce:
+
+1. **Keymaps: Windows ↔ macOS must mirror each other.** The Windows keymap (`VSCode copy.xml`) and macOS keymap (`VSCode _macOS_ copy.xml`) for the same IDE must define the same set of action IDs with the same letter/digit key — only the modifiers differ. Translation: Windows `ctrl` → macOS `meta`, `shift` → `shift`, `alt` → `meta`. Example: Windows `ctrl t` ↔ macOS `meta t`; Windows `shift ctrl o` ↔ macOS `shift meta o`.
+2. **Options (and keymaps) must be consistent across all IDEs, except DataGrip and DataSpell.** Every option file (`advancedSettings.xml`, `colors.scheme.xml`, `editor-font.xml`, `ide.general.xml`, `laf.xml`, `projectView.xml`, `ui.lnf.xml`) and both keymap files should be byte-identical across all JetBrains IDEs. **DataGrip** (databases) and **DataSpell** (data analysis) are allowed to diverge for data/DB-specific configuration and shortcuts — don't force them to match the others.
+3. **Reference IDE: IntelliJIdea.** When fixing drift among the non-data IDEs, align to IntelliJ's version.
