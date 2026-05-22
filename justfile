@@ -1,4 +1,4 @@
-python := if os() == "windows" { "py" } else { "python3" }
+set windows-shell := ["pwsh.exe", "-NoLogo", "-Command"]
 
 # Show available tasks
 [group("project")]
@@ -13,7 +13,7 @@ lint:
 # Backup or restore dotfiles (interactive selection)
 [group("dotfiles")]
 dotfiles:
-    {{python}} dotfiles.py
+    python dotfiles.py
 alias dot := dotfiles
 
 # Setup a Linux or MacOs system from scratch
