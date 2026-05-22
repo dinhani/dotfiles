@@ -1,0 +1,6 @@
+<keymap version="1" name="VSCode (Migrated)" parent="VSCode">
+  <action id="GotoSymbol">
+    <keyboard-shortcut first-keystroke="ctrl t" />
+    <keyboard-shortcut first-keystroke="alt p" />
+  </action>
+</keymap>
