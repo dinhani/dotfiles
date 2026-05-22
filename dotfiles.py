@@ -18,6 +18,8 @@ from dotfiles_tui import show_tui
 class File(Path):
     # track dotfiles dirs that we already deleted
     _deleted: set = set()
+    # when False, deletes dotfiles/<app>/; when True, deletes dotfiles/<category>/<app>/ (example: JetBrains/<app>/)
+    _subdir: bool = False
 
     def __rshift__(self, other) -> None:
         """Copy a source to a target. Automatically detects if source is a file or directory."""
@@ -57,15 +59,14 @@ class File(Path):
         return self.is_relative_to(DOTFILES)
 
     def _delete_dotfiles_root_once(self) -> None:
-        """First write into dotfiles/<app>/... deletes <app> once per session."""
+        """First write into the cleanup root (dotfiles/<app>/... by default) deletes it once per session."""
         # check if inside dotfiles dir
         if not self._is_backup():
             return
 
-        # extract root to delete
-        # jetbrains is a special case because we delete the inner tool directory, not the whole jetbrains dir
+        # extract root to delete; if `subdir` is set, go one level deeper than dotfiles/<app>/
         parts = self.relative_to(DOTFILES).parts
-        if parts[0] == "jetbrains":
+        if File._subdir:
             root = DOTFILES / parts[0] / parts[1]
         else:
             root = DOTFILES / parts[0]
@@ -150,12 +151,21 @@ class Op(StrEnum):
 # ------------------------------------------------------------------------------
 # Decorator
 # ------------------------------------------------------------------------------
-def operation(app: str, dir: str):
-    """Wrap a backup/restore function, injecting the app name and the resolved `dotfiles/<target_dir>` path."""
+def operation(app: str, dir: str, subdir: bool = False):
+    """Wrap a backup/restore function, injecting the app name and the resolved `dotfiles/<target_dir>` path.
+
+    Set `subdir=True` for apps whose backup lives one level deeper (e.g. JetBrains, where each tool has
+    its own subdir under `dotfiles/jetbrains/` that must be preserved when the tool isn't installed on
+    the current machine).
+    """
     def decorator(fn):
         @functools.wraps(fn)
         def wrapper(*args, **kwargs):
-            return fn(app, DOTFILES / dir, *args, **kwargs)
+            File._subdir = subdir
+            try:
+                return fn(app, DOTFILES / dir, *args, **kwargs)
+            finally:
+                File._subdir = False
         return wrapper
     return decorator
 
@@ -271,7 +281,7 @@ def jetbrains_installs() -> dict[str, File]:
             installs[tool] = File(versions[-1])
     return installs
 
-@operation("JetBrains", "jetbrains")
+@operation("JetBrains", "jetbrains", subdir=True)
 def backup_jetbrains(app: str, dir: File):
     for tool, install in jetbrains_installs().items():
         for file in JETBRAINS_FILES:
