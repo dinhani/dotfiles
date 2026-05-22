@@ -217,14 +217,14 @@ JETBRAINS_FILES = (
     "options/advancedSettings.xml",
     "options/colors.scheme.xml",
     "options/editor-font.xml",
+    "options/ide.general.xml",
+    "options/laf.xml",
     "options/projectView.xml",
+    "options/ui.lnf.xml",
     # "options/editor.xml",
     # "options/find.xml",
-    # "options/ide.general.xml",
     # "options/keymapFlags.xml",
-    # "options/laf.xml",
     # "options/terminal-font.xml",
-    # "options/ui.lnf.xml",
     # "options/window.layouts.xml",
 )
 
