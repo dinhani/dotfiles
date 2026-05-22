@@ -8,9 +8,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent / "vendor"))
 
-from InquirerPy import inquirer
-from InquirerPy.base.control import Choice
-from InquirerPy.separator import Separator
+from collections.abc import Callable
+
+from dotfiles_tui import show_tui
 
 # ------------------------------------------------------------------------------
 # Classes
@@ -142,6 +142,10 @@ class OS(StrEnum):
     LINUX = "Linux"
 
 SYSTEM = OS(platform.system())
+
+class Op(StrEnum):
+    BACKUP  = "Backup"
+    RESTORE = "Restore"
 
 # ------------------------------------------------------------------------------
 # Decorator
@@ -452,26 +456,26 @@ def restore_windows_terminal(app: str, dir: File):
 # ------------------------------------------------------------------------------
 # Registry
 # ------------------------------------------------------------------------------
-ITEMS: dict[str, dict[str, tuple]] = {
+ITEMS: dict[str, dict[str, dict[Op, Callable[[], None]]]] = {
     "AI": {
-        "Claude Code": (backup_claude_code, restore_claude_code),
+        "Claude Code": {Op.BACKUP: backup_claude_code, Op.RESTORE: restore_claude_code},
     },
     "Terminal": {
-        "Ghostty":          (backup_ghostty,          restore_ghostty),
-        "PowerShell":       (backup_powershell,       restore_powershell),
-        "Starship":         (backup_starship,         restore_starship),
-        "Warp":             (backup_warp,             restore_warp),
-        "Windows Terminal": (backup_windows_terminal, restore_windows_terminal),
+        "Ghostty":          {Op.BACKUP: backup_ghostty,          Op.RESTORE: restore_ghostty},
+        "PowerShell":       {Op.BACKUP: backup_powershell,       Op.RESTORE: restore_powershell},
+        "Starship":         {Op.BACKUP: backup_starship,         Op.RESTORE: restore_starship},
+        "Warp":             {Op.BACKUP: backup_warp,             Op.RESTORE: restore_warp},
+        "Windows Terminal": {Op.BACKUP: backup_windows_terminal, Op.RESTORE: restore_windows_terminal},
     },
     "Editor": {
-        "Helix":           (backup_helix,   restore_helix),
-        "JetBrains":       (backup_jetbrains, restore_jetbrains),
-        "RStudio":         (backup_rstudio, restore_rstudio),
-        "VIM":             (backup_vim,     restore_vim),
-        "VSCode / Cursor": (backup_vscode,  restore_vscode),
+        "Helix":           {Op.BACKUP: backup_helix,     Op.RESTORE: restore_helix},
+        "JetBrains":       {Op.BACKUP: backup_jetbrains, Op.RESTORE: restore_jetbrains},
+        "RStudio":         {Op.BACKUP: backup_rstudio,   Op.RESTORE: restore_rstudio},
+        "VIM":             {Op.BACKUP: backup_vim,       Op.RESTORE: restore_vim},
+        "VSCode / Cursor": {Op.BACKUP: backup_vscode,    Op.RESTORE: restore_vscode},
     },
     "Notes": {
-        "Notable": (backup_notable, restore_notable),
+        "Notable": {Op.BACKUP: backup_notable, Op.RESTORE: restore_notable},
     },
 }
 
@@ -479,25 +483,10 @@ ITEMS: dict[str, dict[str, tuple]] = {
 # Main
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
-
-    def section(title: str, op: str) -> list:
-        entries = [Separator(f"=== {title} ===")]
-        for category, items in ITEMS.items():
-            entries.append(Separator(category))
-            entries += [Choice((op, name), name=f"    {name}") for name in items]
-        return entries
-
-    # prepare menu
-    choices = section("Backup", "backup") + section("Restore", "restore")
-
-    # show menu
-    selection = inquirer.checkbox(message="Select operations:", choices=choices).execute()
-    if not selection:
+    operations = show_tui(ITEMS, (Op.BACKUP, Op.RESTORE))
+    if not operations:
         sys.exit(0)
 
-    # execute operations
-    fns = {name: pair for items in ITEMS.values() for name, pair in items.items()}
-    for op, name in selection:
-        backup_fn, restore_fn = fns[name]
-        fn = backup_fn if op == "backup" else restore_fn
-        fn()
+    fns = {name: handlers for items in ITEMS.values() for name, handlers in items.items()}
+    for label, name in operations:
+        fns[name][Op(label)]()
