@@ -265,8 +265,15 @@ if is_mac; then
 
     # app store
     install_mas 937984704  # Amphetamine
+    install_mas 411643860  # DaisyDisk
+    install_mas 1111570163 # GrandPerspective
     install_mas 441258766  # Magnet
     install_mas 1606145041 # Sleeve
+
+    # personal only
+    if is_personal; then
+        install_mas 1136220934 # Infuse
+    fi
 
     # work only
     if is_work; then
