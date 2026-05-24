@@ -67,14 +67,14 @@ class TuiState:
         return panel == self.panel_active
 
 
-def show_tui(items: dict[str, dict[str, object]], left_panel: str, right_panel: str) -> list[tuple[str, str]]:
+def show_tui(items: dict[str, dict[str, object]], panel_left: str, panel_right: str) -> list[tuple[str, str]]:
     """Two-panel picker over `items` (category → name → ...).
     Returns (panel_label, item_name) pairs in menu order.
     """
 
     state = TuiState(
-        panel_left=left_panel,
-        panel_right=right_panel,
+        panel_left=panel_left,
+        panel_right=panel_right,
         items=items,
     )
 
@@ -172,8 +172,8 @@ def show_tui(items: dict[str, dict[str, object]], left_panel: str, right_panel: 
         HSplit([
             # side-by-side panels
             VSplit([
-                Frame(Window(FormattedTextControl(lambda: tui_panel(left_panel)), height=len(state.menu_items)), width=40, title=lambda: tui_panel_title(left_panel)),
-                Frame(Window(FormattedTextControl(lambda: tui_panel(right_panel)), height=len(state.menu_items)), width=40, title=lambda: tui_panel_title(right_panel)),
+                Frame(Window(FormattedTextControl(lambda: tui_panel(panel_left)), height=len(state.menu_items)), width=40, title=lambda: tui_panel_title(panel_left)),
+                Frame(Window(FormattedTextControl(lambda: tui_panel(panel_right)), height=len(state.menu_items)), width=40, title=lambda: tui_panel_title(panel_right)),
             ], padding=1, align=HorizontalAlign.CENTER),
             # help text
             Window(
@@ -193,7 +193,7 @@ def show_tui(items: dict[str, dict[str, object]], left_panel: str, right_panel: 
 
     return [
         (panel, name)
-        for panel in (left_panel, right_panel)
+        for panel in (panel_left, panel_right)
         for name, is_item in state.menu_items
         if is_item and name in state.panel_selected[panel]
     ]
