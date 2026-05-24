@@ -67,7 +67,7 @@
   "security.workspace.trust.untrustedFiles": "open",
   "terminal.integrated.fontFamily": "JetBrains Mono",
   "terminal.integrated.fontLigatures.enabled": true,
-  "terminal.integrated.fontWeight": "200",
+  "terminal.integrated.fontWeight": "400",
   "terminal.integrated.scrollback": 10000,
   "vsicons.dontShowNewVersionMessage": true,
   "workbench.colorTheme": "Light+",
