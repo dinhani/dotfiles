@@ -110,6 +110,9 @@ WIN_ROAMING: File = WIN_HOME / "AppData" / "Roaming"
 WIN_LOCAL: File = WIN_HOME / "AppData" / "Local"
 """Path of Windows AppData/Local directory."""
 
+WIN_SCOOP: File = File(os.environ.get("SCOOP") or WIN_HOME / "scoop")
+"""Path of Windows Scoop directory; portable apps keep their data under `persist/<app>/`."""
+
 MAC_APP_SUPPORT: File = File(Path.home() / "Library" / "Application Support")
 """Path of Mac Application Support directory."""
 
@@ -400,10 +403,11 @@ def restore_vim(app: str, dir: File):
 # ------------------------------------------------------------------------------
 @operation("VSCode / Cursor", "vscode")
 def backup_vscode(app: str, dir: File):
+    # Scoop installs VSCode as a portable app, so its config lives under persist/ instead of %AppData%\Code.
     match SYSTEM:
         case OS.WIN:
-            WIN_ROAMING / "Code/User/keybindings.json" >> dir / "keybindings.json"
-            WIN_ROAMING / "Code/User/settings.json" >> dir / "settings.json"
+            WIN_SCOOP / "persist/vscode/data/user-data/User/keybindings.json" >> dir / "keybindings.json"
+            WIN_SCOOP / "persist/vscode/data/user-data/User/settings.json" >> dir / "settings.json"
         case OS.LINUX:
             UNIX_HOME / ".config/Code/User/keybindings.json" >> dir / "keybindings.json"
             UNIX_HOME / ".config/Code/User/settings.json" >> dir / "settings.json"
@@ -415,7 +419,7 @@ def backup_vscode(app: str, dir: File):
 def restore_vscode(app: str, dir: File):
     match SYSTEM:
         case OS.WIN:
-            dir >> WIN_ROAMING / "Code/User"
+            dir >> WIN_SCOOP / "persist/vscode/data/user-data/User"
             dir >> WIN_ROAMING / "Cursor/User"
         case OS.LINUX:
             dir >> UNIX_HOME / ".config/Code/User"
