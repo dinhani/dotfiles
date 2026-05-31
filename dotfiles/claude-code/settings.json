@@ -332,7 +332,9 @@
       "Bash(git branch -D*)"
     ]
   },
-  "model": "opus",
+  "enabledPlugins": {
+    "warp@claude-code-warp": true
+  },
   "extraKnownMarketplaces": {
     "claude-code-warp": {
       "source": {
@@ -344,7 +346,5 @@
   "effortLevel": "high",
   "autoUpdatesChannel": "latest",
   "skipDangerousModePermissionPrompt": true,
-  "enabledPlugins": {
-    "warp@claude-code-warp": true
-  }
+  "model": "opus"
 }
