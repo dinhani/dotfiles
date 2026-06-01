@@ -442,7 +442,7 @@ pip3 install --break-system-packages alphabet-detector black boto3 beautifulsoup
 
 # Ruby
 log "Installing Ruby extensions and tools"
-gem install --conservative activesupport pry nokogiri pp puma rails rufo sinatra solargraph webrick tomlrb tomlib
+gem install --conservative activesupport pry nokogiri pp pry puma rails rufo sinatra solargraph webrick tomlrb tomlib
 
 # Rust
 log "Installing Rust toolchains"
