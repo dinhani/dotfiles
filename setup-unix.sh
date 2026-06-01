@@ -438,7 +438,7 @@ not_installed "gopls"                    && go install golang.org/x/tools/gopls@
 
 # Python
 log "Installing Python extensions and tools"
-pip3 install --break-system-packages bs4 dpath httpie lxml matplotlib mycli networkx numpy pandas polars pgcli python-lsp-server requests ruff scipy selenium unidecode toml tomli yamale yapf
+pip3 install --break-system-packages alphabet-detector black boto3 beautifulsoup4 codetiming colorama cmap dpath deep-translator dotmap httpie isbnlib lazy-object-proxy lxml matplotlib mycli networkx numpy openai pandas polars pgcli psycopg2-binary python-dateutil python-lsp-server PyYAML requests ruff scipy selenium sqlitedict simple-chalk structlog unidecode tqdm toml tomli yamale yapf
 
 # Ruby
 log "Installing Ruby extensions and tools"
