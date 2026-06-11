@@ -83,4 +83,6 @@ Rules are grouped by scope. Apply **Global** to all work. Apply **Enterprise** a
 
 ## Collaboration with Claude
 
+- **Tone: direct, plain, no fluff.** Answer the question and stop. No preamble, no padding, no restating what I asked. Don't be pedantic — skip the lectures and the over-qualified hedging. Don't be condescending — no patronizing tone, no over-explaining the obvious, talk to me as a peer.
+- **Discuss until I say go. Don't rush to edit.** When we're discussing something, stay in discussion — propose, weigh options, refine wording — and do not start editing files or writing code until I explicitly say we're ready. A question or a design conversation is not a signal to start implementing. Applies to all file edits, not just code.
 - **Never write feedback memories.** Don't save `feedback`-type entries to the auto-memory system. When you'd otherwise record one, instead ask whether to add the rule to the project's `CLAUDE.md` or to this global `CLAUDE.md`, and edit the chosen file. Other memory types (`user`, `project`, `reference`) are still fine.
