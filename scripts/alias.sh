@@ -22,6 +22,15 @@ fi
 # clear
 alias c="clear"
 
+# cursor-agent
+function cursor-agent() {
+  plugin_args=()
+  for plugin in ~/.cursor/plugins/*/; do
+    [ -d "$plugin" ] && plugin_args+=(--plugin-dir "$plugin")
+  done
+  command cursor-agent "${plugin_args[@]}" "$@"
+}
+
 # docker
 alias dip="ifconfig eth0 | rg inet"
 alias dkill="docker ps --format '{{.ID}}' | xargs -I{} docker kill {}"
