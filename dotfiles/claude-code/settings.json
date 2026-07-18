@@ -332,6 +332,7 @@
       "Bash(git branch -D*)"
     ]
   },
+  "model": "opus",
   "enabledPlugins": {
     "warp@claude-code-warp": true
   },
@@ -345,6 +346,6 @@
   },
   "effortLevel": "high",
   "autoUpdatesChannel": "latest",
-  "skipDangerousModePermissionPrompt": true,
-  "model": "opus"
+  "tui": "fullscreen",
+  "skipDangerousModePermissionPrompt": true
 }
