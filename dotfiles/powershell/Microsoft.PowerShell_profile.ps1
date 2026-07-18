@@ -3,7 +3,7 @@
 # ------------------------------------------------------------------------------
 
 if (-not ('System.IO.Hashing.Crc32' -as [type])) {
-    Add-Type -Path (Get-ChildItem "$env:ProgramFiles\dotnet\sdk" -Recurse -Filter 'System.IO.Hashing.dll' |
+    Add-Type -Path (Get-ChildItem "C:\_scoop\apps\dotnet-sdk\current\sdk" -Recurse -Filter 'System.IO.Hashing.dll' |
         Where-Object { $_.FullName -match 'tools[\\/]net\d' } | Select-Object -Last 1).FullName
 }
 

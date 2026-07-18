@@ -15,14 +15,6 @@
         {
             "command": 
             {
-                "action": "moveFocus",
-                "direction": "up"
-            },
-            "id": "User.moveFocus.up"
-        },
-        {
-            "command": 
-            {
                 "action": "splitPane",
                 "split": "right",
                 "splitMode": "duplicate"
@@ -32,19 +24,10 @@
         {
             "command": 
             {
-                "action": "splitPane",
-                "split": "up",
-                "splitMode": "duplicate"
-            },
-            "id": "User.splitPane.up"
-        },
-        {
-            "command": 
-            {
                 "action": "moveFocus",
-                "direction": "right"
+                "direction": "up"
             },
-            "id": "User.moveFocus.right"
+            "id": "User.moveFocus.up"
         },
         {
             "command": 
@@ -57,15 +40,32 @@
         {
             "command": 
             {
+                "action": "moveFocus",
+                "direction": "right"
+            },
+            "id": "User.moveFocus.right"
+        },
+        {
+            "command": 
+            {
+                "action": "splitPane",
+                "split": "up",
+                "splitMode": "duplicate"
+            },
+            "id": "User.splitPane.up"
+        },
+        {
+            "command": "closePane",
+            "id": "User.closePane"
+        },
+        {
+            "command": 
+            {
                 "action": "splitPane",
                 "split": "down",
                 "splitMode": "duplicate"
             },
             "id": "User.splitPane.down"
-        },
-        {
-            "command": "closePane",
-            "id": "User.closePane"
         },
         {
             "command": 
@@ -92,36 +92,36 @@
     "keybindings": 
     [
         {
-            "id": "User.splitPane.left",
-            "keys": "ctrl+shift+left"
-        },
-        {
             "id": "User.splitPane.right",
             "keys": "ctrl+shift+right"
         },
         {
-            "id": "User.splitPane.up",
-            "keys": "ctrl+shift+up"
-        },
-        {
-            "id": "User.moveFocus.left",
-            "keys": "ctrl+alt+left"
+            "id": "User.splitPane.left",
+            "keys": "ctrl+shift+left"
         },
         {
             "id": "User.closePane",
             "keys": "ctrl+w"
         },
         {
-            "id": "User.moveFocus.right",
-            "keys": "ctrl+alt+right"
+            "id": "User.moveFocus.left",
+            "keys": "ctrl+alt+left"
+        },
+        {
+            "id": "User.splitPane.up",
+            "keys": "ctrl+shift+up"
+        },
+        {
+            "id": "User.moveFocus.up",
+            "keys": "ctrl+alt+up"
         },
         {
             "id": "User.splitPane.down",
             "keys": "ctrl+shift+down"
         },
         {
-            "id": "User.moveFocus.up",
-            "keys": "ctrl+alt+up"
+            "id": "User.moveFocus.right",
+            "keys": "ctrl+alt+right"
         },
         {
             "id": "User.moveFocus.down",
@@ -148,7 +148,7 @@
             {
                 "antialiasingMode": "cleartype",
                 "colorScheme": "One Half Dark",
-                "commandline": "C:/Program Files/PowerShell/7/pwsh.exe",
+                "commandline": "C:\\_scoop\\apps\\pwsh\\current\\pwsh.exe",
                 "cursorShape": "bar",
                 "font": 
                 {
