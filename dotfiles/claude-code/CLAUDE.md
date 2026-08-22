@@ -88,6 +88,7 @@ Rules are grouped by scope. Apply **Global** to all work. Apply **Enterprise** a
 
 - **No tests required.** Personal projects/scripts don't need unit, integration, or e2e tests. Don't add a test suite, test files, or test scaffolding unless I explicitly ask. Manual verification is fine.
 - **Magic numbers/strings are usually fine inline.** Don't extract constants just to give a literal a name in a one-off script. Extract only when the value is genuinely reused or its meaning is unclear in context.
+- **Parallelism: cap NAS I/O at 8 workers, CPU work can go wide.** My machine is an i9 with 32 threads; my NAS is a Synology 1522+ on HDDs. For CPU-bound work, feel free to use many threads. But any task that reads/writes the NAS in parallel must cap concurrency at **8 workers** — HDDs thrash under heavy parallel I/O, so going wider *lowers* throughput instead of raising it. 8 is the sweet spot for NAS I/O.
 
 ## Collaboration with Claude
 
