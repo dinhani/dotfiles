@@ -150,6 +150,16 @@ reload
 log "Configuring aliases"
 cp scripts/alias.sh $DIR_SCRIPTS
 
+# config: global justfile
+if [ ! -e ~/justfile ]; then
+    log "Configuring global justfile"
+    cat << 'EOF' > ~/justfile
+# Show available tasks
+default:
+    just --justfile ~/justfile --list --unsorted
+EOF
+fi
+
 # config: editor
 if is_linux; then
     log "Configuring editor"
