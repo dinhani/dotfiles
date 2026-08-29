@@ -156,21 +156,6 @@ if is_linux; then
     sudo update-alternatives --install /usr/bin/editor editor "$(brew_dir)/bin/hx" 100
 fi
 
-# config: gpg
-if ! gpg --list-secret-keys "$EMAIL" >/dev/null 2>&1; then
-    log "Configuring GPG key"
-gpg --batch --gen-key <<EOF
-    Key-Type: 1
-    Key-Length: 4096
-    Subkey-Type: 1
-    Subkey-Length: 4096
-    Name-Real: Renato Dinhani
-    Name-Email: $EMAIL
-    Expire-Date: 0
-    %no-protection
-EOF
-fi
-
 # config: ssh
 if [ ! -e ~/.ssh/dinhani.pub ]; then
     log "Configuring SSH key"
