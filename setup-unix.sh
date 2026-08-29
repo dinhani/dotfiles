@@ -133,6 +133,14 @@ eval "\$(starship init zsh)"
 
 # zoxide
 eval "\$(zoxide init zsh)"
+
+# zsh plugins
+if [ -f "$(brew_dir)/share/zsh-autosuggestions/zsh-autosuggestions.zsh" ]; then
+    source "$(brew_dir)/share/zsh-autosuggestions/zsh-autosuggestions.zsh"
+fi
+if [ -f "$(brew_dir)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]; then
+    source "$(brew_dir)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+fi
 EOF
 
 if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
@@ -330,6 +338,8 @@ log "Installing CLI tools"
 install_brew bash
 install_brew nushell
 install_brew zsh
+install_brew zsh-autosuggestions
+install_brew zsh-syntax-highlighting
 install_brew starship
 
 # managers
