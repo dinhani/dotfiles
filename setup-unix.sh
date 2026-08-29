@@ -184,6 +184,9 @@ fi
 log "Configuring Git"
 git config --global user.email "$EMAIL"
 git config --global user.name "Renato Dinhani"
+git config --global core.autocrlf false        # never convert line endings
+git config --global init.defaultBranch main    # main, not master
+git config --global push.autoSetupRemote true  # no --set-upstream
 
 # ------------------------------------------------------------------------------
 # Install APT basic tools
