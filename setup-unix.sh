@@ -133,6 +133,14 @@ eval "\$(starship init zsh)"
 
 # zoxide
 eval "\$(zoxide init zsh)"
+
+# zsh plugins
+if [ -f "$(brew_dir)/share/zsh-autosuggestions/zsh-autosuggestions.zsh" ]; then
+    source "$(brew_dir)/share/zsh-autosuggestions/zsh-autosuggestions.zsh"
+fi
+if [ -f "$(brew_dir)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]; then
+    source "$(brew_dir)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+fi
 EOF
 
 if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
@@ -150,25 +158,20 @@ reload
 log "Configuring aliases"
 cp scripts/alias.sh $DIR_SCRIPTS
 
+# config: global justfile
+if [ ! -e ~/justfile ]; then
+    log "Configuring global justfile"
+    cat << 'EOF' > ~/justfile
+# Show available tasks
+default:
+    just --justfile ~/justfile --list --unsorted
+EOF
+fi
+
 # config: editor
 if is_linux; then
     log "Configuring editor"
     sudo update-alternatives --install /usr/bin/editor editor "$(brew_dir)/bin/hx" 100
-fi
-
-# config: gpg
-if ! gpg --list-secret-keys "$EMAIL" >/dev/null 2>&1; then
-    log "Configuring GPG key"
-gpg --batch --gen-key <<EOF
-    Key-Type: 1
-    Key-Length: 4096
-    Subkey-Type: 1
-    Subkey-Length: 4096
-    Name-Real: Renato Dinhani
-    Name-Email: $EMAIL
-    Expire-Date: 0
-    %no-protection
-EOF
 fi
 
 # config: ssh
@@ -181,6 +184,9 @@ fi
 log "Configuring Git"
 git config --global user.email "$EMAIL"
 git config --global user.name "Renato Dinhani"
+git config --global core.autocrlf false        # never convert line endings
+git config --global init.defaultBranch main    # main, not master
+git config --global push.autoSetupRemote true  # no --set-upstream
 
 # ------------------------------------------------------------------------------
 # Install APT basic tools
@@ -335,6 +341,8 @@ log "Installing CLI tools"
 install_brew bash
 install_brew nushell
 install_brew zsh
+install_brew zsh-autosuggestions
+install_brew zsh-syntax-highlighting
 install_brew starship
 
 # managers
