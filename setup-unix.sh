@@ -175,9 +175,11 @@ if is_linux; then
 fi
 
 # config: dns
-if is_mac && is_personal && [[ "$(networksetup -getdnsservers Wi-Fi)" != "192.168.0.2" ]]; then
-    log "Configuring DNS"
-    sudo networksetup -setdnsservers Wi-Fi 192.168.0.2
+if is_mac; then
+    if [[ "$(networksetup -getdnsservers Wi-Fi)" != "192.168.0.2" ]]; then
+        log "Configuring DNS"
+        sudo networksetup -setdnsservers Wi-Fi 192.168.0.2
+    fi
 fi
 
 # config: ssh
