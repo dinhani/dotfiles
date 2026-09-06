@@ -370,6 +370,7 @@ install_brew fd
 install_brew fzf
 install_brew gh
 install_brew git-delta
+install_brew git-lfs
 install_brew gitql
 install_brew gnupg
 install_brew graphviz
@@ -397,6 +398,8 @@ install_brew wait4x
 install_brew watchexec
 install_brew websocat
 install_brew zoxide
+
+git lfs install
 
 # linux specific
 if is_linux; then
