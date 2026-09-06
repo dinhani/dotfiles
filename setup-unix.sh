@@ -201,6 +201,84 @@ git config --global interactive.diffFilter 'delta --color-only'
 git config --global delta.line-numbers true    # real file line numbers
 
 # ------------------------------------------------------------------------------
+# Configure macOS
+# ------------------------------------------------------------------------------
+if is_mac; then
+    log "Configuring macOS keyboard"
+    set_mac_option NSGlobalDomain ApplePressAndHoldEnabled bool true  # accent popup on key hold
+    set_mac_option NSGlobalDomain KeyRepeat int 1                     # key repeat interval, in 15ms ticks
+    set_mac_option NSGlobalDomain InitialKeyRepeat int 15             # key repeat delay, in 15ms ticks
+    set_mac_option NSGlobalDomain AppleKeyboardUIMode int 3           # tab navigation scope: 3 all controls, 0 text fields and lists
+
+    log "Configuring macOS trackpad"
+    set_mac_option NSGlobalDomain com.apple.swipescrolldirection bool false              # natural scroll direction
+    set_mac_option com.apple.AppleMultitouchTrackpad Clicking bool false                 # tap to click
+    set_mac_option com.apple.AppleMultitouchTrackpad TrackpadRightClick bool true        # two finger tap right click
+    set_mac_option com.apple.AppleMultitouchTrackpad TrackpadThreeFingerDrag bool false  # three finger window drag
+    set_mac_option com.apple.AppleMultitouchTrackpad FirstClickThreshold int 1           # click pressure: 0 light, 1 medium, 2 firm
+
+    log "Configuring macOS text input"
+    set_mac_option NSGlobalDomain NSAutomaticCapitalizationEnabled bool false      # automatic capitalization
+    set_mac_option NSGlobalDomain NSAutomaticSpellingCorrectionEnabled bool false  # automatic spelling correction
+    set_mac_option NSGlobalDomain NSAutomaticPeriodSubstitutionEnabled bool false  # automatic period on double space
+    set_mac_option NSGlobalDomain NSAutomaticQuoteSubstitutionEnabled bool false   # automatic curly quotes
+    set_mac_option NSGlobalDomain NSAutomaticDashSubstitutionEnabled bool false    # automatic em dash
+
+    log "Configuring macOS Finder"
+    set_mac_option com.apple.finder AppleShowAllExtensions bool true             # file extensions
+    set_mac_option com.apple.finder AppleShowAllFiles bool true                  # hidden files
+    set_mac_option com.apple.finder ShowPathbar bool true                        # path bar
+    set_mac_option com.apple.finder ShowStatusBar bool true                      # status bar
+    set_mac_option com.apple.finder FXPreferredViewStyle string Nlsv             # folder view: icnv icon, Nlsv list, clmv column, Flwv gallery
+    set_mac_option com.apple.finder _FXSortFoldersFirst bool true                # folders before files
+    set_mac_option com.apple.finder FXDefaultSearchScope string SCcf             # search scope: SCcf current folder, SCev this Mac, SCsp previous scope
+    set_mac_option com.apple.finder FXEnableExtensionChangeWarning bool false    # extension rename warning
+    set_mac_option com.apple.finder NewWindowTarget string PfHm                  # new window folder: PfHm home, PfDe desktop, PfDo documents, PfLo custom path
+    set_mac_option com.apple.desktopservices DSDontWriteNetworkStores bool true  # .DS_Store on network shares: true never written, false written by Finder
+    set_mac_option com.apple.desktopservices DSDontWriteUSBStores bool true      # .DS_Store on USB drives: true never written, false written by Finder
+
+    log "Configuring macOS Dock"
+    set_mac_option com.apple.dock orientation string bottom  # dock edge: bottom, left, right
+    set_mac_option com.apple.dock tilesize int 54            # dock icon size, in pixels
+    set_mac_option com.apple.dock autohide bool false        # dock auto hide
+    set_mac_option com.apple.dock autohide-delay float 0     # dock auto hide delay, in seconds
+    set_mac_option com.apple.dock magnification bool false   # dock icon magnification
+    set_mac_option com.apple.dock mineffect string scale     # minimize animation: scale, genie, suck
+    set_mac_option com.apple.dock show-recents bool false    # recent apps in the dock
+
+    log "Configuring macOS screenshots"
+    set_mac_option com.apple.screencapture location string "$DIR_DOWNLOADS"  # screenshot folder
+    set_mac_option com.apple.screencapture type string png                   # screenshot format: png, jpg, pdf, tiff, gif
+    set_mac_option com.apple.screencapture disable-shadow bool true          # screenshot window shadow: true cropped tight, false shadow and margin kept
+    set_mac_option com.apple.screencapture show-thumbnail bool false         # screenshot preview thumbnail
+
+    log "Configuring macOS sound"
+    set_mac_option NSGlobalDomain com.apple.sound.beep.feedback bool false  # volume change click
+    set_mac_option NSGlobalDomain com.apple.sound.uiaudio.enabled int 0     # interface sound effects
+
+    log "Configuring macOS dialogs"
+    set_mac_option NSGlobalDomain NSNavPanelExpandedStateForSaveMode bool true   # expanded save panel
+    set_mac_option NSGlobalDomain NSNavPanelExpandedStateForSaveMode2 bool true  # expanded save panel, newer apps
+    set_mac_option NSGlobalDomain PMPrintingExpandedStateForPrint bool true      # expanded print panel
+    set_mac_option NSGlobalDomain PMPrintingExpandedStateForPrint2 bool true     # expanded print panel, newer apps
+    set_mac_option NSGlobalDomain NSDocumentSaveNewDocumentsToCloud bool false   # default save location: true iCloud, false local disk
+
+    log "Configuring macOS lock screen"
+    set_mac_option com.apple.screensaver askForPassword int 1       # password after screensaver or sleep
+    set_mac_option com.apple.screensaver askForPasswordDelay int 0  # password grace period, in seconds
+
+    if [[ "$(nvram StartupMute 2>/dev/null)" != *"%01" ]]; then
+        log "Muting macOS startup chime"
+        sudo nvram StartupMute=%01
+    fi
+
+    log "Restarting macOS UI"
+    killall Dock
+    killall Finder
+    killall SystemUIServer
+fi
+
+# ------------------------------------------------------------------------------
 # Install APT basic tools
 # ------------------------------------------------------------------------------
 if is_linux; then

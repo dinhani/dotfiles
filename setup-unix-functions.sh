@@ -157,6 +157,31 @@ function install_vscode() {
 }
 
 # ------------------------------------------------------------------------------
+# Configuration
+# ------------------------------------------------------------------------------
+
+# Set a macOS option when it does not already hold the expected value.
+function set_mac_option() {
+    local domain=$1
+    local key=$2
+    local type=$3
+    local value=$4
+
+    local current=$(defaults read $domain $key 2>/dev/null)
+    if [[ $type == "bool" && -n $current ]]; then
+        current=$([[ $current == "1" ]] && echo true || echo false)
+    fi
+
+    if [[ -n $current && "$current" == "$value" ]]; then
+        log_skip "Defaults skipping: $domain $key"
+        return 1
+    fi
+
+    log "Defaults writing: $domain $key $value"
+    defaults write $domain $key -$type "$value"
+}
+
+# ------------------------------------------------------------------------------
 # Download / Extract
 # ------------------------------------------------------------------------------
 
