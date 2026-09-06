@@ -229,8 +229,9 @@ if is_mac; then
     set_mac_option com.apple.finder AppleShowAllFiles bool true                  # hidden files
     set_mac_option com.apple.finder ShowPathbar bool true                        # path bar
     set_mac_option com.apple.finder ShowStatusBar bool true                      # status bar
-    set_mac_option com.apple.finder FXPreferredViewStyle string Nlsv             # folder view: icnv icon, Nlsv list, clmv column, Flwv gallery
+    set_mac_option com.apple.finder FXPreferredViewStyle string icnv             # folder view: icnv icon, Nlsv list, clmv column, Flwv gallery
     set_mac_option com.apple.finder _FXSortFoldersFirst bool true                # folders before files
+    set_mac_option com.apple.finder FXPreferredGroupBy string Kind               # grouping criterion: Kind, Name, "Date Modified", "Date Created", "Date Last Opened", Size, Tags
     set_mac_option com.apple.finder FXDefaultSearchScope string SCcf             # search scope: SCcf current folder, SCev this Mac, SCsp previous scope
     set_mac_option com.apple.finder FXEnableExtensionChangeWarning bool false    # extension rename warning
     set_mac_option com.apple.finder NewWindowTarget string PfHm                  # new window folder: PfHm home, PfDe desktop, PfDo documents, PfLo custom path
@@ -243,6 +244,7 @@ if is_mac; then
     set_mac_option com.apple.dock autohide bool false        # dock auto hide
     set_mac_option com.apple.dock autohide-delay float 0     # dock auto hide delay, in seconds
     set_mac_option com.apple.dock magnification bool false   # dock icon magnification
+    set_mac_option com.apple.dock largesize float 64         # magnified dock icon size, in pixels
     set_mac_option com.apple.dock mineffect string scale     # minimize animation: scale, genie, suck
     set_mac_option com.apple.dock show-recents bool false    # recent apps in the dock
 
@@ -254,7 +256,12 @@ if is_mac; then
 
     log "Configuring macOS sound"
     set_mac_option NSGlobalDomain com.apple.sound.beep.feedback bool false  # volume change click
-    set_mac_option NSGlobalDomain com.apple.sound.uiaudio.enabled int 0     # interface sound effects
+    set_mac_option NSGlobalDomain com.apple.sound.uiaudio.enabled int 1     # interface sound effects
+
+    if [[ "$(nvram StartupMute 2>/dev/null)" != *"%00" ]]; then
+        log "Configuring macOS startup chime"
+        sudo nvram StartupMute=%00
+    fi
 
     log "Configuring macOS dialogs"
     set_mac_option NSGlobalDomain NSNavPanelExpandedStateForSaveMode bool true   # expanded save panel
@@ -262,15 +269,6 @@ if is_mac; then
     set_mac_option NSGlobalDomain PMPrintingExpandedStateForPrint bool true      # expanded print panel
     set_mac_option NSGlobalDomain PMPrintingExpandedStateForPrint2 bool true     # expanded print panel, newer apps
     set_mac_option NSGlobalDomain NSDocumentSaveNewDocumentsToCloud bool false   # default save location: true iCloud, false local disk
-
-    log "Configuring macOS lock screen"
-    set_mac_option com.apple.screensaver askForPassword int 1       # password after screensaver or sleep
-    set_mac_option com.apple.screensaver askForPasswordDelay int 0  # password grace period, in seconds
-
-    if [[ "$(nvram StartupMute 2>/dev/null)" != *"%01" ]]; then
-        log "Muting macOS startup chime"
-        sudo nvram StartupMute=%01
-    fi
 
     log "Restarting macOS UI"
     killall Dock
