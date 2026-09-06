@@ -83,11 +83,9 @@ alias gam="git add --all .; git commit -m"
 alias gb="git branch"
 alias gbkill="git branch | grep -vE 'main|master' | xargs -p -I{} git branch -D {}"
 alias gc="git checkout"
-function gd() {
-  git diff $1 | bat
-}
+alias gd="git diff"
 alias gdn="git diff --name-only"
-alias gl="git log | bat"
+alias gl="git log"
 alias gm="git commit -m"
 alias gma="git commit --amend -m"
 alias gman="git commit --amend --no-edit"

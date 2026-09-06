@@ -174,6 +174,12 @@ if is_linux; then
     sudo update-alternatives --install /usr/bin/editor editor "$(brew_dir)/bin/hx" 100
 fi
 
+# config: dns
+if is_mac && is_personal && [[ "$(networksetup -getdnsservers Wi-Fi)" != "192.168.0.2" ]]; then
+    log "Configuring DNS"
+    sudo networksetup -setdnsservers Wi-Fi 192.168.0.2
+fi
+
 # config: ssh
 if [ ! -e ~/.ssh/dinhani.pub ]; then
     log "Configuring SSH key"
@@ -182,11 +188,15 @@ fi
 
 # config: git
 log "Configuring Git"
+rm -f ~/.gitconfig                             # script is the source of truth
 git config --global user.email "$EMAIL"
 git config --global user.name "Renato Dinhani"
 git config --global core.autocrlf false        # never convert line endings
 git config --global init.defaultBranch main    # main, not master
 git config --global push.autoSetupRemote true  # no --set-upstream
+git config --global core.pager delta           # pretty diffs everywhere
+git config --global interactive.diffFilter 'delta --color-only'
+git config --global delta.line-numbers true    # real file line numbers
 
 # ------------------------------------------------------------------------------
 # Install APT basic tools
@@ -353,10 +363,13 @@ install_brew mise
 install_brew bat
 install_brew claude-code
 install_brew dasel
+install_brew dust
 install_brew erdtree
 install_brew eza
 install_brew fd
 install_brew fzf
+install_brew gh
+install_brew git-delta
 install_brew gitql
 install_brew gnupg
 install_brew graphviz
@@ -395,6 +408,7 @@ fi
 
 # mac specific
 if is_mac; then
+    install_brew coreutils  # gdu and friends, aliased in alias.sh
     install_brew mas
 
     install_brew colima
