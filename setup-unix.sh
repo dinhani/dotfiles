@@ -516,7 +516,7 @@ install_asdf maven           3.9.16
 install_asdf nodejs          26.1.0
 install_asdf powershell-core 7.6.1
 install_asdf python          3.14.5
-install_asdf R               4.6.0
+install_asdf r               4.6.0
 install_asdf ruby            4.0.4
 install_asdf zig             0.16.0
 
