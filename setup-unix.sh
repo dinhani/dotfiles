@@ -505,6 +505,8 @@ fi
 # ------------------------------------------------------------------------------
 # Install programming languages
 # ------------------------------------------------------------------------------
+export R_EXTRA_CONFIGURE_OPTIONS=--with-x=no
+
 install_asdf dotnet          10.0.300
 install_asdf golang          1.26.3
 install_asdf gradle          9.5.1
