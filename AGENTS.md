@@ -20,7 +20,8 @@ Cross-platform (Windows / Linux / Mac) Python script that backs up app config fi
 
 ### TUI (`dotfiles_tui.py`)
 
-- Keyboard: `Tab` / `←` / `→` switches panel · `↑` / `↓` moves cursor (skips category headers) · `Space` toggles · `a` selects all · `n` clears all · `Enter` confirms · `Esc` / `Ctrl-C` cancels.
+- Keyboard: `Tab` switches panel · `←` / `→` activates the left / right panel · `↑` / `↓` / `k` / `j` moves cursor (skips category headers) · `Home` / `End` jumps to first / last · `Space` toggles · `a` selects all · `n` clears all · `Enter` confirms · `q` / `Esc` / `Ctrl-C` cancels.
+- Panel titles show the selected count. When any restore is selected, `dotfiles.py` asks for confirmation before running.
 - Returns selections in menu order, left-panel picks before right-panel picks.
 
 ### Adding a new app

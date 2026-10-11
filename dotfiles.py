@@ -10,6 +10,8 @@ sys.path.insert(0, str(Path(__file__).parent / "vendor"))
 
 from collections.abc import Callable
 
+from prompt_toolkit.shortcuts import confirm
+
 from dotfiles_tui import show_tui
 
 # ------------------------------------------------------------------------------
@@ -523,8 +525,12 @@ REGISTRY_BY_APP: dict[str, dict[Op, Callable[[], None]]] = {
 # Main
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
-    selections = show_tui(REGISTRY_BY_CATEGORY, Op.BACKUP, Op.RESTORE)
+    selections = show_tui({category: list(apps) for category, apps in REGISTRY_BY_CATEGORY.items()}, Op.BACKUP, Op.RESTORE)
     if not selections:
+        sys.exit(0)
+
+    apps_restore = [app for op_label, app in selections if op_label == Op.RESTORE]
+    if apps_restore and not confirm(f"Restore overwrites local config for: {', '.join(apps_restore)}. Continue?"):
         sys.exit(0)
 
     for op_label, app in selections:

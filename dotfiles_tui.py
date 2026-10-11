@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from prompt_toolkit import Application
 from prompt_toolkit.formatted_text import FormattedText
 from prompt_toolkit.key_binding import KeyBindings
@@ -6,6 +8,17 @@ from prompt_toolkit.layout.containers import HorizontalAlign, VerticalAlign
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.styles import Style
 from prompt_toolkit.widgets import Frame
+
+
+@dataclass(frozen=True)
+class Category:
+    name: str
+
+@dataclass(frozen=True)
+class Item:
+    name: str
+
+MenuRow = Category | Item
 
 
 class TuiState:
@@ -18,47 +31,49 @@ class TuiState:
     panel_cursors: dict[str, int] # position of cursor in each panel
     panel_selected: dict[str, set[str]] # selected item names in each panel
 
-    menu_items: list[tuple[str, bool]] # (label, is_item) for each menu row, in display order
-    menu_items_indices: list[int] # indexes of menu_rows that are selectable (is_item = True)
+    menu_rows: list[MenuRow] # category and item rows, in display order
+    menu_item_indices: list[int] # indexes of menu_rows that are selectable (Item rows)
 
-    def __init__(self, panel_left: str, panel_right: str, items: dict[str, dict[str, object]]):
+    def __init__(self, panel_left: str, panel_right: str, items: dict[str, list[str]]):
         self.panel_left = panel_left
         self.panel_right = panel_right
 
         # set menu state
-        self.menu_items = []
-        for category_name, members in items.items():
-            self.menu_items.append((category_name, False))
-            for item_name in members:
-                self.menu_items.append((item_name, True))
+        self.menu_rows = []
+        for category_name, item_names in items.items():
+            self.menu_rows.append(Category(category_name))
+            self.menu_rows.extend(Item(item_name) for item_name in item_names)
 
-        self.menu_items_indices = [i for i, (_, is_item) in enumerate(self.menu_items) if is_item]
+        self.menu_item_indices = [i for i, row in enumerate(self.menu_rows) if isinstance(row, Item)]
 
         # set panel state
         self.panel_active = panel_left
-        self.panel_cursors = {panel_left: self.menu_items_indices[0], panel_right: self.menu_items_indices[0]}
+        self.panel_cursors = {panel_left: self.menu_item_indices[0], panel_right: self.menu_item_indices[0]}
         self.panel_selected = {panel_left: set(), panel_right: set()}
 
     def switch_panel(self) -> None:
         self.panel_active = self.panel_right if self.is_active(self.panel_left) else self.panel_left
 
+    def activate_panel(self, panel: str) -> None:
+        self.panel_active = panel
+
     def move_cursor(self, delta: int) -> None:
-        current = self.menu_items_indices.index(self.panel_cursors[self.panel_active])
-        new = max(0, min(len(self.menu_items_indices) - 1, current + delta))
-        self.panel_cursors[self.panel_active] = self.menu_items_indices[new]
+        current = self.menu_item_indices.index(self.panel_cursors[self.panel_active])
+        new = max(0, min(len(self.menu_item_indices) - 1, current + delta))
+        self.panel_cursors[self.panel_active] = self.menu_item_indices[new]
 
     def cursor_to_first(self) -> None:
-        self.panel_cursors[self.panel_active] = self.menu_items_indices[0]
+        self.panel_cursors[self.panel_active] = self.menu_item_indices[0]
 
     def cursor_to_last(self) -> None:
-        self.panel_cursors[self.panel_active] = self.menu_items_indices[-1]
+        self.panel_cursors[self.panel_active] = self.menu_item_indices[-1]
 
     def toggle_item(self) -> None:
-        name = self.menu_items[self.panel_cursors[self.panel_active]][0]
+        name = self.menu_rows[self.panel_cursors[self.panel_active]].name
         self.panel_selected[self.panel_active] ^= {name}
 
     def select_all(self) -> None:
-        self.panel_selected[self.panel_active] = {label for label, is_item in self.menu_items if is_item}
+        self.panel_selected[self.panel_active] = {row.name for row in self.menu_rows if isinstance(row, Item)}
 
     def select_none(self) -> None:
         self.panel_selected[self.panel_active].clear()
@@ -67,8 +82,8 @@ class TuiState:
         return panel == self.panel_active
 
 
-def show_tui(items: dict[str, dict[str, object]], panel_left: str, panel_right: str) -> list[tuple[str, str]]:
-    """Two-panel picker over `items` (category → name → ...).
+def show_tui(items: dict[str, list[str]], panel_left: str, panel_right: str) -> list[tuple[str, str]]:
+    """Two-panel picker over `items` (category → item names).
     Returns (panel_label, item_name) pairs in menu order.
     """
 
@@ -85,16 +100,24 @@ def show_tui(items: dict[str, dict[str, object]], panel_left: str, panel_right: 
 
     @kb.add("tab")
     @kb.add("s-tab")
-    @kb.add("right")
-    @kb.add("left")
     def _(event):
         state.switch_panel()
 
+    @kb.add("left")
+    def _(event):
+        state.activate_panel(panel_left)
+
+    @kb.add("right")
+    def _(event):
+        state.activate_panel(panel_right)
+
     @kb.add("up")
+    @kb.add("k")
     def _(event):
         state.move_cursor(-1)
 
     @kb.add("down")
+    @kb.add("j")
     def _(event):
         state.move_cursor(1)
 
@@ -134,10 +157,10 @@ def show_tui(items: dict[str, dict[str, object]], panel_left: str, panel_right: 
     def tui_panel(panel: str) -> FormattedText:
         fragments: list[tuple[str, str]] = []
 
-        for row_index, (item_label, item_is_item) in enumerate(state.menu_items):
+        for row_index, row in enumerate(state.menu_rows):
             # render category
-            if not item_is_item:
-                fragments.append(("class:category", f" {item_label}\n"))
+            if isinstance(row, Category):
+                fragments.append(("class:category", f" {row.name}\n"))
                 continue
 
             # determine if on cursor or not
@@ -150,15 +173,15 @@ def show_tui(items: dict[str, dict[str, object]], panel_left: str, panel_right: 
                 row_style, item_cursor = "class:item", " "
 
             # determine if selected or not
-            item_marker = "[●]" if item_label in state.panel_selected[panel] else "[ ]"
+            item_marker = "[●]" if row.name in state.panel_selected[panel] else "[ ]"
 
             # render item
-            fragments.append((row_style, f" {item_cursor} {item_marker} {item_label}\n"))
+            fragments.append((row_style, f" {item_cursor} {item_marker} {row.name}\n"))
 
         return FormattedText(fragments)
 
     def tui_panel_title(panel: str) -> str:
-        return f"{'●' if state.is_active(panel) else ' '} {panel}"
+        return f"{'●' if state.is_active(panel) else ' '} {panel} ({len(state.panel_selected[panel])})"
 
     tui_theme = Style.from_dict({
         "category":         "bold ansicyan",
@@ -172,12 +195,12 @@ def show_tui(items: dict[str, dict[str, object]], panel_left: str, panel_right: 
         HSplit([
             # side-by-side panels
             VSplit([
-                Frame(Window(FormattedTextControl(lambda: tui_panel(panel_left)), height=len(state.menu_items)), width=40, title=lambda: tui_panel_title(panel_left)),
-                Frame(Window(FormattedTextControl(lambda: tui_panel(panel_right)), height=len(state.menu_items)), width=40, title=lambda: tui_panel_title(panel_right)),
+                Frame(Window(FormattedTextControl(lambda: tui_panel(panel_left)), height=len(state.menu_rows)), width=40, title=lambda: tui_panel_title(panel_left)),
+                Frame(Window(FormattedTextControl(lambda: tui_panel(panel_right)), height=len(state.menu_rows)), width=40, title=lambda: tui_panel_title(panel_right)),
             ], padding=1, align=HorizontalAlign.CENTER),
             # help text
             Window(
-                FormattedTextControl("[Tab/←→] switch panel  [↑↓] move  [Space] toggle  [a] all  [n] none  [Enter] confirm  [q/Esc] cancel"),
+                FormattedTextControl("[Tab/←→] panel  [↑↓/jk] move  [Home/End] first/last  [Space] toggle  [a] all  [n] none  [Enter] confirm  [q/Esc] cancel"),
                 height=1, style="class:help", align=WindowAlign.CENTER
             )
         ], align=VerticalAlign.CENTER)
@@ -192,8 +215,8 @@ def show_tui(items: dict[str, dict[str, object]], panel_left: str, panel_right: 
         return []
 
     return [
-        (panel, name)
+        (panel, row.name)
         for panel in (panel_left, panel_right)
-        for name, is_item in state.menu_items
-        if is_item and name in state.panel_selected[panel]
+        for row in state.menu_rows
+        if isinstance(row, Item) and row.name in state.panel_selected[panel]
     ]
