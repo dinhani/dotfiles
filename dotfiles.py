@@ -1,11 +1,11 @@
 import ast
-import functools
 import inspect
 import os
 import platform
 import shutil
 import subprocess
 import sys
+from dataclasses import dataclass
 from enum import Enum, StrEnum
 from pathlib import Path
 
@@ -43,6 +43,37 @@ class Sync(StrEnum):
             return cls.MIXED
         return files_changed.pop()
 
+    def has_machine_changes(self) -> bool:
+        return self in (Sync.MACHINE_NEWER, Sync.MIXED)
+
+@dataclass(frozen=True)
+class BackupHistory:
+    commit_times: dict[Path, float]
+    paths_uncommitted: frozenset[Path]
+
+    @classmethod
+    def from_git(cls, dotfiles: Path) -> "BackupHistory":
+        repo = dotfiles.parent
+        git = ["git", "-c", "core.quotePath=false"]
+        git_log = subprocess.run([*git, "log", "--format=@%ct", "--name-only", "--", dotfiles.name], cwd=repo, capture_output=True, encoding="utf-8", check=True).stdout
+        git_status = subprocess.run([*git, "status", "--porcelain", "--untracked-files=all", "--", dotfiles.name], cwd=repo, capture_output=True, encoding="utf-8", check=True).stdout
+
+        commit_times: dict[Path, float] = {}
+        commit_time = 0.0
+        for line in git_log.splitlines():
+            if line.startswith("@"):
+                commit_time = float(line[1:])
+            elif line:
+                commit_times.setdefault(repo / line, commit_time)
+        paths_uncommitted = frozenset(repo / line[3:].split(" -> ")[-1] for line in git_status.splitlines())
+
+        return cls(commit_times=commit_times, paths_uncommitted=paths_uncommitted)
+
+    def get_time(self, backup: Path) -> float:
+        if backup in self.paths_uncommitted or backup not in self.commit_times:
+            return backup.stat().st_mtime
+        return self.commit_times[backup]
+
 class File(Path):
     # track dotfiles dirs that we already deleted
     _deleted: set = set()
@@ -68,7 +99,7 @@ class File(Path):
         else:
             self._copy_dir(target)
 
-    def compare_to_backup(self, backup: "File", backup_times: dict[Path, float]) -> Sync | None:
+    def compare_to_backup(self, backup: "File", history: BackupHistory) -> Sync | None:
         if not self.is_file() and not backup.is_file():
             return None
         if not backup.is_file():
@@ -76,11 +107,10 @@ class File(Path):
         if not self.is_file():
             return Sync.BACKUP_NEWER
 
-        machine_bytes = self.read_bytes()
-        if backup.read_bytes() in (machine_bytes, machine_bytes + b"\n"):
+        if self.read_bytes().removesuffix(b"\n") == backup.read_bytes().removesuffix(b"\n"):
             return Sync.IN_SYNC
 
-        if self.stat().st_mtime > backup_times.get(backup, backup.stat().st_mtime):
+        if self.stat().st_mtime > history.get_time(backup):
             return Sync.MACHINE_NEWER
         return Sync.BACKUP_NEWER
 
@@ -183,7 +213,10 @@ def log_transfer(kind: str, source: Path, target: Path) -> None:
     print("")
     print(f"{COLOR_GREEN}{kind:<4}{COLOR_RESET}  {source} {COLOR_CYAN}→{COLOR_RESET} {target}")
 
+errors_logged: list[Exception] = []
+
 def log_error(message: str, exception: Exception) -> None:
+    errors_logged.append(exception)
     print("")
     print(f"{COLOR_RED}err {COLOR_RESET}  {message}: {exception}")
 
@@ -208,30 +241,48 @@ class Op(StrEnum):
 # ------------------------------------------------------------------------------
 # Decorator
 # ------------------------------------------------------------------------------
-def operation(app: str, dir: str, subdir: bool = False):
+@dataclass(frozen=True)
+class Handler:
+    app: str
+    dir: str
+    subdir: bool
+    fn: Callable[[str, File], None]
+    systems_unsupported: frozenset[OS]
+
+    def __call__(self) -> None:
+        File._subdir = self.subdir
+        try:
+            self.fn(self.app, DOTFILES / self.dir)
+        finally:
+            File._subdir = False
+
+    def is_supported(self) -> bool:
+        return SYSTEM not in self.systems_unsupported
+
+    def collect_transfers(self) -> list[tuple[File, File]]:
+        File._transfer = Transfer.COMPARE
+        File._compared = []
+        try:
+            self()
+        finally:
+            File._transfer = Transfer.COPY
+        return File._compared
+
+def operation(app: str, dir: str, subdir: bool = False) -> Callable[[Callable[[str, File], None]], Handler]:
     """Wrap a backup/restore function, injecting the app name and the resolved `dotfiles/<target_dir>` path.
 
     Set `subdir=True` for apps whose backup lives one level deeper (e.g. JetBrains, where each tool has
     its own subdir under `dotfiles/jetbrains/` that must be preserved when the tool isn't installed on
     the current machine).
     """
-    def decorator(fn):
-        @functools.wraps(fn)
-        def wrapper(*args, **kwargs):
-            File._subdir = subdir
-            try:
-                return fn(app, DOTFILES / dir, *args, **kwargs)
-            finally:
-                File._subdir = False
-
+    def decorator(fn: Callable[[str, File], None]) -> Handler:
         systems_unsupported: set[OS] = set()
         for node in ast.walk(ast.parse(inspect.getsource(fn))):
             match node:
                 case ast.match_case(pattern, body=[ast.Expr(ast.Call(ast.Name(name)))]) if name == log_unsupported.__name__:
                     systems_unsupported |= {OS[value.attr] for value in ast.walk(pattern) if isinstance(value, ast.Attribute)}
-        wrapper.systems_unsupported = systems_unsupported
 
-        return wrapper
+        return Handler(app=app, dir=dir, subdir=subdir, fn=fn, systems_unsupported=frozenset(systems_unsupported))
     return decorator
 
 # ------------------------------------------------------------------------------
@@ -552,7 +603,7 @@ def restore_windows_terminal(app: str, dir: File):
 # ------------------------------------------------------------------------------
 # Registry
 # ------------------------------------------------------------------------------
-REGISTRY_BY_CATEGORY: dict[str, dict[str, dict[Op, Callable[[], None]]]] = {
+REGISTRY_BY_CATEGORY: dict[str, dict[str, dict[Op, Handler]]] = {
     "AI": {
         "Claude Code": {Op.BACKUP: backup_claude_code, Op.RESTORE: restore_claude_code},
     },
@@ -575,7 +626,7 @@ REGISTRY_BY_CATEGORY: dict[str, dict[str, dict[Op, Callable[[], None]]]] = {
     },
 }
 
-REGISTRY_BY_APP: dict[str, dict[Op, Callable[[], None]]] = {
+REGISTRY_BY_APP: dict[str, dict[Op, Handler]] = {
     app: handlers
     for category in REGISTRY_BY_CATEGORY.values()
     for app, handlers in category.items()
@@ -585,42 +636,19 @@ REGISTRY_BY_APP: dict[str, dict[Op, Callable[[], None]]] = {
 # Main
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
-    repo = DOTFILES.parent
-    git = ["git", "-c", "core.quotePath=false"]
-    git_log = subprocess.run([*git, "log", "--format=@%ct", "--name-only", "--", DOTFILES.name], cwd=repo, capture_output=True, encoding="utf-8", check=True).stdout
-    git_status = subprocess.run([*git, "status", "--porcelain", "--untracked-files=all", "--", DOTFILES.name], cwd=repo, capture_output=True, encoding="utf-8", check=True).stdout
+    history = BackupHistory.from_git(DOTFILES)
+    handlers_backup = {app: handlers[Op.BACKUP] for app, handlers in REGISTRY_BY_APP.items() if handlers[Op.BACKUP].is_supported()}
+    transfers = [(app, machine, backup) for app, handler in handlers_backup.items() for machine, backup in handler.collect_transfers()]
 
-    backup_times: dict[Path, float] = {}
-    commit_time = 0.0
-    for line in git_log.splitlines():
-        if line.startswith("@"):
-            commit_time = float(line[1:])
-        elif line:
-            backup_times.setdefault(repo / line, commit_time)
-    for line in git_status.splitlines():
-        backup_times.pop(repo / line[3:].split(" -> ")[-1], None)
-
-    files_by_app: dict[str, set[Sync | None]] = {}
-    pairs: list[tuple[str, File, File]] = []
-    File._transfer = Transfer.COMPARE
-    for app, handlers in REGISTRY_BY_APP.items():
-        handler = handlers[Op.BACKUP]
-        if SYSTEM in handler.systems_unsupported:
-            continue
-        File._compared.clear()
-        handler()
-        files_by_app[app] = set()
-        pairs.extend((app, machine, backup) for machine, backup in File._compared)
-    File._transfer = Transfer.COPY
-
-    for app, machine, backup in tqdm(pairs, desc="Comparing files", unit="file"):
-        files_by_app[app].add(machine.compare_to_backup(backup, backup_times))
+    files_by_app: dict[str, set[Sync | None]] = {app: set() for app in handlers_backup}
+    for app, machine, backup in tqdm(transfers, desc="Comparing files", unit="file"):
+        files_by_app[app].add(machine.compare_to_backup(backup, history))
     items_hint = {app: Sync.from_files(files - {None}) for app, files in files_by_app.items()}
 
     selections = show_tui(
         items={category: list(apps) for category, apps in REGISTRY_BY_CATEGORY.items()},
         items_disabled={
-            op: {app for app, handlers in REGISTRY_BY_APP.items() if SYSTEM in handlers[op].systems_unsupported}
+            op.value: {app for app, handlers in REGISTRY_BY_APP.items() if not handlers[op].is_supported()}
             for op in Op
         },
         items_hint=items_hint,
@@ -630,11 +658,18 @@ if __name__ == "__main__":
     if not selections:
         sys.exit(0)
 
-    apps_restore = [app for op_label, app in selections if op_label == Op.RESTORE]
-    if apps_restore and not confirm(f"Restore overwrites local config for: {', '.join(apps_restore)}. Continue?"):
+    apps_restore_labels = [
+        f"{app} ({items_hint[app]})" if items_hint[app].has_machine_changes() else app
+        for op_label, app in selections
+        if op_label == Op.RESTORE
+    ]
+    if apps_restore_labels and not confirm(f"Restore overwrites local config for: {', '.join(apps_restore_labels)}. Continue?"):
         sys.exit(0)
 
     for op_label, app in selections:
         op = Op(op_label)
         handler = REGISTRY_BY_APP[app][op]
         handler()
+
+    if errors_logged:
+        sys.exit(1)

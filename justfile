@@ -8,7 +8,7 @@ default:
 # Lint and format code
 [group("project")]
 lint:
-    yapf -i dotfiles.py
+    yapf -i dotfiles.py dotfiles_tui.py
 
 # Backup or restore dotfiles (interactive selection)
 [group("dotfiles")]

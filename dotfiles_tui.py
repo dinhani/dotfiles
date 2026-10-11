@@ -1,9 +1,11 @@
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 from prompt_toolkit import Application
+from prompt_toolkit.data_structures import Point
 from prompt_toolkit.formatted_text import FormattedText
 from prompt_toolkit.key_binding import KeyBindings
-from prompt_toolkit.layout import HSplit, Layout, VSplit, Window, WindowAlign
+from prompt_toolkit.layout import Dimension, HSplit, Layout, VSplit, Window, WindowAlign
 from prompt_toolkit.layout.containers import HorizontalAlign, VerticalAlign
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.styles import Style
@@ -28,7 +30,7 @@ class TuiState:
 
     # panel selection
     panel_active: str # which panel is active (left or right)
-    panel_cursors: dict[str, int] # position of cursor in each panel
+    panel_cursors: dict[str, int | None] # position of cursor in each panel (None when the panel has no enabled items)
     panel_selected: dict[str, set[str]] # selected item names in each panel
     panel_disabled: dict[str, set[str]] # disabled item names in each panel
     panel_item_indices: dict[str, list[int]] # indexes of menu_rows that are selectable in each panel (enabled Item rows)
@@ -53,7 +55,7 @@ class TuiState:
             panel: [i for i, row in enumerate(self.menu_rows) if isinstance(row, Item) and row.name not in self.panel_disabled[panel]]
             for panel in (panel_left, panel_right)
         }
-        self.panel_cursors = {panel: indices[0] for panel, indices in self.panel_item_indices.items()}
+        self.panel_cursors = {panel: indices[0] if indices else None for panel, indices in self.panel_item_indices.items()}
 
     def switch_panel(self) -> None:
         self.panel_active = self.panel_right if self.is_active(self.panel_left) else self.panel_left
@@ -63,18 +65,29 @@ class TuiState:
 
     def move_cursor(self, delta: int) -> None:
         indices = self.panel_item_indices[self.panel_active]
-        current = indices.index(self.panel_cursors[self.panel_active])
-        new = max(0, min(len(indices) - 1, current + delta))
+        cursor = self.panel_cursors[self.panel_active]
+        if cursor is None:
+            return
+        new = max(0, min(len(indices) - 1, indices.index(cursor) + delta))
         self.panel_cursors[self.panel_active] = indices[new]
 
     def cursor_to_first(self) -> None:
-        self.panel_cursors[self.panel_active] = self.panel_item_indices[self.panel_active][0]
+        indices = self.panel_item_indices[self.panel_active]
+        if not indices:
+            return
+        self.panel_cursors[self.panel_active] = indices[0]
 
     def cursor_to_last(self) -> None:
-        self.panel_cursors[self.panel_active] = self.panel_item_indices[self.panel_active][-1]
+        indices = self.panel_item_indices[self.panel_active]
+        if not indices:
+            return
+        self.panel_cursors[self.panel_active] = indices[-1]
 
     def toggle_item(self) -> None:
-        name = self.menu_rows[self.panel_cursors[self.panel_active]].name
+        cursor = self.panel_cursors[self.panel_active]
+        if cursor is None:
+            return
+        name = self.menu_rows[cursor].name
         self.panel_selected[self.panel_active] ^= {name}
 
     def select_all(self) -> None:
@@ -87,7 +100,7 @@ class TuiState:
         return panel == self.panel_active
 
 
-def show_tui(items: dict[str, list[str]], items_disabled: dict[str, set[str]], items_hint: dict[str, str], panel_left: str, panel_right: str) -> list[tuple[str, str]]:
+def show_tui(items: dict[str, list[str]], items_disabled: dict[str, set[str]], items_hint: Mapping[str, str], panel_left: str, panel_right: str) -> list[tuple[str, str]]:
     """Two-panel picker over `items` (category → item names).
     Returns (panel_label, item_name) pairs in menu order.
     """
@@ -161,6 +174,7 @@ def show_tui(items: dict[str, list[str]], items_disabled: dict[str, set[str]], i
     # mount TUI
     # --------------------------------------------------------------------------
     panel_width = 40
+    panel_height = Dimension(min=1, max=len(state.menu_rows), preferred=len(state.menu_rows))
 
     def tui_panel(panel: str) -> FormattedText:
         fragments: list[tuple[str, str]] = []
@@ -213,8 +227,8 @@ def show_tui(items: dict[str, list[str]], items_disabled: dict[str, set[str]], i
         HSplit([
             # side-by-side panels
             VSplit([
-                Frame(Window(FormattedTextControl(lambda: tui_panel(panel_left)), height=len(state.menu_rows)), width=panel_width, title=lambda: tui_panel_title(panel_left)),
-                Frame(Window(FormattedTextControl(lambda: tui_panel(panel_right)), height=len(state.menu_rows)), width=panel_width, title=lambda: tui_panel_title(panel_right)),
+                Frame(Window(FormattedTextControl(lambda: tui_panel(panel_left), get_cursor_position=lambda: Point(0, state.panel_cursors[panel_left] or 0)), height=panel_height), width=panel_width, title=lambda: tui_panel_title(panel_left)),
+                Frame(Window(FormattedTextControl(lambda: tui_panel(panel_right), get_cursor_position=lambda: Point(0, state.panel_cursors[panel_right] or 0)), height=panel_height), width=panel_width, title=lambda: tui_panel_title(panel_right)),
             ], padding=1, align=HorizontalAlign.CENTER),
             # help text
             Window(
