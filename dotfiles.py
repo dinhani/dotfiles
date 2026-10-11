@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).parent / "vendor"))
 from collections.abc import Callable
 
 from prompt_toolkit.shortcuts import confirm
+from tqdm import tqdm
 
 from dotfiles_tui import show_tui
 
@@ -599,7 +600,8 @@ if __name__ == "__main__":
     for line in git_status.splitlines():
         backup_times.pop(repo / line[3:].split(" -> ")[-1], None)
 
-    items_hint: dict[str, str] = {}
+    files_by_app: dict[str, set[Sync | None]] = {}
+    pairs: list[tuple[str, File, File]] = []
     File._transfer = Transfer.COMPARE
     for app, handlers in REGISTRY_BY_APP.items():
         handler = handlers[Op.BACKUP]
@@ -607,9 +609,13 @@ if __name__ == "__main__":
             continue
         File._compared.clear()
         handler()
-        files = {machine.compare_to_backup(backup, backup_times) for machine, backup in File._compared}
-        items_hint[app] = Sync.from_files(files - {None})
+        files_by_app[app] = set()
+        pairs.extend((app, machine, backup) for machine, backup in File._compared)
     File._transfer = Transfer.COPY
+
+    for app, machine, backup in tqdm(pairs, desc="Comparing files", unit="file"):
+        files_by_app[app].add(machine.compare_to_backup(backup, backup_times))
+    items_hint = {app: Sync.from_files(files - {None}) for app, files in files_by_app.items()}
 
     selections = show_tui(
         items={category: list(apps) for category, apps in REGISTRY_BY_CATEGORY.items()},
