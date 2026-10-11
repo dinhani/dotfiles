@@ -4,7 +4,7 @@
 			"minimap": {
 				"enabled": false
 			},
-			"lineNumbers": "on",
+			"lineNumbers": "true",
 			"scrollBeyondLastLine": false,
 			"wordWrap": "bounded"
 		}
@@ -14,6 +14,6 @@
 		"type": "ascending"
 	},
 	"theme": "light",
-	"tutorial": true,
+	"tutorial": false,
 	"cwd": "Z:\\pessoal\\notable"
 }

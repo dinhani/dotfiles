@@ -42,7 +42,7 @@
   },
   "files.insertFinalNewline": true,
   "files.trimTrailingWhitespace": true,
-  "git.blame.editorDecoration.enabled": false,
+  "git.blame.editorDecoration.enabled": true,
   "git.ignoreMissingGitWarning": true,
   "git.openRepositoryInParentFolders": "never",
   "github.copilot.enable": {
@@ -73,5 +73,8 @@
   "workbench.colorTheme": "Light+",
   "workbench.editor.enablePreview": false,
   "workbench.iconTheme": "vscode-icons",
-  "workbench.settings.editor": "json"
+  "workbench.settings.editor": "json",
+  "git.blame.statusBarItem.enabled": true,
+  "chat.viewSessions.orientation": "stacked",
+  "claudeCode.preferredLocation": "panel"
 }

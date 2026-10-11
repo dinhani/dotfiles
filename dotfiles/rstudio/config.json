@@ -10,14 +10,16 @@
 	"view": {
 		"zoomLevel": 1,
 		"windowBounds": {
-			"x": 1920,
-			"y": 216,
-			"width": 1536,
-			"height": 864,
+			"x": -6,
+			"y": 0,
+			"width": 1932,
+			"height": 1038,
 			"maximized": true
 		},
 		"accessibility": false,
-		"disableRendererAccessibility": false
+		"disableRendererAccessibility": false,
+		"enableSplashScreen": true,
+		"showWhatsNew": true
 	},
 	"remote_session": {
 		"lastRemoteSessionUrl": "",
@@ -33,7 +35,9 @@
 		"windows": {
 			"rBinDir": "",
 			"preferR64": true,
-			"rExecutablePath": "C:\\_dev\\r\\bin\\x64\\Rterm.exe"
+			"rExecutablePath": "C:\\_scoop\\apps\\r\\current\\bin\\x64\\Rterm.exe",
+			"useDefault32BitR": false,
+			"useDefault64BitR": false
 		},
 		"macos": {
 			"checkForRosetta": true
