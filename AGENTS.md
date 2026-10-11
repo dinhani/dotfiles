@@ -16,12 +16,14 @@ Cross-platform (Windows / Linux / Mac) Python script that backs up app config fi
 - Each app has a backup/restore pair decorated with `@operation`, which injects the app name and resolved `dotfiles/<subdir>` path.
 - File copies use a `>>` operator on a `Path` subclass: `source >> target`. First write into a `dotfiles/<app>/` subtree deletes that subtree once per session to avoid stale files.
 - OS dispatch is via `match` on a `SYSTEM` enum; unsupported combos call `log_unsupported`.
+- Before the TUI opens, each backup handler runs with `File._transfer = Transfer.COMPARE`: `>>` records (machine, backup) file pairs instead of copying. Each pair is compared by content (ignoring the trailing newline backup adds); when content differs, the machine mtime is compared with the backup's last git commit time (or its mtime if uncommitted). The per-app `Sync` result is shown as a hint in the TUI.
 - Dependencies are vendored under `vendor/` and added to `sys.path` at import time.
 
 ### TUI (`dotfiles_tui.py`)
 
 - Items can be disabled per panel (shown dimmed as `[-]`, not selectable). `dotfiles.py` disables apps whose handler is unsupported on the current OS.
 - Keyboard: `Tab` switches panel · `←` / `→` activates the left / right panel · `↑` / `↓` / `k` / `j` moves cursor (skips category headers and disabled items) · `Home` / `End` jumps to first / last · `Space` toggles · `a` selects all · `n` clears all · `Enter` confirms · `q` / `Esc` / `Ctrl-C` cancels.
+- Each item can carry a short hint, shown dimmed and right-aligned in both panels.
 - Panel titles show the selected count. When any restore is selected, `dotfiles.py` asks for confirmation before running.
 - Returns selections in menu order, left-panel picks before right-panel picks.
 

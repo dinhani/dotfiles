@@ -87,7 +87,7 @@ class TuiState:
         return panel == self.panel_active
 
 
-def show_tui(items: dict[str, list[str]], items_disabled: dict[str, set[str]], panel_left: str, panel_right: str) -> list[tuple[str, str]]:
+def show_tui(items: dict[str, list[str]], items_disabled: dict[str, set[str]], items_hint: dict[str, str], panel_left: str, panel_right: str) -> list[tuple[str, str]]:
     """Two-panel picker over `items` (category → item names).
     Returns (panel_label, item_name) pairs in menu order.
     """
@@ -160,6 +160,8 @@ def show_tui(items: dict[str, list[str]], items_disabled: dict[str, set[str]], p
     # --------------------------------------------------------------------------
     # mount TUI
     # --------------------------------------------------------------------------
+    panel_width = 40
+
     def tui_panel(panel: str) -> FormattedText:
         fragments: list[tuple[str, str]] = []
 
@@ -176,17 +178,21 @@ def show_tui(items: dict[str, list[str]], items_disabled: dict[str, set[str]], p
             # determine if on cursor or not
             on_cursor = row_index == state.panel_cursors[panel]
             if on_cursor and state.is_active(panel):
-                row_style, item_cursor = "class:focused", "▶"
+                row_style, hint_style, item_cursor = "class:focused", "class:focused", "▶"
             elif on_cursor:
-                row_style, item_cursor = "class:cursor-inactive", "·"
+                row_style, hint_style, item_cursor = "class:cursor-inactive", "class:hint", "·"
             else:
-                row_style, item_cursor = "class:item", " "
+                row_style, hint_style, item_cursor = "class:item", "class:hint", " "
 
             # determine if selected or not
             item_marker = "[●]" if row.name in state.panel_selected[panel] else "[ ]"
 
             # render item
-            fragments.append((row_style, f" {item_cursor} {item_marker} {row.name}\n"))
+            item_text = f" {item_cursor} {item_marker} {row.name}"
+            item_hint = items_hint.get(row.name, "")
+            item_padding = max(1, panel_width - 2 - len(item_text) - len(item_hint) - 1)
+            fragments.append((row_style, item_text + " " * item_padding))
+            fragments.append((hint_style, f"{item_hint} \n"))
 
         return FormattedText(fragments)
 
@@ -198,6 +204,7 @@ def show_tui(items: dict[str, list[str]], items_disabled: dict[str, set[str]], p
         "focused":          "reverse bold",
         "cursor-inactive":  "ansiblue",
         "disabled":         "ansibrightblack",
+        "hint":             "ansibrightblack",
         "help":             "ansibrightblack",
         "frame.label":      "bold",
     })
@@ -206,8 +213,8 @@ def show_tui(items: dict[str, list[str]], items_disabled: dict[str, set[str]], p
         HSplit([
             # side-by-side panels
             VSplit([
-                Frame(Window(FormattedTextControl(lambda: tui_panel(panel_left)), height=len(state.menu_rows)), width=40, title=lambda: tui_panel_title(panel_left)),
-                Frame(Window(FormattedTextControl(lambda: tui_panel(panel_right)), height=len(state.menu_rows)), width=40, title=lambda: tui_panel_title(panel_right)),
+                Frame(Window(FormattedTextControl(lambda: tui_panel(panel_left)), height=len(state.menu_rows)), width=panel_width, title=lambda: tui_panel_title(panel_left)),
+                Frame(Window(FormattedTextControl(lambda: tui_panel(panel_right)), height=len(state.menu_rows)), width=panel_width, title=lambda: tui_panel_title(panel_right)),
             ], padding=1, align=HorizontalAlign.CENTER),
             # help text
             Window(

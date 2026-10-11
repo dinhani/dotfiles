@@ -4,8 +4,9 @@ import inspect
 import os
 import platform
 import shutil
+import subprocess
 import sys
-from enum import StrEnum
+from enum import Enum, StrEnum
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent / "vendor"))
@@ -19,20 +20,68 @@ from dotfiles_tui import show_tui
 # ------------------------------------------------------------------------------
 # Classes
 # ------------------------------------------------------------------------------
+class Transfer(Enum):
+    COPY    = "copy"
+    COMPARE = "compare"
+
+class Sync(StrEnum):
+    IN_SYNC       = "in sync"
+    MACHINE_NEWER = "machine newer"
+    BACKUP_NEWER  = "backup newer"
+    MIXED         = "mixed"
+    NO_FILES      = "no files"
+
+    @classmethod
+    def from_files(cls, files: set["Sync"]) -> "Sync":
+        files_changed = files - {cls.IN_SYNC}
+        if not files:
+            return cls.NO_FILES
+        if not files_changed:
+            return cls.IN_SYNC
+        if len(files_changed) > 1:
+            return cls.MIXED
+        return files_changed.pop()
+
 class File(Path):
     # track dotfiles dirs that we already deleted
     _deleted: set = set()
     # when False, deletes dotfiles/<app>/; when True, deletes dotfiles/<category>/<app>/ (example: JetBrains/<app>/)
     _subdir: bool = False
+    _transfer: "Transfer" = Transfer.COPY
+    _compared: list[tuple["File", "File"]] = []
 
     def __rshift__(self, other) -> None:
         """Copy a source to a target. Automatically detects if source is a file or directory."""
         target = File(other)
+        if File._transfer is Transfer.COMPARE:
+            if self.is_dir() or target.is_dir():
+                files = {path.relative_to(root) for root in (self, target) for path in root.rglob("*") if path.is_file()}
+                File._compared.extend((self / file, target / file) for file in sorted(files))
+            else:
+                File._compared.append((self, target))
+            return
+
         target._delete_dotfiles_root_once()
         if self.is_file():
             self._copy_file(target)
         else:
             self._copy_dir(target)
+
+    def compare_to_backup(self, backup: "File", backup_times: dict[Path, float]) -> Sync | None:
+        if not self.is_file() and not backup.is_file():
+            return None
+        if not backup.is_file():
+            return Sync.MACHINE_NEWER
+        if not self.is_file():
+            return Sync.BACKUP_NEWER
+
+        machine_bytes = self.read_bytes()
+        if backup.read_bytes() in (machine_bytes, machine_bytes + b"\n"):
+            return Sync.IN_SYNC
+
+        if self.stat().st_mtime > backup_times.get(backup, backup.stat().st_mtime):
+            return Sync.MACHINE_NEWER
+        return Sync.BACKUP_NEWER
 
     def _copy_dir(self, target: "File") -> None:
         """Copy a local directory to a local target."""
@@ -535,12 +584,40 @@ REGISTRY_BY_APP: dict[str, dict[Op, Callable[[], None]]] = {
 # Main
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
+    repo = DOTFILES.parent
+    git = ["git", "-c", "core.quotePath=false"]
+    git_log = subprocess.run([*git, "log", "--format=@%ct", "--name-only", "--", DOTFILES.name], cwd=repo, capture_output=True, encoding="utf-8", check=True).stdout
+    git_status = subprocess.run([*git, "status", "--porcelain", "--untracked-files=all", "--", DOTFILES.name], cwd=repo, capture_output=True, encoding="utf-8", check=True).stdout
+
+    backup_times: dict[Path, float] = {}
+    commit_time = 0.0
+    for line in git_log.splitlines():
+        if line.startswith("@"):
+            commit_time = float(line[1:])
+        elif line:
+            backup_times.setdefault(repo / line, commit_time)
+    for line in git_status.splitlines():
+        backup_times.pop(repo / line[3:].split(" -> ")[-1], None)
+
+    items_hint: dict[str, str] = {}
+    File._transfer = Transfer.COMPARE
+    for app, handlers in REGISTRY_BY_APP.items():
+        handler = handlers[Op.BACKUP]
+        if SYSTEM in handler.systems_unsupported:
+            continue
+        File._compared.clear()
+        handler()
+        files = {machine.compare_to_backup(backup, backup_times) for machine, backup in File._compared}
+        items_hint[app] = Sync.from_files(files - {None})
+    File._transfer = Transfer.COPY
+
     selections = show_tui(
         items={category: list(apps) for category, apps in REGISTRY_BY_CATEGORY.items()},
         items_disabled={
             op: {app for app, handlers in REGISTRY_BY_APP.items() if SYSTEM in handlers[op].systems_unsupported}
             for op in Op
         },
+        items_hint=items_hint,
         panel_left=Op.BACKUP,
         panel_right=Op.RESTORE,
     )
