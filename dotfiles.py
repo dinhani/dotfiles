@@ -187,13 +187,33 @@ def backup_claude_code(app: str, dir: File):
 
 @operation("Claude Code", "claude-code")
 def restore_claude_code(app: str, dir: File):
+    def write_cursor_rule(target: File) -> None:
+        source = dir / "CLAUDE.md"
+        try:
+            log_transfer("file", source, target)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            frontmatter = "---\ndescription: Global programming rules\nalwaysApply: true\n---\n"
+            target.write_text(frontmatter + source.read_text(encoding="utf-8"), encoding="utf-8")
+        except Exception as e:
+            log_error("Failed to write Cursor rule", e)
+
     match SYSTEM:
         case OS.WIN:
             dir / "settings.json" >> WIN_HOME / ".claude/settings.json"
             dir / "CLAUDE.md" >> WIN_HOME / ".claude/CLAUDE.md"
+            dir / "CLAUDE.md" >> WIN_HOME / ".codex/AGENTS.md"
+            write_cursor_rule(WIN_HOME / ".cursor/rules/global-rules.mdc")
+            if (WIN_HOME / ".claude-2").is_dir():
+                dir / "settings.json" >> WIN_HOME / ".claude-2/settings.json"
+                dir / "CLAUDE.md" >> WIN_HOME / ".claude-2/CLAUDE.md"
         case OS.LINUX | OS.MAC:
             dir / "settings.json" >> UNIX_HOME / ".claude/settings.json"
             dir / "CLAUDE.md" >> UNIX_HOME / ".claude/CLAUDE.md"
+            dir / "CLAUDE.md" >> UNIX_HOME / ".codex/AGENTS.md"
+            write_cursor_rule(UNIX_HOME / ".cursor/rules/global-rules.mdc")
+            if (UNIX_HOME / ".claude-2").is_dir():
+                dir / "settings.json" >> UNIX_HOME / ".claude-2/settings.json"
+                dir / "CLAUDE.md" >> UNIX_HOME / ".claude-2/CLAUDE.md"
 
 # ------------------------------------------------------------------------------
 # Items - Ghostty
