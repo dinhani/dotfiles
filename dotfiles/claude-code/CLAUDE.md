@@ -1,6 +1,6 @@
 # Global programming rules
 
-Rules are grouped by scope. Apply **Global** to all work. Apply **Enterprise** and **Personal** only when the project clearly fits that category — if unsure, ask.
+These rules apply to every coding agent working with me (Claude, Codex, Cursor Agent, and any other). Rules are grouped by scope. Apply **Global** to all work. Apply **Enterprise** and **Personal** only when the project clearly fits that category — if unsure, ask.
 
 ## Global (applies to everything)
 
@@ -93,7 +93,7 @@ Rules are grouped by scope. Apply **Global** to all work. Apply **Enterprise** a
 - **Magic numbers/strings are usually fine inline.** Don't extract constants just to give a literal a name in a one-off script. Extract only when the value is genuinely reused or its meaning is unclear in context.
 - **Parallelism: cap NAS I/O at 8 workers, CPU work can go wide.** My machine is an i9 with 32 threads; my NAS is a Synology 1522+ on HDDs. For CPU-bound work, feel free to use many threads. But any task that reads/writes the NAS in parallel must cap concurrency at **8 workers** — HDDs thrash under heavy parallel I/O, so going wider *lowers* throughput instead of raising it. 8 is the sweet spot for NAS I/O.
 
-## Collaboration with Claude
+## Collaboration with Claude, Codex and Cursor Agent
 
 - **Tone: direct, plain, no fluff.** Answer the question and stop. No preamble, no padding, no restating what I asked. Don't be pedantic — skip the lectures and the over-qualified hedging. Don't be condescending — no patronizing tone, no over-explaining the obvious, talk to me as a peer.
 - **Discuss until I say go. Don't rush to edit.** When we're discussing something, stay in discussion — propose, weigh options, refine wording — and do not start editing files or writing code until I explicitly say we're ready. A question or a design conversation is not a signal to start implementing. Applies to all file edits, not just code.
