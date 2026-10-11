@@ -5,7 +5,6 @@ import os
 import platform
 import shutil
 import sys
-import textwrap
 from enum import StrEnum
 from pathlib import Path
 
@@ -176,16 +175,10 @@ def operation(app: str, dir: str, subdir: bool = False):
                 File._subdir = False
 
         systems_unsupported: set[OS] = set()
-        for node in ast.walk(ast.parse(textwrap.dedent(inspect.getsource(fn)))):
-            if not isinstance(node, ast.match_case) or len(node.body) != 1:
-                continue
-            statement = node.body[0]
-            if not (isinstance(statement, ast.Expr) and isinstance(statement.value, ast.Call)
-                    and isinstance(statement.value.func, ast.Name) and statement.value.func.id == log_unsupported.__name__):
-                continue
-            for pattern in ast.walk(node.pattern):
-                if isinstance(pattern, ast.MatchValue) and isinstance(pattern.value, ast.Attribute):
-                    systems_unsupported.add(OS[pattern.value.attr])
+        for node in ast.walk(ast.parse(inspect.getsource(fn))):
+            match node:
+                case ast.match_case(pattern, body=[ast.Expr(ast.Call(ast.Name(name)))]) if name == log_unsupported.__name__:
+                    systems_unsupported |= {OS[value.attr] for value in ast.walk(pattern) if isinstance(value, ast.Attribute)}
         wrapper.systems_unsupported = systems_unsupported
 
         return wrapper
