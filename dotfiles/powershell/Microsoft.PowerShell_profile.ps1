@@ -134,7 +134,10 @@ function Invoke-Unarchive {
         [int]$Limit = 1,
 
         [Parameter(Mandatory = $false)]
-        [switch]$CheckSpace
+        [switch]$CheckSpace,
+
+        [Parameter(Mandatory = $false)]
+        [switch]$Flat
     )
 
     # parse output path
@@ -150,10 +153,14 @@ function Invoke-Unarchive {
     # unarchive files
     $files | ForEach-Object -ThrottleLimit $Limit -Parallel {
         # generate unarchive name
-        $unarchive = Join-Path $using:OutputPath "$($_.BaseName)"
-        if (Test-Path -LiteralPath $unarchive -PathType Container) {
-            Write-Warning "Skipping: $unarchive"
-            continue
+        if ($using:Flat) {
+            $unarchive = $using:OutputPath
+        } else {
+            $unarchive = Join-Path $using:OutputPath "$($_.BaseName)"
+            if (Test-Path -LiteralPath $unarchive -PathType Container) {
+                Write-Warning "Skipping: $unarchive"
+                continue
+            }
         }
 
         # check space
@@ -166,7 +173,11 @@ function Invoke-Unarchive {
         }
 
         # unarchive entry
-        Write-Host "Unarchiving: $unarchive"
+        if ($using:Flat) {
+            Write-Host "Unarchiving: $($_.BaseName)"
+        } else {
+            Write-Host "Unarchiving: $unarchive"
+        }
         7z x -bso0 -bsp0 "$($_.FullName)" -y -o"$unarchive"
     }
 }
@@ -272,8 +283,14 @@ function Invoke-Hash {
 
     # hash files
     $files | ForEach-Object -ThrottleLimit $Limit -Parallel {
+        # \\?\ prefix for paths over MAX_PATH (scriptblocks can't be $using:'d in -Parallel)
+        $path = $_.FullName
+        if (-not $path.StartsWith('\\?\')) {
+            $path = if ($path.StartsWith('\\')) { '\\?\UNC\' + $path.Substring(2) } else { '\\?\' + $path }
+        }
+
         # check which hashes are missing
-        $streams = Get-Item -LiteralPath $_.FullName -Stream * | Select-Object -ExpandProperty Stream
+        $streams = Get-Item -LiteralPath $path -Stream * | Select-Object -ExpandProperty Stream
         $needMD5  = $streams -notcontains "MD5"
         $needSHA1 = $streams -notcontains "SHA1"
         $needCRC  = $streams -notcontains "CRC32"
@@ -284,7 +301,7 @@ function Invoke-Hash {
 
         # hash file in a single streaming pass (no 2 GB array limit)
         Write-Host "Hashing: $($_.FullName)"
-        $stream = [System.IO.File]::OpenRead($_.FullName)
+        $stream = [System.IO.File]::OpenRead($path)
         $md5  = if ($needMD5)  {
             [System.Security.Cryptography.IncrementalHash]::CreateHash([System.Security.Cryptography.HashAlgorithmName]::MD5)
         }
@@ -320,17 +337,17 @@ function Invoke-Hash {
 
         # store computed hashes
         if ($md5) {
-            Set-Content -LiteralPath $_.FullName -Stream MD5 -Value ([System.Convert]::ToHexString($md5.GetHashAndReset()))
+            Set-Content -LiteralPath $path -Stream MD5 -Value ([System.Convert]::ToHexString($md5.GetHashAndReset()))
             $md5.Dispose()
         }
         if ($sha1) {
-            Set-Content -LiteralPath $_.FullName -Stream SHA1 -Value ([System.Convert]::ToHexString($sha1.GetHashAndReset()))
+            Set-Content -LiteralPath $path -Stream SHA1 -Value ([System.Convert]::ToHexString($sha1.GetHashAndReset()))
             $sha1.Dispose()
         }
         if ($needCRC) {
             $hash = $crc.GetCurrentHash()
             [System.Array]::Reverse($hash)
-            Set-Content -LiteralPath $_.FullName -Stream CRC32 -Value ([System.Convert]::ToHexString($hash))
+            Set-Content -LiteralPath $path -Stream CRC32 -Value ([System.Convert]::ToHexString($hash))
         }
     }
 }
@@ -361,13 +378,19 @@ function Invoke-FindDuplicates {
         $processing.Enqueue($true)
         Write-Progress -Activity "Hashing" -Status "$($processing.Count)/$($using:filesToHash.Count)" -PercentComplete ($processing.Count / $using:filesToHash.Count * 100)
 
+        # \\?\ prefix for paths over MAX_PATH (scriptblocks can't be $using:'d in -Parallel)
+        $path = $_.FullName
+        if (-not $path.StartsWith('\\?\')) {
+            $path = if ($path.StartsWith('\\')) { '\\?\UNC\' + $path.Substring(2) } else { '\\?\' + $path }
+        }
+
         # get hash or compute it
-        $streams = Get-Item -LiteralPath $_.FullName -Stream * | Select-Object -ExpandProperty Stream
+        $streams = Get-Item -LiteralPath $path -Stream * | Select-Object -ExpandProperty Stream
         Write-Host $_.FullName
         if ($streams -contains "MD5") {
-            $hash = Get-Content -LiteralPath $_.FullName -Stream MD5
+            $hash = Get-Content -LiteralPath $path -Stream MD5
         } else {
-            $stream = [System.IO.File]::OpenRead($_.FullName)
+            $stream = [System.IO.File]::OpenRead($path)
             try {
                 $bytes = [byte[]]::new($stream.Length)
                 $stream.ReadExactly($bytes, 0, $bytes.Length)
@@ -376,7 +399,7 @@ function Invoke-FindDuplicates {
             }
             $hashBytes = [System.Security.Cryptography.MD5]::HashData($bytes)
             $hash = [System.Convert]::ToHexString($hashBytes)
-            Set-Content -LiteralPath $_.FullName -Stream MD5 -Value $hash
+            Set-Content -LiteralPath $path -Stream MD5 -Value $hash
         }
 
         # hash
