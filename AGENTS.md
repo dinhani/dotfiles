@@ -20,13 +20,14 @@ Cross-platform (Windows / Linux / Mac) Python script that backs up app config fi
 
 ### TUI (`dotfiles_tui.py`)
 
-- Keyboard: `Tab` switches panel · `←` / `→` activates the left / right panel · `↑` / `↓` / `k` / `j` moves cursor (skips category headers) · `Home` / `End` jumps to first / last · `Space` toggles · `a` selects all · `n` clears all · `Enter` confirms · `q` / `Esc` / `Ctrl-C` cancels.
+- Items can be disabled per panel (shown dimmed as `[-]`, not selectable). `dotfiles.py` disables apps whose handler is unsupported on the current OS.
+- Keyboard: `Tab` switches panel · `←` / `→` activates the left / right panel · `↑` / `↓` / `k` / `j` moves cursor (skips category headers and disabled items) · `Home` / `End` jumps to first / last · `Space` toggles · `a` selects all · `n` clears all · `Enter` confirms · `q` / `Esc` / `Ctrl-C` cancels.
 - Panel titles show the selected count. When any restore is selected, `dotfiles.py` asks for confirmation before running.
 - Returns selections in menu order, left-panel picks before right-panel picks.
 
 ### Adding a new app
 1. Write the backup/restore pair, decorated with `@operation`.
-2. Handle each OS case explicitly; use `log_unsupported` for unsupported platforms.
+2. Handle each OS case explicitly; for unsupported platforms write a `case` whose only statement is `log_unsupported(app)`. `@operation` parses the handler source for exactly that shape to disable the app in the TUI on those platforms.
 3. Register the app under a category (`Terminal`, `Editor`, `Notes`, ...).
 
 ## Goal 2: Unix machine setup (`setup-unix.sh` + `setup-unix-functions.sh`)

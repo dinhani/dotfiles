@@ -30,11 +30,12 @@ class TuiState:
     panel_active: str # which panel is active (left or right)
     panel_cursors: dict[str, int] # position of cursor in each panel
     panel_selected: dict[str, set[str]] # selected item names in each panel
+    panel_disabled: dict[str, set[str]] # disabled item names in each panel
+    panel_item_indices: dict[str, list[int]] # indexes of menu_rows that are selectable in each panel (enabled Item rows)
 
     menu_rows: list[MenuRow] # category and item rows, in display order
-    menu_item_indices: list[int] # indexes of menu_rows that are selectable (Item rows)
 
-    def __init__(self, panel_left: str, panel_right: str, items: dict[str, list[str]]):
+    def __init__(self, panel_left: str, panel_right: str, items: dict[str, list[str]], items_disabled: dict[str, set[str]]):
         self.panel_left = panel_left
         self.panel_right = panel_right
 
@@ -44,12 +45,15 @@ class TuiState:
             self.menu_rows.append(Category(category_name))
             self.menu_rows.extend(Item(item_name) for item_name in item_names)
 
-        self.menu_item_indices = [i for i, row in enumerate(self.menu_rows) if isinstance(row, Item)]
-
         # set panel state
         self.panel_active = panel_left
-        self.panel_cursors = {panel_left: self.menu_item_indices[0], panel_right: self.menu_item_indices[0]}
         self.panel_selected = {panel_left: set(), panel_right: set()}
+        self.panel_disabled = {panel: items_disabled.get(panel, set()) for panel in (panel_left, panel_right)}
+        self.panel_item_indices = {
+            panel: [i for i, row in enumerate(self.menu_rows) if isinstance(row, Item) and row.name not in self.panel_disabled[panel]]
+            for panel in (panel_left, panel_right)
+        }
+        self.panel_cursors = {panel: indices[0] for panel, indices in self.panel_item_indices.items()}
 
     def switch_panel(self) -> None:
         self.panel_active = self.panel_right if self.is_active(self.panel_left) else self.panel_left
@@ -58,22 +62,23 @@ class TuiState:
         self.panel_active = panel
 
     def move_cursor(self, delta: int) -> None:
-        current = self.menu_item_indices.index(self.panel_cursors[self.panel_active])
-        new = max(0, min(len(self.menu_item_indices) - 1, current + delta))
-        self.panel_cursors[self.panel_active] = self.menu_item_indices[new]
+        indices = self.panel_item_indices[self.panel_active]
+        current = indices.index(self.panel_cursors[self.panel_active])
+        new = max(0, min(len(indices) - 1, current + delta))
+        self.panel_cursors[self.panel_active] = indices[new]
 
     def cursor_to_first(self) -> None:
-        self.panel_cursors[self.panel_active] = self.menu_item_indices[0]
+        self.panel_cursors[self.panel_active] = self.panel_item_indices[self.panel_active][0]
 
     def cursor_to_last(self) -> None:
-        self.panel_cursors[self.panel_active] = self.menu_item_indices[-1]
+        self.panel_cursors[self.panel_active] = self.panel_item_indices[self.panel_active][-1]
 
     def toggle_item(self) -> None:
         name = self.menu_rows[self.panel_cursors[self.panel_active]].name
         self.panel_selected[self.panel_active] ^= {name}
 
     def select_all(self) -> None:
-        self.panel_selected[self.panel_active] = {row.name for row in self.menu_rows if isinstance(row, Item)}
+        self.panel_selected[self.panel_active] = {self.menu_rows[i].name for i in self.panel_item_indices[self.panel_active]}
 
     def select_none(self) -> None:
         self.panel_selected[self.panel_active].clear()
@@ -82,7 +87,7 @@ class TuiState:
         return panel == self.panel_active
 
 
-def show_tui(items: dict[str, list[str]], panel_left: str, panel_right: str) -> list[tuple[str, str]]:
+def show_tui(items: dict[str, list[str]], items_disabled: dict[str, set[str]], panel_left: str, panel_right: str) -> list[tuple[str, str]]:
     """Two-panel picker over `items` (category → item names).
     Returns (panel_label, item_name) pairs in menu order.
     """
@@ -91,6 +96,7 @@ def show_tui(items: dict[str, list[str]], panel_left: str, panel_right: str) -> 
         panel_left=panel_left,
         panel_right=panel_right,
         items=items,
+        items_disabled=items_disabled,
     )
 
     # --------------------------------------------------------------------------
@@ -163,6 +169,10 @@ def show_tui(items: dict[str, list[str]], panel_left: str, panel_right: str) -> 
                 fragments.append(("class:category", f" {row.name}\n"))
                 continue
 
+            if row.name in state.panel_disabled[panel]:
+                fragments.append(("class:disabled", f"   [-] {row.name}\n"))
+                continue
+
             # determine if on cursor or not
             on_cursor = row_index == state.panel_cursors[panel]
             if on_cursor and state.is_active(panel):
@@ -187,6 +197,7 @@ def show_tui(items: dict[str, list[str]], panel_left: str, panel_right: str) -> 
         "category":         "bold ansicyan",
         "focused":          "reverse bold",
         "cursor-inactive":  "ansiblue",
+        "disabled":         "ansibrightblack",
         "help":             "ansibrightblack",
         "frame.label":      "bold",
     })

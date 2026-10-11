@@ -1,8 +1,11 @@
+import ast
 import functools
+import inspect
 import os
 import platform
 import shutil
 import sys
+import textwrap
 from enum import StrEnum
 from pathlib import Path
 
@@ -171,6 +174,20 @@ def operation(app: str, dir: str, subdir: bool = False):
                 return fn(app, DOTFILES / dir, *args, **kwargs)
             finally:
                 File._subdir = False
+
+        systems_unsupported: set[OS] = set()
+        for node in ast.walk(ast.parse(textwrap.dedent(inspect.getsource(fn)))):
+            if not isinstance(node, ast.match_case) or len(node.body) != 1:
+                continue
+            statement = node.body[0]
+            if not (isinstance(statement, ast.Expr) and isinstance(statement.value, ast.Call)
+                    and isinstance(statement.value.func, ast.Name) and statement.value.func.id == log_unsupported.__name__):
+                continue
+            for pattern in ast.walk(node.pattern):
+                if isinstance(pattern, ast.MatchValue) and isinstance(pattern.value, ast.Attribute):
+                    systems_unsupported.add(OS[pattern.value.attr])
+        wrapper.systems_unsupported = systems_unsupported
+
         return wrapper
     return decorator
 
@@ -525,7 +542,15 @@ REGISTRY_BY_APP: dict[str, dict[Op, Callable[[], None]]] = {
 # Main
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
-    selections = show_tui({category: list(apps) for category, apps in REGISTRY_BY_CATEGORY.items()}, Op.BACKUP, Op.RESTORE)
+    selections = show_tui(
+        items={category: list(apps) for category, apps in REGISTRY_BY_CATEGORY.items()},
+        items_disabled={
+            op: {app for app, handlers in REGISTRY_BY_APP.items() if SYSTEM in handlers[op].systems_unsupported}
+            for op in Op
+        },
+        panel_left=Op.BACKUP,
+        panel_right=Op.RESTORE,
+    )
     if not selections:
         sys.exit(0)
 
