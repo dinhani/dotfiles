@@ -689,7 +689,7 @@ if __name__ == "__main__":
         sys.exit(0)
 
     apps_restore_labels = [
-        f"{app} ({items_hint[app]})" if items_hint[app].has_machine_changes() else app
+        f"{app} ({items_hint[app]})" if app in items_hint and items_hint[app].has_machine_changes() else app
         for op_label, app in selections
         if op_label == Op.RESTORE
     ]
