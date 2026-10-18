@@ -553,6 +553,56 @@ function Invoke-Install {
     Invoke-Expression $command
 }
 
+function Start-LlamaCoder {
+    $modelRoot = "D:/AI-Models-LMStudio"
+    $models = @(
+        Get-ChildItem -LiteralPath $modelRoot -Recurse -File -Filter "*.gguf" |
+            Where-Object { $_.Name -notmatch "^(mmproj-|mtp-)|(?i)reranker|embed" } |
+            Sort-Object FullName
+    )
+    if ($models.Count -eq 0) {
+        Write-Error "No coding models found in $modelRoot"
+        return
+    }
+
+    $modelOptions = for ($i = 0; $i -lt $models.Count; $i++) {
+        [PSCustomObject]@{
+            Number = $i + 1
+            Model = $models[$i].BaseName
+            SizeGB = [math]::Round($models[$i].Length / 1GB, 2)
+        }
+    }
+    $modelOptions | Format-Table -AutoSize | Out-Host
+
+    $selection = Read-Host "Select a model number"
+    $modelIndex = 0
+    if (-not [int]::TryParse($selection, [ref]$modelIndex) -or $modelIndex -lt 1 -or $modelIndex -gt $models.Count) {
+        Write-Error "Select a number from 1 to $($models.Count)"
+        return
+    }
+
+    & "C:/_scoop/apps/llama.cpp-cu133/current/llama-server.exe" `
+        --model $models[$modelIndex - 1].FullName `
+        --port 18080 `
+        --ctx-size 262144 `
+        --parallel 1 `
+        --ubatch-size 2048 `
+        --cache-type-k q8_0 `
+        --cache-type-v q8_0 `
+        --cache-ram 0 `
+        --ctx-checkpoints 0 `
+        --device CUDA0 `
+        --n-gpu-layers all `
+        --fit off `
+        --flash-attn on `
+        --jinja `
+        --reasoning on `
+        --chat-template-kwargs '{"enable_thinking":true}' `
+        --temp 1.0 `
+        --top-p 0.95 `
+        --top-k 64
+}
+
 # ------------------------------------------------------------------------------
 # Aliases
 # ------------------------------------------------------------------------------
@@ -596,6 +646,7 @@ function Skip {
 
 # Function aliases
 Set-Alias c          Clear
+Set-Alias llama-coder Start-LlamaCoder
 Set-Alias unarc      Invoke-Unarchive
 Set-Alias arc        Invoke-Archive
 Set-Alias unarc-test Invoke-UnarchiveTest
