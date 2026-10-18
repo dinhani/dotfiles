@@ -9,33 +9,6 @@
         "baseURL": "http://127.0.0.1:18080/v1"
       },
       "models": {
-        "llama-coder-32k": {
-          "name": "llama-coder 32k",
-          "limit": {
-            "context": 32768,
-            "output": 16384
-          },
-          "reasoning": true,
-          "tool_call": true
-        },
-        "llama-coder-64k": {
-          "name": "llama-coder 64k",
-          "limit": {
-            "context": 65536,
-            "output": 32768
-          },
-          "reasoning": true,
-          "tool_call": true
-        },
-        "llama-coder-128k": {
-          "name": "llama-coder 128k",
-          "limit": {
-            "context": 131072,
-            "output": 32768
-          },
-          "reasoning": true,
-          "tool_call": true
-        },
         "llama-coder-256k": {
           "name": "llama-coder 256k",
           "limit": {
