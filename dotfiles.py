@@ -315,6 +315,7 @@ def restore_claude_code(app: str, dir: File):
             dir / "settings.json" >> WIN_HOME / ".claude/settings.json"
             dir / "CLAUDE.md" >> WIN_HOME / ".claude/CLAUDE.md"
             dir / "CLAUDE.md" >> WIN_HOME / ".codex/AGENTS.md"
+            dir / "CLAUDE.md" >> WIN_HOME / ".config/opencode/AGENTS.md"
             write_cursor_rule(WIN_HOME / ".cursor/rules/global-rules.mdc")
             if (WIN_HOME / ".claude-2").is_dir():
                 dir / "settings.json" >> WIN_HOME / ".claude-2/settings.json"
@@ -323,6 +324,7 @@ def restore_claude_code(app: str, dir: File):
             dir / "settings.json" >> UNIX_HOME / ".claude/settings.json"
             dir / "CLAUDE.md" >> UNIX_HOME / ".claude/CLAUDE.md"
             dir / "CLAUDE.md" >> UNIX_HOME / ".codex/AGENTS.md"
+            dir / "CLAUDE.md" >> UNIX_HOME / ".config/opencode/AGENTS.md"
             write_cursor_rule(UNIX_HOME / ".cursor/rules/global-rules.mdc")
             if (UNIX_HOME / ".claude-2").is_dir():
                 dir / "settings.json" >> UNIX_HOME / ".claude-2/settings.json"
@@ -453,6 +455,33 @@ def restore_notable(app: str, dir: File):
             dir / ".notable.json" >> WIN_HOME / ".notable.json"
         case OS.LINUX | OS.MAC:
             log_unsupported(app)
+
+# ------------------------------------------------------------------------------
+# Items - OpenCode
+# ------------------------------------------------------------------------------
+@operation("OpenCode", "opencode")
+def backup_opencode(app: str, dir: File):
+    match SYSTEM:
+        case OS.WIN:
+            WIN_HOME / ".config/opencode/opencode.json" >> dir / "opencode.json"
+        case OS.LINUX | OS.MAC:
+            log_unsupported(app)
+
+@operation("OpenCode", "opencode")
+def restore_opencode(app: str, dir: File):
+    match SYSTEM:
+        case OS.WIN:
+            dir / "opencode.json" >> WIN_HOME / ".config/opencode/opencode.json"
+        case OS.LINUX | OS.MAC:
+            # llama-server runs on the Windows machine; point other machines at it over the LAN
+            source = dir / "opencode.json"
+            target = UNIX_HOME / ".config/opencode/opencode.json"
+            try:
+                log_transfer("file", source, target)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(source.read_text(encoding="utf-8").replace("127.0.0.1", "192.168.0.11"), encoding="utf-8")
+            except Exception as e:
+                log_error("Failed to write OpenCode config", e)
 
 # ------------------------------------------------------------------------------
 # Items - PowerShell
@@ -606,6 +635,7 @@ def restore_windows_terminal(app: str, dir: File):
 REGISTRY_BY_CATEGORY: dict[str, dict[str, dict[Op, Handler]]] = {
     "AI": {
         "Claude Code": {Op.BACKUP: backup_claude_code, Op.RESTORE: restore_claude_code},
+        "OpenCode":    {Op.BACKUP: backup_opencode,    Op.RESTORE: restore_opencode},
     },
     "Terminal": {
         "Ghostty":          {Op.BACKUP: backup_ghostty,          Op.RESTORE: restore_ghostty},

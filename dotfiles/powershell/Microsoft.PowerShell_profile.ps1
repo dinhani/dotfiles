@@ -554,53 +554,140 @@ function Invoke-Install {
 }
 
 function Start-LlamaCoder {
+    param (
+        [Parameter(Mandatory = $false)]
+        [string]$Model,
+
+        [Parameter(Mandatory = $false)]
+        [switch]$DryRun
+    )
+
+    $server = "C:/_scoop/apps/llama.cpp-cu133/current/llama-server.exe"
     $modelRoot = "D:/AI-Models-LMStudio"
+    $alias = "llama-coder"
+    $port = 18080
+
+    if (-not (Test-Path -LiteralPath $server -PathType Leaf)) {
+        Write-Error "llama-server not found: $server"
+        return
+    }
+    if (-not (Test-Path -LiteralPath $modelRoot -PathType Container)) {
+        Write-Error "Model directory not found: $modelRoot"
+        return
+    }
+
+    # Published presets per family, first match wins. Thinking is the chat-template kwarg that turns reasoning on ($null = fixed by the model).
+    $families = @(
+        [PSCustomObject]@{ Name = "Qwen3-Coder-Next";   Pattern = "qwen3[-_.]?coder[-_.]?next";            ContextSize = 131072; Thinking = $null;                             Sampling = @{ temp = "1.0";  "top-p" = "0.95"; "top-k" = "40"; "min-p" = "0.00"; "repeat-penalty" = "1.00"; "presence-penalty" = "0.0" } }
+        [PSCustomObject]@{ Name = "Qwen3-Coder";        Pattern = "qwen3[-_.]?coder";                       ContextSize = 131072; Thinking = $null;                             Sampling = @{ temp = "0.7";  "top-p" = "0.80"; "top-k" = "20"; "min-p" = "0.00"; "repeat-penalty" = "1.05"; "presence-penalty" = "0.0" } }
+        [PSCustomObject]@{ Name = "Qwen2.5-Coder";      Pattern = "qwen2[-_.]?5[-_.]?coder";                ContextSize = 32768;  Thinking = $null;                             Sampling = @{ temp = "0.7";  "top-p" = "0.80"; "top-k" = "20"; "min-p" = "0.00"; "repeat-penalty" = "1.05"; "presence-penalty" = "0.0" } }
+        [PSCustomObject]@{ Name = "Qwen3 Instruct";     Pattern = "qwen3.*instruct";                        ContextSize = 131072; Thinking = $null;                             Sampling = @{ temp = "0.7";  "top-p" = "0.80"; "top-k" = "20"; "min-p" = "0.00"; "repeat-penalty" = "1.00"; "presence-penalty" = "0.0" } }
+        [PSCustomObject]@{ Name = "Qwen3 / 3.5 / 3.6";  Pattern = "qwen3";                                  ContextSize = 131072; Thinking = @{ enable_thinking = $true };      Sampling = @{ temp = "0.6";  "top-p" = "0.95"; "top-k" = "20"; "min-p" = "0.00"; "repeat-penalty" = "1.00"; "presence-penalty" = "0.0" } }
+        [PSCustomObject]@{ Name = "GLM";                Pattern = "glm";                                    ContextSize = 131072; Thinking = @{ enable_thinking = $true };      Sampling = @{ temp = "0.7";  "top-p" = "1.00"; "top-k" = "40"; "min-p" = "0.01"; "repeat-penalty" = "1.00"; "presence-penalty" = "0.0" } }
+        [PSCustomObject]@{ Name = "gpt-oss";            Pattern = "gpt[-_]?oss";                            ContextSize = 131072; Thinking = @{ reasoning_effort = "high" };    Sampling = @{ temp = "1.0";  "top-p" = "1.00"; "top-k" = "0";  "min-p" = "0.00"; "repeat-penalty" = "1.00"; "presence-penalty" = "0.0" } }
+        [PSCustomObject]@{ Name = "Magistral";          Pattern = "magistral";                              ContextSize = 131072; Thinking = $null;                             Sampling = @{ temp = "0.7";  "top-p" = "0.95"; "top-k" = "0";  "min-p" = "0.01"; "repeat-penalty" = "1.00"; "presence-penalty" = "0.0" } }
+        [PSCustomObject]@{ Name = "Devstral / Mistral"; Pattern = "devstral|codestral|ministral|mistral";   ContextSize = 131072; Thinking = $null;                             Sampling = @{ temp = "0.15"; "top-p" = "1.00"; "top-k" = "0";  "min-p" = "0.01"; "repeat-penalty" = "1.00"; "presence-penalty" = "0.0" } }
+        [PSCustomObject]@{ Name = "Nemotron";           Pattern = "nemotron";                               ContextSize = 131072; Thinking = @{ enable_thinking = $true };      Sampling = @{ temp = "0.6";  "top-p" = "0.95"; "top-k" = "0";  "min-p" = "0.01"; "repeat-penalty" = "1.00"; "presence-penalty" = "0.0" } }
+        [PSCustomObject]@{ Name = "Gemma";              Pattern = "gemma";                                  ContextSize = 131072; Thinking = @{ enable_thinking = $true };      Sampling = @{ temp = "1.0";  "top-p" = "0.95"; "top-k" = "64"; "min-p" = "0.00"; "repeat-penalty" = "1.00"; "presence-penalty" = "0.0" } }
+        [PSCustomObject]@{ Name = "DeepSeek";           Pattern = "deepseek";                               ContextSize = 131072; Thinking = @{ thinking = $true };             Sampling = @{ temp = "0.6";  "top-p" = "0.95"; "top-k" = "0";  "min-p" = "0.00"; "repeat-penalty" = "1.00"; "presence-penalty" = "0.0" } }
+        [PSCustomObject]@{ Name = "generic";            Pattern = ".";                                      ContextSize = 32768;  Thinking = @{ enable_thinking = $true };      Sampling = @{ temp = "0.7";  "top-p" = "0.95"; "top-k" = "40"; "min-p" = "0.05"; "repeat-penalty" = "1.00"; "presence-penalty" = "0.0" } }
+    )
+
+    # list models, collapsing multi-part ggufs into their first shard
     $models = @(
         Get-ChildItem -LiteralPath $modelRoot -Recurse -File -Filter "*.gguf" |
-            Where-Object { $_.Name -notmatch "^(mmproj-|mtp-)|(?i)reranker|embed" } |
-            Sort-Object FullName
+            Where-Object { $_.Name -notmatch "^(mmproj|mtp)-|reranker|embed" } |
+            Group-Object { $_.FullName -replace "-\d{5}-of-\d{5}\.gguf$", ".gguf" } |
+            ForEach-Object {
+                $name = [System.IO.Path]::GetRelativePath($modelRoot, $_.Name) -replace "\.gguf$", "" -replace "\\", "/"
+                [PSCustomObject]@{
+                    Name   = $name
+                    Family = ($families | Where-Object { $name -match $_.Pattern } | Select-Object -First 1)
+                    SizeGB = [math]::Round(($_.Group | Measure-Object Length -Sum).Sum / 1GB, 2)
+                    Path   = ($_.Group | Sort-Object Name | Select-Object -First 1).FullName
+                }
+            } |
+            Sort-Object Name
     )
     if ($models.Count -eq 0) {
-        Write-Error "No coding models found in $modelRoot"
+        Write-Error "No models found in $modelRoot"
         return
     }
 
-    $modelOptions = for ($i = 0; $i -lt $models.Count; $i++) {
-        [PSCustomObject]@{
-            Number = $i + 1
-            Model = $models[$i].BaseName
-            SizeGB = [math]::Round($models[$i].Length / 1GB, 2)
+    $candidates = if ($Model) { @($models | Where-Object { $_.Name -like "*$Model*" }) } else { $models }
+    if ($candidates.Count -eq 0) {
+        Write-Error "No model matches '$Model'. Available: $($models.Name -join ', ')"
+        return
+    }
+
+    $vramGB = 16
+    if (Get-Command nvidia-smi -ErrorAction SilentlyContinue) {
+        $vramMiB = (& nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits | Select-Object -First 1) -as [int]
+        if ($vramMiB) {
+            $vramGB = [math]::Round($vramMiB / 1024, 1)
         }
     }
-    $modelOptions | Format-Table -AutoSize | Out-Host
 
-    $selection = Read-Host "Select a model number"
-    $modelIndex = 0
-    if (-not [int]::TryParse($selection, [ref]$modelIndex) -or $modelIndex -lt 1 -or $modelIndex -gt $models.Count) {
-        Write-Error "Select a number from 1 to $($models.Count)"
-        return
+    $selected = $candidates[0]
+    if ($candidates.Count -gt 1) {
+        $options = for ($i = 0; $i -lt $candidates.Count; $i++) {
+            [PSCustomObject]@{
+                Number = $i + 1
+                Model  = $candidates[$i].Name
+                SizeGB = $candidates[$i].SizeGB
+                Family = $candidates[$i].Family.Name
+                Fit    = if ($candidates[$i].SizeGB + 2 -le $vramGB) { "GPU" } else { "GPU+CPU" }
+            }
+        }
+        $options | Format-Table -AutoSize | Out-Host
+
+        $selection = Read-Host "Select a model number"
+        $modelIndex = 0
+        if (-not [int]::TryParse($selection, [ref]$modelIndex) -or $modelIndex -lt 1 -or $modelIndex -gt $candidates.Count) {
+            Write-Error "Select a number from 1 to $($candidates.Count)"
+            return
+        }
+        $selected = $candidates[$modelIndex - 1]
+    }
+    $family = $selected.Family
+
+    # fit on: with a fixed context, llama.cpp moves MoE experts (then dense layers) to CPU until the rest fits VRAM
+    $arguments = @(
+        "--model", $selected.Path
+        "--alias", $alias
+        "--host", "0.0.0.0"
+        "--port", $port
+        "--device", "CUDA0"
+        "--fit", "on"
+        "--ctx-size", $family.ContextSize
+        "--parallel", "1"
+        "--batch-size", "2048"
+        "--ubatch-size", "2048"
+        "--flash-attn", "on"
+        "--cache-type-k", "q8_0"
+        "--cache-type-v", "q8_0"
+        "--jinja"
+        "--reasoning-format", "auto"
+    )
+    foreach ($option in $family.Sampling.GetEnumerator() | Sort-Object Key) {
+        $arguments += @("--$($option.Key)", $option.Value)
+    }
+    if ($family.Thinking) {
+        $arguments += @("--chat-template-kwargs", ($family.Thinking | ConvertTo-Json -Compress))
     }
 
-    & "C:/_scoop/apps/llama.cpp-cu133/current/llama-server.exe" `
-        --model $models[$modelIndex - 1].FullName `
-        --port 18080 `
-        --ctx-size 262144 `
-        --parallel 1 `
-        --ubatch-size 2048 `
-        --cache-type-k q8_0 `
-        --cache-type-v q8_0 `
-        --cache-ram 0 `
-        --ctx-checkpoints 0 `
-        --device CUDA0 `
-        --n-gpu-layers all `
-        --fit off `
-        --flash-attn on `
-        --jinja `
-        --reasoning on `
-        --chat-template-kwargs '{"enable_thinking":true}' `
-        --temp 1.0 `
-        --top-p 0.95 `
-        --top-k 64
+    Write-Host "Model:     $($selected.Name) ($($selected.SizeGB) GB, VRAM $vramGB GB)" -ForegroundColor Cyan
+    Write-Host "Family:    $($family.Name)"
+    Write-Host "Context:   $($family.ContextSize)"
+    Write-Host "Thinking:  $(if ($family.Thinking) { $family.Thinking | ConvertTo-Json -Compress } else { 'fixed by model' })"
+    Write-Host "Sampling:  $(($family.Sampling.GetEnumerator() | Sort-Object Key | ForEach-Object { "$($_.Key)=$($_.Value)" }) -join ' ')"
+    Write-Host "Endpoint:  http://0.0.0.0:$port/v1  model id '$alias'"
+
+    if ($DryRun) {
+        Write-Host "`n$server $($arguments -join ' ')"
+        return
+    }
+    & $server @arguments
 }
 
 # ------------------------------------------------------------------------------
