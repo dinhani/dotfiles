@@ -2,47 +2,32 @@
 
 # Sorts input objects by size in ascending order.
 function SortSize {
-    param(
-        [Parameter(ValueFromPipeline=$true)]
-        $Input
-    )
-
-    $Input | Sort-Object Length
+    $input | Sort-Object Length
 }
 
 # Sorts input objects by size in descending order.
 function SortSizeDesc {
-    param(
-        [Parameter(ValueFromPipeline=$true)]
-        $Input
-    )
-
-    $Input | Sort-Object Length -Descending
+    $input | Sort-Object Length -Descending
 }
 
 # Returns the top N items from the input.
 function Top {
-    param(
-        [Parameter(ValueFromPipeline=$true)]
-        $Input,
+    param ([int]$N = 10)
 
-        [Parameter(Position = 1, Mandatory = $false)]
-        [int]$N = 10
-    )
-
-    $Input | Select-Object -First $N
+    $input | Select-Object -First $N
 }
-
 
 # Skips the first N items from the input.
 function Skip {
+    param ([int]$N = 10)
 
-    param(
-        [Parameter(ValueFromPipeline=$true)]
-        $Input,
-
-        [Parameter(Position = 1, Mandatory = $false)]
-        [int]$N = 10
-    )
-    $Input | Select-Object -Skip $N
+    $input | Select-Object -Skip $N
 }
+
+# Prints each argument passed to the function with its index.
+function Write-Args {
+    for($i = 0; $i -lt $args.length; $i++) {
+        "$i`: $($args[$i])"
+    }
+}
+
