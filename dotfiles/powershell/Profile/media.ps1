@@ -6,7 +6,7 @@ function Get-MediaInfo {
 
         [Parameter(Mandatory = $false)]
         [Alias("j")]
-        [int]$Parallel = 1
+        [int]$Parallel = 8
     )
 
     $languagesPreferred = "por", "eng"
