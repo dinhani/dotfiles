@@ -5,9 +5,7 @@ function Get-MediaInfo {
         [string]$Path,
 
         [Parameter(Mandatory = $false)]
-
         [Alias("j")]
-
         [int]$Parallel = 1
     )
 

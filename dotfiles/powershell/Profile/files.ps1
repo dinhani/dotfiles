@@ -20,9 +20,7 @@ function Compress-Item {
         [int]$Level = 9,
 
         [Parameter(Mandatory = $false)]
-
         [Alias("j")]
-
         [int]$Parallel = 1,
 
         [Parameter(Mandatory = $false)]
@@ -111,9 +109,7 @@ function Expand-Item {
         [string]$OutputPath,
 
         [Parameter(Mandatory = $false)]
-
         [Alias("j")]
-
         [int]$Parallel = 1,
 
         [Parameter(Mandatory = $false)]
@@ -201,9 +197,7 @@ function Set-FileHash {
         [string[]]$LiteralPath,
 
         [Parameter(Mandatory = $false)]
-
         [Alias("j")]
-
         [int]$Parallel = 1,
 
         [Parameter(Mandatory = $false)]
@@ -340,9 +334,7 @@ function Find-Duplicate {
         [string[]]$Path,
 
         [Parameter(Mandatory = $false)]
-
         [Alias("j")]
-
         [int]$Parallel = 1
     )
 
