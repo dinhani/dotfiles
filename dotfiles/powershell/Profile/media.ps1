@@ -5,7 +5,10 @@ function Get-MediaInfo {
         [string]$Path,
 
         [Parameter(Mandatory = $false)]
-        [int]$Limit = 1
+
+        [Alias("j")]
+
+        [int]$Parallel = 1
     )
 
     $languagesPreferred = "por", "eng"
@@ -19,7 +22,7 @@ function Get-MediaInfo {
     $counter  = [ref]0
 
     $files |
-        ForEach-Object -ThrottleLimit $Limit -Parallel {
+        ForEach-Object -ThrottleLimit $Parallel -Parallel {
             $current = [System.Threading.Interlocked]::Increment(($using:counter))
             Write-Progress -Activity "Scanning" -Status "$current / $using:filesTotal — $($_.Name)" -PercentComplete ($current / $using:filesTotal * 100)
 

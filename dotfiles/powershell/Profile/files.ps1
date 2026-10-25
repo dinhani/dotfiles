@@ -20,7 +20,10 @@ function Compress-Item {
         [int]$Level = 9,
 
         [Parameter(Mandatory = $false)]
-        [int]$Limit = 1,
+
+        [Alias("j")]
+
+        [int]$Parallel = 1,
 
         [Parameter(Mandatory = $false)]
         [ValidateSet("All", "Directory", "File")]
@@ -43,7 +46,7 @@ function Compress-Item {
     Write-Host "Found $($items.Count) items"
 
     # archive items
-    $items | ForEach-Object -ThrottleLimit $Limit -Parallel {
+    $items | ForEach-Object -ThrottleLimit $Parallel -Parallel {
         $source = $_
         $target = Join-Path $using:OutputPath "$($source.BaseName).$using:Type"
         if (Test-Path -LiteralPath $target -PathType Leaf) {
@@ -108,7 +111,10 @@ function Expand-Item {
         [string]$OutputPath,
 
         [Parameter(Mandatory = $false)]
-        [int]$Limit = 1,
+
+        [Alias("j")]
+
+        [int]$Parallel = 1,
 
         [Parameter(Mandatory = $false)]
         [switch]$CheckSpace,
@@ -139,7 +145,7 @@ function Expand-Item {
         if ($MoveBroken) {
             New-Item -Path $dirBroken -ItemType Directory -Force | Out-Null
         }
-        $files | ForEach-Object -ThrottleLimit $Limit -Parallel {
+        $files | ForEach-Object -ThrottleLimit $Parallel -Parallel {
             7z t -bso0 -bsp0 $_.FullName
             if ($LASTEXITCODE -eq 0) {
                 Write-Host "OK: $($_.FullName)" -ForegroundColor Green
@@ -154,7 +160,7 @@ function Expand-Item {
     }
 
     # unarchive files
-    $files | ForEach-Object -ThrottleLimit $Limit -Parallel {
+    $files | ForEach-Object -ThrottleLimit $Parallel -Parallel {
         # generate unarchive name
         if ($using:Flat) {
             $unarchive = $using:OutputPath
@@ -195,7 +201,10 @@ function Set-FileHash {
         [string[]]$LiteralPath,
 
         [Parameter(Mandatory = $false)]
-        [int]$Limit = 1,
+
+        [Alias("j")]
+
+        [int]$Parallel = 1,
 
         [Parameter(Mandatory = $false)]
         [switch]$PassThru
@@ -225,7 +234,7 @@ function Set-FileHash {
     Write-Host "Found $filesTotal files"
 
     # hash files
-    $files | ForEach-Object -ThrottleLimit $Limit -Parallel {
+    $files | ForEach-Object -ThrottleLimit $Parallel -Parallel {
         $current = [System.Threading.Interlocked]::Increment(($using:counter))
         Write-Progress -Activity "Hashing" -Status "$current / $using:filesTotal" -PercentComplete ($current / $using:filesTotal * 100)
 
@@ -331,7 +340,10 @@ function Find-Duplicate {
         [string[]]$Path,
 
         [Parameter(Mandatory = $false)]
-        [int]$Limit = 1
+
+        [Alias("j")]
+
+        [int]$Parallel = 1
     )
 
     # list files
@@ -345,7 +357,7 @@ function Find-Duplicate {
         Write-Host "No duplicates found"
         return
     }
-    $hashes = Set-FileHash -LiteralPath $filesToHash.FullName -Limit $Limit -PassThru
+    $hashes = Set-FileHash -LiteralPath $filesToHash.FullName -Parallel $Parallel -PassThru
 
     # show duplicates
     $duplicates = @($hashes |
