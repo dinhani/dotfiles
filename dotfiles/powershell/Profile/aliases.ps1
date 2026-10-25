@@ -1,0 +1,14 @@
+# Function aliases
+Set-Alias c           Clear
+Set-Alias llama-coder Start-LlamaCoder
+Set-Alias gpu         Show-GpuUsage
+Set-Alias gpu-clean   Invoke-GpuCleanup
+Set-Alias unarc       Invoke-Unarchive
+Set-Alias arc         Invoke-Archive
+Set-Alias unarc-test  Invoke-UnarchiveTest
+Set-Alias hash        Invoke-Hash
+Set-Alias dup         Invoke-FindDuplicates
+Set-Alias add         Invoke-Install
+Set-Alias media       Invoke-Media
+Set-Alias mvascii     Invoke-RenameAscii
+Set-Alias zzz         Invoke-ZipTo7z

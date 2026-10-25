@@ -491,6 +491,7 @@ def backup_powershell(app: str, dir: File):
     match SYSTEM:
         case OS.WIN:
             WIN_HOME / "Documents/PowerShell/Microsoft.PowerShell_profile.ps1" >> dir / "Microsoft.PowerShell_profile.ps1"
+            WIN_HOME / "Documents/PowerShell/Profile" >> dir / "Profile"
         case OS.LINUX | OS.MAC:
             log_unsupported(app)
 
@@ -498,7 +499,7 @@ def backup_powershell(app: str, dir: File):
 def restore_powershell(app: str, dir: File):
     match SYSTEM:
         case OS.WIN:
-            dir / "Microsoft.PowerShell_profile.ps1" >> WIN_HOME / "Documents/PowerShell/Microsoft.PowerShell_profile.ps1"
+            dir >> WIN_HOME / "Documents/PowerShell"
         case OS.LINUX | OS.MAC:
             log_unsupported(app)
 
