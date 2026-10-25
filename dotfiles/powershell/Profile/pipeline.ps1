@@ -25,7 +25,7 @@ function Skip {
 }
 
 # Prints each argument passed to the function with its index.
-function Write-Args {
+function Write-Argument {
     for($i = 0; $i -lt $args.length; $i++) {
         "$i`: $($args[$i])"
     }

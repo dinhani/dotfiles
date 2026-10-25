@@ -1,4 +1,4 @@
-# Apps that Invoke-GpuCleanup kills; Invoke-GpuRestore starts the ones with Restore = $true.
+# Apps that Stop-GpuApp kills; Start-GpuApp starts the ones with Restore = $true.
 $GpuApps = @(
     [PSCustomObject]@{ Process = "avpui";                   Restore = $false; Start = $null }
     [PSCustomObject]@{ Process = "chrome";                  Restore = $false; Start = "C:\Program Files\Google\Chrome\Application\chrome.exe" }
@@ -367,7 +367,7 @@ function Show-GpuUsage {
 }
 
 # Kills apps that hold GPU VRAM so more is free for llama-server.
-function Invoke-GpuCleanup {
+function Stop-GpuApp {
     foreach ($app in $GpuApps) {
         if (Get-Process -Name $app.Process -ErrorAction SilentlyContinue) {
             Write-Host "Killing: $($app.Process)"
@@ -377,7 +377,7 @@ function Invoke-GpuCleanup {
 }
 
 # Starts the apps from $GpuApps that have Restore = $true.
-function Invoke-GpuRestore {
+function Start-GpuApp {
     foreach ($app in $GpuApps | Where-Object Restore) {
         if (-not (Get-Process -Name $app.Process -ErrorAction SilentlyContinue)) {
             Write-Host "Starting: $($app.Process)"

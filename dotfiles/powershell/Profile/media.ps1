@@ -1,5 +1,5 @@
-# Prints one line per media file with its video, audio and subtitle summary.
-function Invoke-Media {
+# Returns one row per media file with its video, audio and subtitle summary.
+function Get-MediaInfo {
     param (
         [Parameter(Mandatory = $true)]
         [string]$Path,
@@ -8,16 +8,12 @@ function Invoke-Media {
         [int]$Limit = 1
     )
 
+    $languagesPreferred = "por", "eng"
     $extensions = "*.mkv", "*.mp4", "*.m4v", "*.mov", "*.avi", "*.webm", "*.ts", "*.flac", "*.mp3", "*.m4a"
     $files = if (Test-Path -LiteralPath $Path -PathType Leaf) {
         Get-Item -LiteralPath $Path
     } else {
         Get-ChildItem $Path -Recurse -File -Include $extensions
-    }
-    $basePath = if (Test-Path -LiteralPath $Path -PathType Leaf) {
-        Split-Path $Path -Parent
-    } else {
-        $Path
     }
     $filesTotal = $files.Count
     $counter  = [ref]0
@@ -27,10 +23,24 @@ function Invoke-Media {
             $current = [System.Threading.Interlocked]::Increment(($using:counter))
             Write-Progress -Activity "Scanning" -Status "$current / $using:filesTotal — $($_.Name)" -PercentComplete ($current / $using:filesTotal * 100)
 
-            $file = [System.IO.Path]::GetRelativePath($using:basePath, $_.FullName)
+            # preferred languages that are present, or the first one when none is, then how many others
+            $languagesPreferred = $using:languagesPreferred
+            $summarizeLanguages = {
+                param ([string[]]$languages)
+                $shown = @($languagesPreferred | Where-Object { $_ -in $languages })
+                if (-not $shown -and $languages) {
+                    $shown = @($languages[0])
+                }
+                $summary = $shown -join ", "
+                if ($languages.Count -gt $shown.Count) {
+                    $summary += " +$($languages.Count - $shown.Count)"
+                }
+                $summary
+            }
+
             $json = ffprobe -v quiet -print_format json -show_streams $_.FullName
             if ($LASTEXITCODE -ne 0) {
-                return [PSCustomObject]@{ Video = "unreadable"; Audio = ""; Subs = ""; File = $file }
+                return [PSCustomObject]@{ File = $_.Name; Video = "unreadable"; Audio = ""; Subs = ""; Path = $_.FullName }
             }
             $streams = @(($json | ConvertFrom-Json).streams | Where-Object { $_.disposition.attached_pic -ne 1 })
             $videos = @($streams | Where-Object codec_type -eq "video")
@@ -63,7 +73,7 @@ function Invoke-Media {
                 }
             }
 
-            # audio: first track's codec and layout, then the languages of all tracks
+            # audio: first track's codec and layout, then the languages
             $audio = ""
             if ($audios) {
                 $layout = $audios[0].channel_layout -replace '\(.*\)$', ''
@@ -71,32 +81,26 @@ function Invoke-Media {
                     $layout = "$($audios[0].channels)ch"
                 }
                 $audio = "$($audios[0].codec_name) $layout"
-                $languages = @($audios.tags.language | Where-Object { $_ -and $_ -ne "und" } | Select-Object -Unique)
+                $languages = & $summarizeLanguages @($audios.tags.language | Where-Object { $_ -and $_ -ne "und" } | Select-Object -Unique)
                 if ($languages) {
-                    $audio += " ($($languages -join ', '))"
+                    $audio += " ($languages)"
                 }
             }
 
-            # subtitles: first three languages and how many more
-            $subtitleLanguages = @($subtitles.tags.language | Where-Object { $_ -and $_ -ne "und" } | Select-Object -Unique)
-            $subs = $subtitleLanguages | Select-Object -First 3 | Join-String -Separator ", "
-            if ($subtitleLanguages.Count -gt 3) {
-                $subs += " +$($subtitleLanguages.Count - 3)"
-            }
-
             [PSCustomObject]@{
+                File  = $_.Name
                 Video = $video
                 Audio = $audio
-                Subs  = $subs
-                File  = $file
+                Subs  = & $summarizeLanguages @($subtitles.tags.language | Where-Object { $_ -and $_ -ne "und" } | Select-Object -Unique)
+                Path  = $_.FullName
             }
         } |
-        Sort-Object File |
-        Format-Table -AutoSize
+        Sort-Object Path |
+        Select-Object File, Video, Audio, Subs
 }
 
 # Renames piped files to lowercase ASCII with dashes instead of spaces and underscores.
-function Invoke-RenameAscii {
+function Rename-ItemAscii {
     param (
         [Parameter(Mandatory = $true, ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true)]
         [Alias("FullName")]

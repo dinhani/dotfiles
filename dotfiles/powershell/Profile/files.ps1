@@ -1,5 +1,5 @@
 # Archives each item in a path to its own 7z, zip, chd or rvz file.
-function Invoke-Archive {
+function Compress-Item {
     param (
         [Parameter(Mandatory = $true)]
         [string]$InputPath,
@@ -99,7 +99,7 @@ function Invoke-Archive {
 }
 
 # Extracts or tests each 7z, gz, rar or zip archive in a path.
-function Invoke-Unarchive {
+function Expand-Item {
     param (
         [Parameter(Mandatory = $true)]
         [string]$InputPath,
@@ -186,7 +186,7 @@ function Invoke-Unarchive {
 }
 
 # Stores MD5, SHA1 and CRC32 of each file in a path as alternate data streams.
-function Invoke-Hash {
+function Set-FileHash {
     param (
         [Parameter(Mandatory = $true, Position = 0, ParameterSetName = "Path")]
         [string[]]$Path,
@@ -325,7 +325,7 @@ function Invoke-Hash {
 }
 
 # Lists files with identical MD5 across one or more paths.
-function Invoke-FindDuplicates {
+function Find-Duplicate {
     param (
         [Parameter(Mandatory = $true)]
         [string[]]$Path,
@@ -345,7 +345,7 @@ function Invoke-FindDuplicates {
         Write-Host "No duplicates found"
         return
     }
-    $hashes = Invoke-Hash -LiteralPath $filesToHash.FullName -Limit $Limit -PassThru
+    $hashes = Set-FileHash -LiteralPath $filesToHash.FullName -Limit $Limit -PassThru
 
     # show duplicates
     $duplicates = @($hashes |
