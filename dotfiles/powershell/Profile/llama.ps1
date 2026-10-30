@@ -14,7 +14,9 @@ $GpuApps = @(
     [PSCustomObject]@{ Process = "PowerToys.QuickAccess";   Restore = $false; Start = $null }
     [PSCustomObject]@{ Process = "PowerToys";               Restore = $true;  Start = "C:\_scoop\apps\powertoys\current\PowerToys.exe" }
     [PSCustomObject]@{ Process = "RazerAppEngine";          Restore = $true;  Start = "C:\Program Files\Razer\RazerAppEngine\RazerAppEngine.exe" }
+    [PSCustomObject]@{ Process = "rstudio";                 Restore = $false; Start = $null }
     [PSCustomObject]@{ Process = "ShellExperienceHost";     Restore = $false; Start = $null }
+    [PSCustomObject]@{ Process = "Spotify";                 Restore = $false; Start = $null }
     [PSCustomObject]@{ Process = "StartMenuExperienceHost"; Restore = $false; Start = $null }
     [PSCustomObject]@{ Process = "StreamDeck";              Restore = $true;  Start = "C:\Program Files\Elgato\StreamDeck\StreamDeck.exe" }
     [PSCustomObject]@{ Process = "TabTip";                  Restore = $false; Start = $null }
@@ -333,7 +335,7 @@ function Show-GpuUsage {
                     "(exited)"
                 }
                 "Used (MB)" = [long][math]::Round($bytes / 1MB)
-                "Of total"  = "{0:P1}" -f ($bytes / $memory.Total)
+                "Of total"  = $bytes / $memory.Total
             }
         } |
         Sort-Object "Used (MB)" -Descending
@@ -362,7 +364,15 @@ function Show-GpuUsage {
     Write-Host ("  Free      {0,6:N1} GB  {1,6:P1}" -f ($memory.Free / 1GB), $freeRatio)
 
     # processes
-    $processes | Format-Table -AutoSize | Out-Host
+    $processes |
+        Format-Table PID, Process, "Used (MB)",
+            @{ Name = "Of total"; Expression = { $_."Of total" }; FormatString = "P1"; Alignment = "Right" },
+            @{ Name = "Usage"; Expression = {
+                $eighths = [int][math]::Round($_."Of total" * 20 * 8)
+                $partial = if ($eighths % 8 -gt 0) { "▏▎▍▌▋▊▉"[$eighths % 8 - 1] } else { "" }
+                (("█" * [math]::Floor($eighths / 8)) + $partial).PadRight(20, "░")
+            } } -AutoSize |
+        Out-Host
     Write-Host "  Memory shared between processes is counted for each of them, so the rows can add up to more than Used."
 }
 
@@ -371,7 +381,7 @@ function Stop-GpuApp {
     foreach ($app in $GpuApps) {
         if (Get-Process -Name $app.Process -ErrorAction SilentlyContinue) {
             Write-Host "Killing: $($app.Process)"
-            Stop-Process -Name $app.Process -Force -ErrorAction SilentlyContinue
+            taskkill /F /IM "$($app.Process).exe" | Out-Null
         }
     }
 }
