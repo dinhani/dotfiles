@@ -10,6 +10,11 @@ default:
 lint:
     yapf -i dotfiles.py dotfiles_tui.py
 
+[doc("List line counts")]
+[group("project")]
+cloc:
+    cloc dotfiles.py dotfiles_tui.py setup-unix.sh setup-unix-functions.sh scripts
+
 [doc("Backup or restore dotfiles")]
 [group("run")]
 dotfiles:
