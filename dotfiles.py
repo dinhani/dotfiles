@@ -294,9 +294,11 @@ def backup_claude_code(app: str, dir: File):
         case OS.WIN:
             WIN_HOME / ".claude/settings.json" >> dir / "settings.json"
             WIN_HOME / ".claude/CLAUDE.md" >> dir / "CLAUDE.md"
+            WIN_HOME / ".claude/hooks" >> dir / "hooks"
         case OS.LINUX | OS.MAC:
             UNIX_HOME / ".claude/settings.json" >> dir / "settings.json"
             UNIX_HOME / ".claude/CLAUDE.md" >> dir / "CLAUDE.md"
+            UNIX_HOME / ".claude/hooks" >> dir / "hooks"
 
 @operation("Claude Code", "claude-code")
 def restore_claude_code(app: str, dir: File):
@@ -314,21 +316,25 @@ def restore_claude_code(app: str, dir: File):
         case OS.WIN:
             dir / "settings.json" >> WIN_HOME / ".claude/settings.json"
             dir / "CLAUDE.md" >> WIN_HOME / ".claude/CLAUDE.md"
+            dir / "hooks" >> WIN_HOME / ".claude/hooks"
             dir / "CLAUDE.md" >> WIN_HOME / ".codex/AGENTS.md"
             dir / "CLAUDE.md" >> WIN_HOME / ".config/opencode/AGENTS.md"
             write_cursor_rule(WIN_HOME / ".cursor/rules/global-rules.mdc")
             if (WIN_HOME / ".claude-2").is_dir():
                 dir / "settings.json" >> WIN_HOME / ".claude-2/settings.json"
                 dir / "CLAUDE.md" >> WIN_HOME / ".claude-2/CLAUDE.md"
+                dir / "hooks" >> WIN_HOME / ".claude-2/hooks"
         case OS.LINUX | OS.MAC:
             dir / "settings.json" >> UNIX_HOME / ".claude/settings.json"
             dir / "CLAUDE.md" >> UNIX_HOME / ".claude/CLAUDE.md"
+            dir / "hooks" >> UNIX_HOME / ".claude/hooks"
             dir / "CLAUDE.md" >> UNIX_HOME / ".codex/AGENTS.md"
             dir / "CLAUDE.md" >> UNIX_HOME / ".config/opencode/AGENTS.md"
             write_cursor_rule(UNIX_HOME / ".cursor/rules/global-rules.mdc")
             if (UNIX_HOME / ".claude-2").is_dir():
                 dir / "settings.json" >> UNIX_HOME / ".claude-2/settings.json"
                 dir / "CLAUDE.md" >> UNIX_HOME / ".claude-2/CLAUDE.md"
+                dir / "hooks" >> UNIX_HOME / ".claude-2/hooks"
 
 # ------------------------------------------------------------------------------
 # Items - Ghostty
