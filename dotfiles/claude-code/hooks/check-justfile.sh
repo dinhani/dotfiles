@@ -18,42 +18,44 @@
 # - Private recipes are not checked.
 # - Speed: starting a process costs 30-50 ms on Windows, so the hook exits before any
 #   process when the input does not contain "ustfile" (justfile, Justfile, .justfile).
+# - The input JSON is read with parse_json and parse_agent from _helpers.sh, without
+#   starting a process. jq is required to read the `just --dump` JSON. block_hook prints
+#   the answer with jq and only runs when the hook blocks.
 # - Portable: no machine paths, bash 3.2 features only (macOS), jq and just. jq on Windows
 #   writes CRLF, so \r is removed from its output. Paths split on both / and \.
 # - Bypass: environment variable BYPASS_JUSTFILE=1, set in settings.json "env" or in the
 #   shell before starting claude. Write and Edit have no command to prefix.
 # - Fails open: any error exits without a decision.
-set -euo pipefail
 
+# Setup
+set -euo pipefail
+source "${BASH_SOURCE[0]%/*}/_helpers.sh"
+
+# Read input
 input=$(cat)
 [ "${BYPASS_JUSTFILE:-}" = 1 ] && exit 0
 [[ $input == *ustfile* ]] || exit 0
-{ IFS= read -r file; IFS= read -r agent; } < <(jq -r '(.tool_input.file_path // ""), (if has("cursor_version") then "cursor" else "claude" end)' <<<"$input")
-file=${file%$'\r'}
-agent=${agent%$'\r'}
 
+# Parse input
+parse_json "$input" file_path
+file=$REPLY
+parse_agent "$input"
+agent=$REPLY
 case "${file##*[/\\]}" in
   justfile | Justfile | .justfile) ;;
   *) exit 0 ;;
 esac
 [ -f "$file" ] || exit 0
 
+# Read justfile
 directory=${file%[/\\]*}
 [ "$directory" != "$file" ] || directory=.
-block() {
-  if [ "$agent" = cursor ]; then
-    jq -n --arg reason "$1" '{additional_context: $reason}'
-  else
-    jq -n --arg reason "$1" '{decision: "block", reason: $reason}'
-  fi
-  exit 0
-}
-
 dump=$(just --justfile "$file" --working-directory "$directory" --dump --dump-format json 2>&1) \
-  || block "just cannot parse $file: ${dump//$'\r'/}"
+  || block_hook "$agent" "just cannot parse $file: ${dump//$'\r'/}"
 order=$(just --justfile "$file" --working-directory "$directory" --summary --unsorted 2>/dev/null || true)
 order=${order//$'\r'/}
 
+# Check rules
 errors=$(jq -r --arg order "$order" '
   (.recipes | with_entries(select(.value.private | not))) as $recipes
   | ($order | split(" ") | map(select(. != "" and (contains("::") | not)))) as $names
@@ -68,8 +70,9 @@ errors=$(jq -r --arg order "$order" '
   ] | .[] | "- \(.)"
 ' <<<"$dump")
 errors=${errors//$'\r'/}
-
 [ -n "$errors" ] || exit 0
-block "Justfile errors in $file:
+
+# Block
+block_hook "$agent" "Justfile errors in $file:
 $errors
 Fix them now. If this justfile must keep this shape, the user can set BYPASS_JUSTFILE=1."

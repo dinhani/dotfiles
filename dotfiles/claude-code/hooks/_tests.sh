@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Test cases for the check-*.sh hooks in this folder. Run: bash test-hooks.sh
+# Test cases for the check-*.sh hooks and _helpers.sh in this folder. Run: bash _tests.sh
 # Prints one line per case and exits 1 if any case fails.
 #
-# Layout: case functions, fixtures, syntax check, one section per hook in the order
-# settings.json registers them, summary. Within a section: blocked cases, allowed cases,
-# bypass.
+# Layout: case functions, fixtures, syntax check, _helpers.sh, one section per hook in the
+# order settings.json registers them, summary. Within a hook section: blocked cases, allowed
+# cases, bypass.
 #
 # Decisions:
 # - Not a hook: settings.json does not register it.
@@ -20,7 +20,7 @@
 # - Multi-line commands are printed with \n so cases stay distinguishable on one line.
 set -uo pipefail
 
-hooks=$(cd "${BASH_SOURCE[0]%/*}" && pwd)
+hooks=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 failures=0
 total=0
 
@@ -32,18 +32,21 @@ esac
 # ------------------------------------------------------------------------------
 # Case functions
 # ------------------------------------------------------------------------------
-run_case() {
-  local expected=$1 hook=$2 json=$3 label=$4 actual status=ok
-  actual=$(bash "$hooks/$hook" <<<"$json" | jq -r '.hookSpecificOutput.permissionDecision // .decision // (.additional_context | values | "context") // empty' 2>/dev/null)
-  actual=${actual//$'\r'/}
-  actual=${actual:-pass}
+record_case() {
+  local expected=$1 actual=$2 label=$3 status=ok
   total=$((total + 1))
   if [ "$actual" != "$expected" ]; then
     status=FAIL
     failures=$((failures + 1))
   fi
   label=${label//$'\n'/\\n}
-  printf '  %-4s %-5s %s\n' "$status" "$actual" "${label:0:100}"
+  printf '  %-4s %s -> %s\n' "$status" "${label:0:100}" "${actual//$'\n'/\\n}"
+}
+run_case() {
+  local expected=$1 hook=$2 json=$3 label=$4 actual
+  actual=$(bash "$hooks/$hook" <<<"$json" | jq -r '.hookSpecificOutput.permissionDecision // .decision // (.additional_context | values | "context") // empty' 2>/dev/null)
+  actual=${actual//$'\r'/}
+  record_case "$expected" "${actual:-pass}" "$label"
 }
 command_case() {
   local expected=$1 hook=$2 directory=$3 command=$4
@@ -52,6 +55,21 @@ command_case() {
 file_case() {
   local expected=$1 hook=$2 file=$3 content=${4:-}
   run_case "$expected" "$hook" "$(jq -nc --arg f "$file" --arg c "$content" '{tool_input:{file_path:$f,content:$c}}')" "$file"
+}
+parse_json_case() {
+  local expected=$1 key=$2 json=$3
+  parse_json "$json" "$key"
+  record_case "$expected" "$REPLY" "$json"
+}
+parse_agent_case() {
+  local expected=$1 json=$2
+  parse_agent "$json"
+  record_case "$expected" "$REPLY" "$json"
+}
+parse_command_case() {
+  local expected=$1 command=$2
+  parse_command "$command"
+  record_case "$expected" "$REPLY" "$command"
 }
 
 # ------------------------------------------------------------------------------
@@ -149,15 +167,44 @@ printf '[group("run")]\nfoo:\n    echo {{\n' > "$justfiles/syntax-error/justfile
 # Syntax
 # ------------------------------------------------------------------------------
 echo "== syntax"
-for script in "$hooks"/check-*.sh; do
-  total=$((total + 1))
-  if bash -n "$script"; then
-    printf '  %-4s %s\n' ok "${script##*/}"
-  else
-    printf '  %-4s %s\n' FAIL "${script##*/}"
-    failures=$((failures + 1))
-  fi
+for script in "$hooks"/_helpers.sh "$hooks"/check-*.sh; do
+  syntax=valid
+  bash -n "$script" || syntax=invalid
+  record_case valid "$syntax" "${script##*/}"
 done
+
+# ------------------------------------------------------------------------------
+# _helpers.sh
+# ------------------------------------------------------------------------------
+echo "== _helpers.sh"
+source "$hooks/_helpers.sh"
+parse_json_case 'git status' command '{"tool_input":{"command":"git status"}}'
+parse_json_case 'echo "a"' command '{"tool_input":{"command":"echo \"a\""}}'
+parse_json_case 'C:\Users\x' file_path '{"tool_input":{"file_path":"C:\\Users\\x"}}'
+parse_json_case 'a\nb' command '{"command":"a\\nb"}'
+parse_json_case $'a\nb\tc' command '{"command":"a\nb\tc"}'
+parse_json_case $'a\nb' command '{"command":"a\r\nb"}'
+parse_json_case 'a/b' command '{"command":"a\/b"}'
+parse_json_case 'x' command '{"command" : "x"}'
+parse_json_case '' command '{"cwd":"/x"}'
+parse_json_case '' command '{"command":1}'
+parse_json_case '/x' cwd '{"tool_input":{"content":"\"cwd\": \"/y\""},"cwd":"/x"}'
+
+parse_agent_case cursor '{"tool_input":{"file_path":"x"},"cursor_version":"1.7"}'
+parse_agent_case claude '{"tool_input":{"file_path":"x"}}'
+parse_agent_case claude '{"tool_input":{"content":"\"cursor_version\": \"1\""}}'
+
+parse_command_case $'git status\n' 'git status'
+parse_command_case $'cd x\nuv sync\n' 'cd x && uv sync'
+parse_command_case $'a\nb\nc\nd\n' 'a || b; c | d'
+parse_command_case $'uv run pytest\n' 'A=1 B=2 sudo time uv run pytest'
+parse_command_case $'a\nb\n' $'  a  \n\n  b  ;'
+parse_command_case '' ' ; '
+parse_command_case $'echo "\nuv sync\n"\n' 'echo "$(uv sync)"'
+parse_command_case $'cd x\npip list\n' '(cd x && pip list)'
+parse_command_case $'echo\ngit status\n' 'echo `git status`'
+parse_command_case $'jq .\n' 'env A=1 nohup xargs -n1 -0 jq .'
+parse_command_case $'-v jq\n' 'command -v jq'
 
 # ------------------------------------------------------------------------------
 # check-just
@@ -172,6 +219,8 @@ command_case deny check-just.sh "$project/sub" "uv run pytest -k foo"
 command_case deny check-just.sh "$project" "cd x && UV_X=1 uv run pytest"
 command_case deny check-just.sh "$project" $'echo "start"\npython dotfiles.py'
 command_case deny check-just.sh "$project" "printf 'a\\nb' | python dotfiles.py"
+command_case deny check-just.sh "$project" 'output=$(uv run pytest -x)'
+command_case deny check-just.sh "$project" '(cd web && npm run dev)'
 command_case pass check-just.sh "$project" "git status"
 command_case pass check-just.sh "$project" "python -c 'x'"
 command_case pass check-just.sh "$project" "python -c \"print('dotfiles.py')\""
@@ -189,6 +238,8 @@ echo "== check-pip"
 command_case deny check-pip.sh "$uv_tool/src" "pip install httpx"
 command_case deny check-pip.sh "$uv_lock" "python -m pip install x"
 command_case deny check-pip.sh "$uv_tool" "cd x && /usr/bin/pip3.exe list"
+command_case deny check-pip.sh "$uv_tool" 'echo "$(pip freeze)"'
+command_case deny check-pip.sh "$uv_tool" 'cat reqs.txt | xargs -n1 pip install'
 command_case pass check-pip.sh "$uv_tool" "uv pip install x"
 command_case pass check-pip.sh "$uv_tool" "git status"
 command_case pass check-pip.sh "$pip_project" "pip install httpx"
@@ -221,11 +272,13 @@ command_case "$deny_on_windows" check-jq.sh "$project" 'name=$(jq -r .name x.jso
 command_case "$deny_on_windows" check-jq.sh "$project" "find . -name '*.json' | xargs -n1 jq -c ."
 command_case "$deny_on_windows" check-jq.sh "$project" "/c/tools/jq.exe . x.json"
 command_case "$deny_on_windows" check-jq.sh "$project" "jq -rb .a x.json && jq .b x.json"
+command_case "$deny_on_windows" check-jq.sh "$project" "env LC_ALL=C jq .a x.json"
 command_case pass check-jq.sh "$project" "jq -b '.a' settings.json > settings.new"
 command_case pass check-jq.sh "$project" "cat x.json | jq -rb .name"
 command_case pass check-jq.sh "$project" "jq --binary -n '1'"
 command_case pass check-jq.sh "$project" "jq -n --arg x 1 -b '\$x'"
 command_case pass check-jq.sh "$project" "grep jq README.md"
+command_case pass check-jq.sh "$project" "command -v jq"
 command_case pass check-jq.sh "$project" "echo 'use jq here'"
 command_case pass check-jq.sh "$project" "git status"
 command_case pass check-jq.sh "$project" "BYPASS_JQ=1 jq . x.json"
@@ -236,6 +289,7 @@ command_case pass check-jq.sh "$project" "BYPASS_JQ=1 jq . x.json"
 echo "== check-memory"
 file_case deny check-memory.sh "$memory_windows\\rule.md" "$memory_feedback"
 file_case deny check-memory.sh "$memory_unix/rule.md" "$memory_feedback"
+run_case deny check-memory.sh "$(jq -nc --arg f "$memory_unix/rule.md" --arg c "$memory_feedback" '{tool_input:{file_path:$f,old_string:"x",new_string:$c}}')" "edit: $memory_unix/rule.md"
 file_case pass check-memory.sh "$memory_windows\\user.md" "$memory_user"
 file_case pass check-memory.sh 'C:\src\notes.md' "$memory_feedback"
 BYPASS_MEMORY=1 file_case pass check-memory.sh "$memory_windows\\rule.md" "$memory_feedback"
