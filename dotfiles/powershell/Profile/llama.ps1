@@ -203,9 +203,9 @@ function Start-LlamaCoder {
                 }
                 Size    = "{0:0.0} GB" -f $candidate.SizeGB
                 Fit     = if ($candidate.SizeGB + 2 -le $vramGB) {
-                    "GPU"
+                    "yes"
                 } else {
-                    "GPU+CPU"
+                    "no"
                 }
                 Preset  = $candidate.Preset.Name
             }
@@ -247,14 +247,14 @@ function Start-LlamaCoder {
     }
     $aliasContext = "$alias-$([int]($context / 1024))k"
 
-    # fit on: with a fixed context, llama.cpp moves MoE experts (then dense layers) to CPU until the rest fits VRAM
     $arguments = @(
         "--model", $selected.File
         "--alias", "$alias,$aliasContext"
         "--host", "0.0.0.0"
         "--port", $port
         "--device", "CUDA0"
-        "--fit", "on"
+        "--n-gpu-layers", "all"
+        "--fit", "off"
         "--ctx-size", $context
         "--parallel", "1"
         "--batch-size", "2048"
@@ -307,7 +307,13 @@ function Start-LlamaCoder {
         Write-Host "$server $($arguments -join ' ')"
         return
     }
-    & $server @arguments
+    $env:GGML_CUDA_PDL = "1"
+    $env:GGML_CUDA_GRAPH_OPT = "1"
+    try {
+        & $server @arguments
+    } finally {
+        Remove-Item Env:GGML_CUDA_PDL, Env:GGML_CUDA_GRAPH_OPT
+    }
 }
 
 # Prints total, used, reserved and free GPU memory and the dedicated memory each process holds.
@@ -409,5 +415,128 @@ function Get-GpuMemory {
         Reserved = [long]$fields[2] * 1MB
         Used     = [long]$fields[3] * 1MB
         Free     = [long]$fields[4] * 1MB
+    }
+}
+
+# llama-server writes one slot line per step of a request:
+#   I slot print: id 0 | task 3 | processing task
+class LlamaSlotLine {
+    [int]$Slot
+    [string]$Task
+    [string]$Message
+
+    static [LlamaSlotLine] Parse([string]$line) {
+        if ($line -notmatch '^(?:[\d.]+\s+)?I slot\s+\w+: id\s+(\d+) \| task (-?\d+) \| (.*)$') {
+            return $null
+        }
+        return [LlamaSlotLine]@{ Slot = $Matches[1]; Task = $Matches[2]; Message = $Matches[3] }
+    }
+
+    [bool] StartsJob() {
+        return $this.Message -match '^processing task'
+    }
+}
+
+# Timings gathered from the slot lines between "processing task" and "stop processing".
+class LlamaJob {
+    [int]$Slot
+    [string]$Task
+    [bool]$Timed
+    [double]$PromptMs
+    [int]$PromptTokens
+    [double]$GenerationMs
+    [int]$GenerationTokens
+    [double]$GenerationSpeed
+    [Nullable[double]]$DraftAcceptance
+    [bool]$Released
+    [bool]$Truncated
+
+    [bool] Record([string]$message) {
+        if ($message -match '^\s*prompt eval time =\s*([\d.]+) ms /\s*(\d+) tokens') {
+            $this.PromptMs = $Matches[1]
+            $this.PromptTokens = $Matches[2]
+            return $true
+        }
+        if ($message -match '^\s*eval time =\s*([\d.]+) ms /\s*(\d+) tokens \(\s*[\d.]+ ms per token,\s*([\d.]+) tokens per second') {
+            $this.Timed = $true
+            $this.GenerationMs = $Matches[1]
+            $this.GenerationTokens = $Matches[2]
+            $this.GenerationSpeed = $Matches[3]
+            return $true
+        }
+        if ($message -match '^\s*draft acceptance = ([\d.]+)') {
+            $this.DraftAcceptance = $Matches[1]
+            return $true
+        }
+        if ($message -match '^stop processing: n_tokens = \d+, truncated = (\d+)') {
+            $this.Released = $true
+            $this.Truncated = $Matches[1] -ne '0'
+            return $true
+        }
+        return $false
+    }
+
+    [string] ToSummary() {
+        $culture = [cultureinfo]::InvariantCulture
+        $summary = [string]::Format($culture, '{0:HH:mm:ss} │ slot {1}  task {2,-6}', (Get-Date), $this.Slot, $this.Task)
+        if (-not $this.Timed) {
+            return "$summary │ released without timings"
+        }
+
+        $totalMs = $this.PromptMs + $this.GenerationMs
+        $draft = if ($null -ne $this.DraftAcceptance) { [string]::Format($culture, 'draft {0,4:0%}', $this.DraftAcceptance) } else { ' ' * 10 }
+        $summary += [string]::Format($culture, ' │ prompt {0,6:N0} tks {1,5:0.0} s ({2,3:0%}) {3,6:N0} t/s',
+            $this.PromptTokens, ($this.PromptMs / 1000), ($this.PromptMs / $totalMs), ($this.PromptTokens / $this.PromptMs * 1000))
+        $summary += [string]::Format($culture, ' │ answer {0,5:N0} tks {1,5:0.0} s ({2,3:0%}) {3,4:N0} t/s  {4}',
+            $this.GenerationTokens, ($this.GenerationMs / 1000), ($this.GenerationMs / $totalMs), $this.GenerationSpeed, $draft)
+        $totalTokens = $this.PromptTokens + $this.GenerationTokens
+        $summary += [string]::Format($culture, ' │ total {0,6:N0} tks {1,5:0.0} s {2:N0} t/s',
+            $totalTokens, ($totalMs / 1000), ($totalTokens / $totalMs * 1000))
+        if ($this.Truncated) {
+            $summary += ' │ truncated'
+        }
+        return $summary
+    }
+}
+
+# Replaces llama-server's info, warning and debug lines with one timing line per finished request: tks just llama, or llama-server ... 2>&1 | tks
+function Measure-LlamaRequest {
+    begin {
+        $jobs = @{}
+    }
+
+    process {
+        if ($null -eq $_) {
+            return
+        }
+
+        $text = "$_"
+        $slotLine = [LlamaSlotLine]::Parse($text)
+        if (-not $slotLine) {
+            if ($text -notmatch '^(?:[\d.]+\s+)?[IWD] ') {
+                Write-Host $text
+            }
+            return
+        }
+
+        if ($slotLine.StartsJob()) {
+            $jobs[$slotLine.Slot] = [LlamaJob]@{ Slot = $slotLine.Slot; Task = $slotLine.Task }
+            return
+        }
+
+        $job = $jobs[$slotLine.Slot]
+        if ($job -and $job.Record($slotLine.Message) -and $job.Released) {
+            $jobs.Remove($slotLine.Slot)
+            Write-Host $job.ToSummary()
+        }
+    }
+
+    end {
+        if (-not $args) {
+            return
+        }
+        $command = $args[0]
+        $arguments = @($args | Select-Object -Skip 1)
+        & $command @arguments 2>&1 | Measure-LlamaRequest
     }
 }

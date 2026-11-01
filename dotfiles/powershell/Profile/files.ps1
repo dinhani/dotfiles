@@ -370,3 +370,39 @@ function Find-Duplicate {
         }
     }
 }
+
+# Renames piped files to lowercase ASCII with dashes instead of spaces and underscores.
+function Rename-ItemAscii {
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true)]
+        [Alias("FullName")]
+        [string]$Path
+    )
+
+    process {
+        $dir    = Split-Path $Path -Parent
+        $source = Split-Path $Path -Leaf
+
+        # ignore special cases
+        if ($source -like "Cargo.*") {
+            return
+        }
+
+        # remove accents
+        $normalized = $source.Normalize([Text.NormalizationForm]::FormD)
+        $target = -join ($normalized.ToCharArray() | Where-Object {
+            [Globalization.CharUnicodeInfo]::GetUnicodeCategory($_) -ne
+            [Globalization.UnicodeCategory]::NonSpacingMark
+        })
+
+        # lower, spaces and underscores to single dashes
+        $target = $target.ToLower() -replace '[ _]', '-' -replace '-{2,}', '-'
+        if ($target -ceq $source) {
+            return
+        }
+
+        # rename in two steps so case-only changes apply
+        Rename-Item -LiteralPath (Join-Path $dir $source) -NewName "__$target"
+        Rename-Item -LiteralPath (Join-Path $dir "__$target") -NewName $target
+    }
+}

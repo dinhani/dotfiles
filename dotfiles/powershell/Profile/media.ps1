@@ -19,7 +19,7 @@ function Get-MediaInfo {
     $filesTotal = $files.Count
     $counter  = [ref]0
 
-    $files |
+    $rows = @($files |
         ForEach-Object -ThrottleLimit $Parallel -Parallel {
             $current = [System.Threading.Interlocked]::Increment(($using:counter))
             Write-Progress -Activity "Scanning" -Status "$current / $using:filesTotal — $($_.Name)" -PercentComplete ($current / $using:filesTotal * 100)
@@ -96,42 +96,27 @@ function Get-MediaInfo {
                 Path  = $_.FullName
             }
         } |
-        Sort-Object Path |
-        Select-Object File, Video, Audio, Subs
-}
+        Sort-Object Path)
 
-# Renames piped files to lowercase ASCII with dashes instead of spaces and underscores.
-function Rename-ItemAscii {
-    param (
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true)]
-        [Alias("FullName")]
-        [string]$Path
-    )
-
-    process {
-        $dir    = Split-Path $Path -Parent
-        $source = Split-Path $Path -Leaf
-
-        # ignore special cases
-        if ($source -like "Cargo.*") {
-            return
+    $columns = @(foreach ($column in "File", "Video", "Audio", "Subs") {
+        if (@($rows.$column | Where-Object { $_ })) {
+            $column
         }
+    })
 
-        # remove accents
-        $normalized = $source.Normalize([Text.NormalizationForm]::FormD)
-        $target = -join ($normalized.ToCharArray() | Where-Object {
-            [Globalization.CharUnicodeInfo]::GetUnicodeCategory($_) -ne
-            [Globalization.UnicodeCategory]::NonSpacingMark
-        })
-
-        # lower, spaces and underscores to single dashes
-        $target = $target.ToLower() -replace '[ _]', '-' -replace '-{2,}', '-'
-        if ($target -ceq $source) {
-            return
-        }
-
-        # rename in two steps so case-only changes apply
-        Rename-Item -LiteralPath (Join-Path $dir $source) -NewName "__$target"
-        Rename-Item -LiteralPath (Join-Path $dir "__$target") -NewName $target
+    $folders = @($rows | Group-Object { Split-Path $_.Path -Parent })
+    if ($folders.Count -lt 2) {
+        return $rows | Select-Object $columns
     }
+
+    $base = $folders[0].Name
+    foreach ($folder in $folders) {
+        while ($base -and -not "$($folder.Name)\".StartsWith("$($base.TrimEnd('\'))\", [StringComparison]::OrdinalIgnoreCase)) {
+            $base = Split-Path $base -Parent
+        }
+    }
+
+    $rows |
+        Select-Object (@(@{ Name = "Folder"; Expression = { (Split-Path $_.Path -Parent).Substring($base.Length).TrimStart('\') } }) + $columns) |
+        Sort-Object Folder, File
 }
