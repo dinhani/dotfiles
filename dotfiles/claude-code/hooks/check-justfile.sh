@@ -2,6 +2,8 @@
 # PostToolUse hook on Write|Edit. After a justfile is written, checks the minimum justfile
 # rules and returns decision "block" with the list of errors. The edit is already on disk;
 # Claude Code passes the list to Claude, which must fix the justfile before moving on.
+# Cursor ignores decision "block" in postToolUse, so when the input has cursor_version the
+# list is returned as additional_context instead.
 #
 # Checks: the justfile parses; `default` is the first recipe and only lists the recipes
 # (`just --list`, any flags); every public recipe has a [group] attribute and a [doc]
@@ -26,8 +28,9 @@ set -euo pipefail
 input=$(cat)
 [ "${BYPASS_JUSTFILE:-}" = 1 ] && exit 0
 [[ $input == *ustfile* ]] || exit 0
-file=$(jq -r '.tool_input.file_path // ""' <<<"$input")
+{ IFS= read -r file; IFS= read -r agent; } < <(jq -r '(.tool_input.file_path // ""), (if has("cursor_version") then "cursor" else "claude" end)' <<<"$input")
 file=${file%$'\r'}
+agent=${agent%$'\r'}
 
 case "${file##*[/\\]}" in
   justfile | Justfile | .justfile) ;;
@@ -38,7 +41,11 @@ esac
 directory=${file%[/\\]*}
 [ "$directory" != "$file" ] || directory=.
 block() {
-  jq -n --arg reason "$1" '{decision: "block", reason: $reason}'
+  if [ "$agent" = cursor ]; then
+    jq -n --arg reason "$1" '{additional_context: $reason}'
+  else
+    jq -n --arg reason "$1" '{decision: "block", reason: $reason}'
+  fi
   exit 0
 }
 

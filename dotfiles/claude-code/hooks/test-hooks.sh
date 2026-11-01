@@ -34,7 +34,7 @@ esac
 # ------------------------------------------------------------------------------
 run_case() {
   local expected=$1 hook=$2 json=$3 label=$4 actual status=ok
-  actual=$(bash "$hooks/$hook" <<<"$json" | jq -r '.hookSpecificOutput.permissionDecision // .decision // empty' 2>/dev/null)
+  actual=$(bash "$hooks/$hook" <<<"$json" | jq -r '.hookSpecificOutput.permissionDecision // .decision // (.additional_context | values | "context") // empty' 2>/dev/null)
   actual=${actual//$'\r'/}
   actual=${actual:-pass}
   total=$((total + 1))
@@ -247,6 +247,8 @@ echo "== check-justfile"
 file_case block check-justfile.sh "$justfiles/missing-attributes/justfile"
 file_case block check-justfile.sh "$justfiles/no-default/justfile"
 file_case block check-justfile.sh "$justfiles/syntax-error/justfile"
+run_case context check-justfile.sh "$(jq -nc --arg f "$justfiles/no-default/justfile" '{tool_input:{file_path:$f},cursor_version:"1"}')" "cursor: $justfiles/no-default/justfile"
+file_case block check-justfile.sh "$justfiles/no-default/justfile" '"cursor_version"'
 file_case pass check-justfile.sh "$project/justfile"
 file_case pass check-justfile.sh "$justfiles/valid/justfile"
 file_case pass check-justfile.sh "$justfiles/valid/README.md"
