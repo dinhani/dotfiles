@@ -1,22 +1,22 @@
-set windows-shell := ["pwsh.exe", "-NoLogo", "-Command"]
+set windows-shell := ["pwsh.exe", "-NoLogo", "-NoProfile", "-Command"]
 
-# Show available tasks
+[doc("List recipes")]
 [group("project")]
 default:
-    just --list --unsorted
+    @just --list --unsorted
 
-# Lint and format code
+[doc("Format Python code")]
 [group("project")]
 lint:
     yapf -i dotfiles.py dotfiles_tui.py
 
-# Backup or restore dotfiles (interactive selection)
-[group("dotfiles")]
+[doc("Backup or restore dotfiles")]
+[group("run")]
 dotfiles:
     python dotfiles.py
 alias dot := dotfiles
 
-# Setup a Linux or MacOs system from scratch
-[group("system")]
+[doc("Setup Linux or macOS")]
+[group("run")]
 setup email="renatodinhani@gmail.com":
     EMAIL={{email}} ./setup-unix.sh
