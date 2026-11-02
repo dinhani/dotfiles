@@ -6,9 +6,14 @@
 # - Matches against the real recipes from `just --dump --dump-format json`, not a fixed
 #   list of tools, so tasks without a recipe (`uv add`, `python -c`) are never blocked.
 #   A command is blocked when it equals a recipe line or starts with it followed by a space.
-#   The recipe line is its literal text before the first {{...}} interpolation, without
-#   @/- prefixes and VAR=value assignments. Recipe lines starting with #, cd, echo or just
-#   are ignored, so `cd web` in a recipe does not block every `cd web`.
+#   The recipe line is its literal text before the first {{...}} interpolation or positional
+#   argument ($@, $*, $1-$9, @args, $args, also in double quotes), without @/- prefixes and
+#   VAR=value assignments, so `uv run x.py @args` blocks `uv run x.py a b`. Recipe lines
+#   starting with #, cd, echo, exit or just are ignored, so `cd web` in a recipe does not
+#   block every `cd web`. Lines of script
+#   recipes that cannot start a command are ignored too: lines starting with a character
+#   other than a letter, digit, ., / or ~ (`}`, `$x = ...`) and shell block keywords
+#   (`fi`, `done`), so `{ ...; }` or `if ...; fi` in a command does not match them.
 # - Commands are split with parse_command from _helpers.sh.
 # - This hook runs on every Bash call, and starting a process costs 30-50 ms on Windows,
 #   so it avoids processes until a block is likely:
@@ -76,8 +81,9 @@ recipes=$(jq -r '
   | sub("^\\s*[@-]+"; "")
   | sub("^\\s*([A-Za-z_][A-Za-z0-9_]*=\\S*\\s+)+"; "")
   | split("\u0001")[0]
+  | sub("\\s\"?(\\$[@*1-9]|[@$]args)\"?(\\s.*)?$"; "")
   | sub("^\\s+"; "") | sub("\\s+$"; "")
-  | select(. != "" and (test("^(#|cd\\b|echo\\b|just\\b)") | not))
+  | select(. != "" and (test("^(#|cd\\b|echo\\b|exit\\b|just\\b|[^\\w./~]|(then|else|elif|fi|do|done|esac)\\b)") | not))
   | "\($recipe)\t\(.)"
 ' <<<"$dump")
 recipes=${recipes//$'\r'/}

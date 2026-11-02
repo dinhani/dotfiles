@@ -116,6 +116,37 @@ frontend:
 [group("test")]
 test *args:
     uv run pytest {{args}}
+
+[doc("Rename files")]
+[group("data")]
+[script]
+rename:
+    $folders = if ($args) { $args } else { '.' }
+    Get-ChildItem $folders | ForEach-Object {
+        Write-Output $_.Name
+    }
+
+[doc("Extract subtitles")]
+[group("run")]
+[script]
+[positional-arguments]
+extract *paths:
+    uv run extract.py @args
+    exit $LASTEXITCODE
+
+[doc("Translate subtitles")]
+[group("run")]
+[positional-arguments]
+translate *paths:
+    ./translate.sh "$@"
+
+[doc("Check files")]
+[group("data")]
+check:
+    #!/usr/bin/env bash
+    if [ -f x ]; then
+        cat x
+    fi
 EOF
 
 uv_tool=$fixtures/uv-tool
@@ -125,6 +156,11 @@ printf '[project]\nname = "x"\n\n[tool.uv]\ndev = 1\n' > "$uv_tool/pyproject.tom
 uv_lock=$fixtures/uv-lock
 mkdir -p "$uv_lock"
 touch "$uv_lock/uv.lock"
+
+uv_env=$fixtures/uv-env
+mkdir -p "$uv_env/sub"
+touch "$uv_env/uv.lock"
+printf 'export UV_PROJECT_ENVIRONMENT := "/envs/uv-env"\n\ndefault:\n    @just --list\n' > "$uv_env/justfile"
 
 pip_project=$fixtures/pip-project
 mkdir -p "$pip_project"
@@ -221,6 +257,9 @@ command_case deny check-just.sh "$project" $'echo "start"\npython dotfiles.py'
 command_case deny check-just.sh "$project" "printf 'a\\nb' | python dotfiles.py"
 command_case deny check-just.sh "$project" 'output=$(uv run pytest -x)'
 command_case deny check-just.sh "$project" '(cd web && npm run dev)'
+command_case deny check-just.sh "$project" "uv run extract.py"
+command_case deny check-just.sh "$project" "uv run extract.py Z:/x 'a b'"
+command_case deny check-just.sh "$project" "./translate.sh x"
 command_case pass check-just.sh "$project" "git status"
 command_case pass check-just.sh "$project" "python -c 'x'"
 command_case pass check-just.sh "$project" "python -c \"print('dotfiles.py')\""
@@ -228,6 +267,15 @@ command_case pass check-just.sh "$project" "echo \"python dotfiles.py\""
 command_case pass check-just.sh "$project" "uv sync"
 command_case pass check-just.sh "$project" "uv add httpx"
 command_case pass check-just.sh "$project" "cd web"
+command_case pass check-just.sh "$project" '{ git status; }'
+command_case pass check-just.sh "$project" 'if true; then git status; fi'
+command_case pass check-just.sh "$project" 'for f in *; do git status; done'
+command_case pass check-just.sh "$project" 'uv run extract_all.py'
+command_case pass check-just.sh "$project" 'exit $LASTEXITCODE'
+command_case pass check-just.sh "$project" "just sync"
+command_case pass check-just.sh "$project" "just extract Z:/x 'a b'"
+command_case pass check-just.sh "$project" "cd web && just frontend"
+command_case pass check-just.sh "$project" "just --list --unsorted"
 command_case pass check-just.sh "$fixtures" "python dotfiles.py"
 command_case pass check-just.sh "$project" "BYPASS_JUST=1 python dotfiles.py"
 
@@ -244,6 +292,29 @@ command_case pass check-pip.sh "$uv_tool" "uv pip install x"
 command_case pass check-pip.sh "$uv_tool" "git status"
 command_case pass check-pip.sh "$pip_project" "pip install httpx"
 command_case pass check-pip.sh "$uv_tool" "BYPASS_PIP=1 pip install x"
+
+# ------------------------------------------------------------------------------
+# check-uv-env
+# ------------------------------------------------------------------------------
+echo "== check-uv-env"
+command_case deny check-uv-env.sh "$uv_tool" "uv run python scratch.py"
+command_case deny check-uv-env.sh "$uv_env/sub" "uv sync"
+command_case deny check-uv-env.sh "$fixtures" "uv --version"
+command_case deny check-uv-env.sh "$uv_tool" "cd x && uv add httpx"
+command_case deny check-uv-env.sh "$uv_tool" "/c/Users/x/.local/bin/uv.exe pip list"
+command_case deny check-uv-env.sh "$uv_tool" 'output=$(uv run pytest)'
+command_case deny check-uv-env.sh "$uv_tool" "UV_PROJECT_ENVIRONMENT= uv sync"
+command_case deny check-uv-env.sh "$uv_tool" 'UV_PROJECT_ENVIRONMENT="" uv sync'
+command_case deny check-uv-env.sh "$uv_tool" "MY_UV_PROJECT_ENVIRONMENT=x uv sync"
+command_case pass check-uv-env.sh "$uv_tool" "UV_PROJECT_ENVIRONMENT=/envs/x uv run python scratch.py"
+command_case pass check-uv-env.sh "$uv_tool" "export UV_PROJECT_ENVIRONMENT='C:\\envs\\x' && uv sync"
+command_case pass check-uv-env.sh "$uv_tool" 'env UV_PROJECT_ENVIRONMENT="$HOME/envs/x" uv run pytest'
+command_case pass check-uv-env.sh "$uv_tool" "just sync"
+command_case pass check-uv-env.sh "$uv_tool" "uvx ruff check"
+command_case pass check-uv-env.sh "$uv_tool" "grep uv README.md"
+command_case pass check-uv-env.sh "$uv_tool" 'echo "uv sync"'
+command_case pass check-uv-env.sh "$uv_tool" "git status"
+command_case pass check-uv-env.sh "$uv_tool" "BYPASS_UV_ENV=1 uv sync"
 
 # ------------------------------------------------------------------------------
 # check-commit
