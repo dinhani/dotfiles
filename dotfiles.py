@@ -292,13 +292,13 @@ def operation(app: str, dir: str, subdir: bool = False) -> Callable[[Callable[[s
 def backup_claude_code(app: str, dir: File):
     match SYSTEM:
         case OS.WIN:
-            WIN_HOME / ".claude/settings.json" >> dir / "settings.json"
-            WIN_HOME / ".claude/CLAUDE.md" >> dir / "CLAUDE.md"
-            WIN_HOME / ".claude/hooks" >> dir / "hooks"
+            home = WIN_HOME
         case OS.LINUX | OS.MAC:
-            UNIX_HOME / ".claude/settings.json" >> dir / "settings.json"
-            UNIX_HOME / ".claude/CLAUDE.md" >> dir / "CLAUDE.md"
-            UNIX_HOME / ".claude/hooks" >> dir / "hooks"
+            home = UNIX_HOME
+
+    home / ".claude/settings.json" >> dir / "settings.json"
+    home / ".claude/CLAUDE.md" >> dir / "CLAUDE.md"
+    home / ".claude/hooks" >> dir / "hooks"
 
 @operation("Claude Code", "claude-code")
 def restore_claude_code(app: str, dir: File):
@@ -308,9 +308,8 @@ def restore_claude_code(app: str, dir: File):
         case OS.LINUX | OS.MAC:
             home = UNIX_HOME
 
-    dir >> home / ".claude"
-    if (home / ".claude-2").is_dir():
-        dir >> home / ".claude-2"
+    for profile in (".claude", ".claude-2", ".claude-3"):
+        dir >> home / profile
 
     dir / "CLAUDE.md" >> home / ".codex/AGENTS.md"
     dir / "CLAUDE.md" >> home / ".config/opencode/AGENTS.md"
