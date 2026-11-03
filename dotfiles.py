@@ -544,13 +544,17 @@ def restore_jetbrains(app: str, dir: Dir):
 # ------------------------------------------------------------------------------
 # App - Notable
 # ------------------------------------------------------------------------------
-@operation(Op.BACKUP, "Notable", "notable")
+@operation(Op.BACKUP, "Notable", "notable", source_of_truth=OS.WIN)
 def backup_notable(app: str, dir: Dir):
-    HOME / ".notable.json" >> dir / ".notable.json"
+    WIN_HOME / ".notable.json" >> dir / ".notable.json"
 
 @operation(Op.RESTORE, "Notable", "notable")
 def restore_notable(app: str, dir: Dir):
-    dir / ".notable.json" >> HOME / ".notable.json"
+    match SYSTEM:
+        case OS.WIN:
+            dir / ".notable.json" >> WIN_HOME / ".notable.json"
+        case OS.LINUX | OS.MAC:
+            log_unsupported(app)
 
 # ------------------------------------------------------------------------------
 # App - OpenCode
