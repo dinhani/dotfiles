@@ -12,12 +12,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent / "vendor"))
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 
-from prompt_toolkit.shortcuts import confirm
 from tqdm import tqdm
 
-from dotfiles_tui import Hint, show_tui
+from dotfiles_tui import Hint, Progress, show_tui
 
 # ------------------------------------------------------------------------------
 # Classes
@@ -251,22 +250,31 @@ COLOR_RESET  = "\033[0m"
 COLOR_RED    = "\033[91m"
 COLOR_GREEN  = "\033[92m"
 COLOR_YELLOW = "\033[93m"
-COLOR_CYAN   = "\033[96m"
+
+class LogKind(StrEnum):
+    TRANSFER = "transfer"
+    ERROR    = "error"
+    SKIP     = "skip"
+
+LOG_COLORS = {LogKind.TRANSFER: COLOR_GREEN, LogKind.ERROR: COLOR_RED, LogKind.SKIP: COLOR_YELLOW}
+
+def print_log(kind: LogKind, label: str, message: str) -> None:
+    print("")
+    print(f"{LOG_COLORS[kind]}{label:<4}{COLOR_RESET}  {message}")
+
+log_handler: Callable[[LogKind, str, str], None] = print_log
 
 def log_transfer(kind: str, source: Path, target: Path) -> None:
-    print("")
-    print(f"{COLOR_GREEN}{kind:<4}{COLOR_RESET}  {source} {COLOR_CYAN}→{COLOR_RESET} {target}")
+    log_handler(LogKind.TRANSFER, kind, f"{source} → {target}")
 
 errors_logged: list[Exception] = []
 
 def log_error(message: str, exception: Exception) -> None:
     errors_logged.append(exception)
-    print("")
-    print(f"{COLOR_RED}err {COLOR_RESET}  {message}: {exception}")
+    log_handler(LogKind.ERROR, "err", f"{message}: {exception}")
 
 def log_unsupported(item: str) -> None:
-    print("")
-    print(f"{COLOR_YELLOW}skip{COLOR_RESET}  {item}: unsupported on {SYSTEM}")
+    log_handler(LogKind.SKIP, "skip", f"{item}: unsupported on {SYSTEM}")
 
 # ------------------------------------------------------------------------------
 # Platform
@@ -704,20 +712,53 @@ REGISTRY_BY_APP: dict[str, dict[Op, Handler]] = {
 # ------------------------------------------------------------------------------
 # Main
 # ------------------------------------------------------------------------------
-if __name__ == "__main__":
-    history = BackupHistory.from_git(DOTFILES)
-    handlers_backup = {app: handlers[Op.BACKUP] for app, handlers in REGISTRY_BY_APP.items() if handlers[Op.BACKUP].is_supported()}
+def compare_backups(
+    handlers_backup: dict[str, Handler],
+    history: BackupHistory,
+    track: Callable[[list[tuple[str, File, File]]], Iterable[tuple[str, File, File]]],
+) -> tuple[dict[str, list[tuple[File, File]]], dict[str, Sync]]:
     transfers = [(app, machine, backup) for app, handler in handlers_backup.items() for machine, backup in handler.collect_transfers()]
+
     transfers_by_app: dict[str, list[tuple[File, File]]] = {app: [] for app in handlers_backup}
-    for app, machine, backup in transfers:
-        transfers_by_app[app].append((machine, backup))
-
     files_by_app: dict[str, set[Sync | None]] = {app: set() for app in handlers_backup}
-    for app, machine, backup in tqdm(transfers, desc="Comparing files", unit="file"):
+    for app, machine, backup in track(transfers):
+        transfers_by_app[app].append((machine, backup))
         files_by_app[app].add(machine.compare_to_backup(backup, history))
-    syncs = {app: Sync.from_files(files - {None}) for app, files in files_by_app.items()}
 
-    selections = show_tui(
+    syncs = {app: Sync.from_files(files - {None}) for app, files in files_by_app.items()}
+    return transfers_by_app, syncs
+
+if __name__ == "__main__":
+    handlers_backup = {app: handlers[Op.BACKUP] for app, handlers in REGISTRY_BY_APP.items() if handlers[Op.BACKUP].is_supported()}
+    transfers_by_app, syncs = compare_backups(
+        handlers_backup,
+        BackupHistory.from_git(DOTFILES),
+        track=lambda transfers: tqdm(transfers, desc="Comparing files", unit="file"),
+    )
+
+    def run(selections: list[tuple[str, str]], progress: Progress) -> None:
+        global log_handler
+        log_handler = lambda kind, label, message: progress.log(kind.value, f"{label:<4}  {message}")
+        File._deleted.clear()
+        try:
+            for op_label, app in progress.track(selections, label=lambda selection: f"{selection[0]} {selection[1]}"):
+                REGISTRY_BY_APP[app][Op(op_label)]()
+        finally:
+            log_handler = print_log
+
+    def refresh(progress: Progress) -> dict[str, Hint]:
+        transfers_by_app_new, syncs_new = compare_backups(
+            handlers_backup,
+            BackupHistory.from_git(DOTFILES),
+            track=lambda transfers: progress.track(transfers, label=lambda transfer: f"comparing {transfer[1]}"),
+        )
+        transfers_by_app.clear()
+        transfers_by_app.update(transfers_by_app_new)
+        syncs.clear()
+        syncs.update(syncs_new)
+        return {app: sync.to_hint() for app, sync in syncs.items()}
+
+    show_tui(
         items={category: list(apps) for category, apps in REGISTRY_BY_CATEGORY.items()},
         items_disabled={
             op.value: {app for app, handlers in REGISTRY_BY_APP.items() if not handlers[op].is_supported()}
@@ -729,24 +770,20 @@ if __name__ == "__main__":
             for machine, backup in transfers_by_app.get(app, [])
             if (diff := (backup.diff_to(machine) if panel == Op.BACKUP else machine.diff_to(backup)))
         ),
+        run=run,
+        refresh=refresh,
+        confirm=lambda selections: (
+            "Restore overwrites local config for: " + ", ".join(
+                f"{app} ({syncs[app]})" if app in syncs and syncs[app].has_machine_changes() else app
+                for op_label, app in selections
+                if op_label == Op.RESTORE
+            ) + ". Continue?"
+            if any(op_label == Op.RESTORE for op_label, app in selections)
+            else None
+        ),
         panel_left=Op.BACKUP,
         panel_right=Op.RESTORE,
     )
-    if not selections:
-        sys.exit(0)
-
-    apps_restore_labels = [
-        f"{app} ({syncs[app]})" if app in syncs and syncs[app].has_machine_changes() else app
-        for op_label, app in selections
-        if op_label == Op.RESTORE
-    ]
-    if apps_restore_labels and not confirm(f"Restore overwrites local config for: {', '.join(apps_restore_labels)}. Continue?"):
-        sys.exit(0)
-
-    for op_label, app in selections:
-        op = Op(op_label)
-        handler = REGISTRY_BY_APP[app][op]
-        handler()
 
     if errors_logged:
         sys.exit(1)

@@ -1,10 +1,14 @@
-from collections.abc import Callable, Mapping
+import asyncio
+import threading
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
+from enum import Enum, auto
+from typing import TypeVar
 
 from prompt_toolkit import Application
 from prompt_toolkit.data_structures import Point
-from prompt_toolkit.formatted_text import FormattedText
 from prompt_toolkit.filters import Condition
+from prompt_toolkit.formatted_text import FormattedText
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import Dimension, HSplit, Layout, VSplit, Window, WindowAlign
 from prompt_toolkit.layout.containers import ConditionalContainer, Float, FloatContainer, HorizontalAlign, VerticalAlign
@@ -25,6 +29,58 @@ MenuRow = Category | Item
 
 
 DIFF_PAGE = 20
+PROGRESS_BAR_WIDTH = 40
+PROGRESS_LAYOUT_ROWS = 10
+
+T = TypeVar("T")
+
+
+class Mode(Enum):
+    BROWSING = auto()
+    DIFF = auto()
+    CONFIRM = auto()
+    RUNNING = auto()
+    FINISHED = auto()
+
+
+class Progress:
+    total: int
+    done: int
+    current: str
+    errors: int
+    lines: list[tuple[str, str]] # (log kind, text)
+
+    def __init__(self, on_change: Callable[[], None]):
+        self.total = 0
+        self.done = 0
+        self.current = ""
+        self.errors = 0
+        self.lines = []
+        self.on_change = on_change
+
+    def clear(self) -> None:
+        self.total = 0
+        self.done = 0
+        self.current = ""
+        self.errors = 0
+        self.lines.clear()
+        self.on_change()
+
+    def log(self, kind: str, text: str) -> None:
+        if kind == "error":
+            self.errors += 1
+        self.lines.append((kind, text))
+        self.on_change()
+
+    def track(self, items: Sequence[T], label: Callable[[T], str]) -> Iterator[T]:
+        self.total = len(items)
+        self.done = 0
+        for item in items:
+            self.current = label(item)
+            self.on_change()
+            yield item
+            self.done += 1
+            self.on_change()
 
 
 class TuiState:
@@ -40,15 +96,24 @@ class TuiState:
     panel_item_indices: dict[str, list[int]] # indexes of menu_rows that are selectable in each panel (enabled Item rows)
 
     menu_rows: list[MenuRow] # category and item rows, in display order
+    items_hint: Mapping[str, "Hint"] # sync hint of each item
+
+    mode: Mode # which popup is open (BROWSING when none)
 
     # diff popup
     diff_title: str # title of the open diff popup
-    diff_lines: list[str] | None # lines of the open diff popup (None when closed)
+    diff_lines: list[str] # lines of the open diff popup
     diff_scroll: int # first visible line of the diff popup
 
-    def __init__(self, panel_left: str, panel_right: str, items: dict[str, list[str]], items_disabled: dict[str, set[str]]):
+    # confirm popup
+    confirm_message: str
+
+    def __init__(self, panel_left: str, panel_right: str, items: dict[str, list[str]], items_disabled: dict[str, set[str]], items_hint: Mapping[str, "Hint"]):
         self.panel_left = panel_left
         self.panel_right = panel_right
+        self.items_hint = items_hint
+        self.mode = Mode.BROWSING
+        self.confirm_message = ""
 
         # set menu state
         self.menu_rows = []
@@ -68,7 +133,7 @@ class TuiState:
 
         # set diff popup state
         self.diff_title = ""
-        self.diff_lines = None
+        self.diff_lines = []
         self.diff_scroll = 0
 
     def switch_panel(self) -> None:
@@ -110,22 +175,31 @@ class TuiState:
     def select_none(self) -> None:
         self.panel_selected[self.panel_active].clear()
 
+    def select_nothing(self) -> None:
+        for selected in self.panel_selected.values():
+            selected.clear()
+
+    def selections(self) -> list[tuple[str, str]]:
+        return [
+            (panel, row.name)
+            for panel in (self.panel_left, self.panel_right)
+            for row in self.menu_rows
+            if isinstance(row, Item) and row.name in self.panel_selected[panel]
+        ]
+
     def is_active(self, panel: str) -> bool:
         return panel == self.panel_active
-
-    def diff_is_open(self) -> bool:
-        return self.diff_lines is not None
 
     def open_diff(self, title: str, text: str) -> None:
         self.diff_title = title
         self.diff_lines = text.splitlines() or ["no differences"]
         self.diff_scroll = 0
+        self.mode = Mode.DIFF
 
     def close_diff(self) -> None:
-        self.diff_lines = None
+        self.mode = Mode.BROWSING
 
     def scroll_diff(self, delta: int) -> None:
-        assert self.diff_lines is not None
         self.diff_scroll = max(0, min(len(self.diff_lines) - 1, self.diff_scroll + delta))
 
     def cursor_item_name(self) -> str | None:
@@ -141,9 +215,21 @@ class Hint:
     color: str
 
 
-def show_tui(items: dict[str, list[str]], items_disabled: dict[str, set[str]], items_hint: Mapping[str, Hint], item_diff: Callable[[str, str], str], panel_left: str, panel_right: str) -> list[tuple[str, str]]:
+def show_tui(
+    items: dict[str, list[str]],
+    items_disabled: dict[str, set[str]],
+    items_hint: Mapping[str, Hint],
+    item_diff: Callable[[str, str], str],
+    run: Callable[[list[tuple[str, str]], Progress], None],
+    refresh: Callable[[Progress], Mapping[str, Hint]],
+    confirm: Callable[[list[tuple[str, str]]], str | None],
+    panel_left: str,
+    panel_right: str,
+) -> None:
     """Two-panel picker over `items` (category → item names).
-    Returns (panel_label, item_name) pairs in menu order.
+    Enter runs the selected (panel_label, item_name) pairs through `run` with a progress popup,
+    then calls `refresh` to get new hints and returns to the menu. `confirm` returns a warning
+    message to confirm before running, or None. Re-raises any exception raised by a callback.
     """
 
     state = TuiState(
@@ -151,14 +237,40 @@ def show_tui(items: dict[str, list[str]], items_disabled: dict[str, set[str]], i
         panel_right=panel_right,
         items=items,
         items_disabled=items_disabled,
+        items_hint=items_hint,
     )
+    failures: list[BaseException] = []
 
     # --------------------------------------------------------------------------
     # TUI events
     # --------------------------------------------------------------------------
     kb = KeyBindings()
-    browsing = Condition(lambda: not state.diff_is_open())
-    diffing = Condition(lambda: state.diff_is_open())
+    browsing = Condition(lambda: state.mode is Mode.BROWSING)
+    diffing = Condition(lambda: state.mode is Mode.DIFF)
+    confirming = Condition(lambda: state.mode is Mode.CONFIRM)
+    running = Condition(lambda: state.mode is Mode.RUNNING)
+    finished = Condition(lambda: state.mode is Mode.FINISHED)
+    not_running = Condition(lambda: state.mode is not Mode.RUNNING)
+
+    def start_worker(app: Application, task: Callable[[], None], mode_after: Mode) -> None:
+        loop = asyncio.get_running_loop()
+        state.mode = Mode.RUNNING
+
+        def work() -> None:
+            try:
+                task()
+            except BaseException as error:
+                failures.append(error)
+                loop.call_soon_threadsafe(app.exit)
+                return
+            state.mode = mode_after
+            app.invalidate()
+
+        threading.Thread(target=work).start()
+
+    def start_run(app: Application, selections: list[tuple[str, str]]) -> None:
+        progress.clear()
+        start_worker(app, lambda: run(selections, progress), Mode.FINISHED)
 
     @kb.add("tab", filter=browsing)
     @kb.add("s-tab", filter=browsing)
@@ -205,7 +317,26 @@ def show_tui(items: dict[str, list[str]], items_disabled: dict[str, set[str]], i
 
     @kb.add("enter", filter=browsing)
     def _(event):
-        event.app.exit(result=True)
+        selections = state.selections()
+        if not selections:
+            return
+        message = confirm(selections)
+        if message is None:
+            start_run(event.app, selections)
+            return
+        state.confirm_message = message
+        state.mode = Mode.CONFIRM
+
+    @kb.add("y", filter=confirming)
+    @kb.add("enter", filter=confirming)
+    def _(event):
+        start_run(event.app, state.selections())
+
+    @kb.add("n", filter=confirming)
+    @kb.add("q", filter=confirming)
+    @kb.add("escape", filter=confirming)
+    def _(event):
+        state.mode = Mode.BROWSING
 
     @kb.add("d", filter=browsing)
     def _(event):
@@ -240,17 +371,25 @@ def show_tui(items: dict[str, list[str]], items_disabled: dict[str, set[str]], i
 
     @kb.add("home", filter=diffing)
     def _(event):
-        state.scroll_diff(-len(state.diff_lines or []))
+        state.scroll_diff(-len(state.diff_lines))
 
     @kb.add("end", filter=diffing)
     def _(event):
-        state.scroll_diff(len(state.diff_lines or []))
+        state.scroll_diff(len(state.diff_lines))
 
-    @kb.add("c-c")
+    @kb.add("c-c", filter=not_running)
     @kb.add("escape", filter=browsing)
     @kb.add("q", filter=browsing)
     def _(event):
-        event.app.exit(result=False)
+        event.app.exit()
+
+    @kb.add("<any>", filter=finished)
+    def _(event):
+        def refresh_task() -> None:
+            state.items_hint = refresh(progress)
+            state.select_nothing()
+
+        start_worker(event.app, refresh_task, Mode.BROWSING)
 
     # --------------------------------------------------------------------------
     # mount TUI
@@ -273,7 +412,7 @@ def show_tui(items: dict[str, list[str]], items_disabled: dict[str, set[str]], i
 
             # determine if on cursor or not
             on_cursor = row_index == state.panel_cursors[panel]
-            item_hint = items_hint.get(row.name, Hint(text="", color="ansibrightblack"))
+            item_hint = state.items_hint.get(row.name, Hint(text="", color="ansibrightblack"))
             if on_cursor and state.is_active(panel):
                 row_style, hint_style, item_cursor = "class:focused", f"class:focused fg:{item_hint.color}", "▶"
             elif on_cursor:
@@ -306,6 +445,37 @@ def show_tui(items: dict[str, list[str]], items_disabled: dict[str, set[str]], i
             fragments.append((style, f"{line}\n"))
         return FormattedText(fragments)
 
+    def tui_progress() -> FormattedText:
+        filled = PROGRESS_BAR_WIDTH * progress.done // progress.total if progress.total else 0
+        fragments: list[tuple[str, str]] = [
+            ("", f" [{'█' * filled}{'░' * (PROGRESS_BAR_WIDTH - filled)}] {progress.done}/{progress.total}  {progress.current}\n"),
+        ]
+        if state.mode is Mode.FINISHED:
+            fragments.append(("class:log-error" if progress.errors else "class:log-transfer", f" done, {progress.errors} errors\n"))
+        else:
+            fragments.append(("", "\n"))
+
+        lines_visible = max(1, tui.output.get_size().rows - PROGRESS_LAYOUT_ROWS)
+        for kind, text in progress.lines[-lines_visible:]:
+            fragments.append((f"class:log-{kind}", f" {text}\n"))
+        return FormattedText(fragments)
+
+    def tui_confirm() -> FormattedText:
+        return FormattedText([("", f" {state.confirm_message}\n\n"), ("class:help", " [y/Enter] run  [n/Esc] cancel")])
+
+    def tui_help() -> str:
+        match state.mode:
+            case Mode.DIFF:
+                return "[↑↓/jk] scroll  [PgUp/PgDn] page  [Home/End] first/last  [d/q/Esc] close"
+            case Mode.CONFIRM:
+                return "[y/Enter] run  [n/Esc] cancel"
+            case Mode.RUNNING:
+                return "running..."
+            case Mode.FINISHED:
+                return "[any key] continue"
+            case Mode.BROWSING:
+                return "[Tab/←→] panel  [↑↓/jk] move  [Home/End] first/last  [Space] toggle  [a] all  [n] none  [d] diff  [Enter] run  [q/Esc] quit"
+
     def tui_panel_title(panel: str) -> str:
         return f"{'●' if state.is_active(panel) else ' '} {panel} ({len(state.panel_selected[panel])})"
 
@@ -318,6 +488,9 @@ def show_tui(items: dict[str, list[str]], items_disabled: dict[str, set[str]], i
         "diff-add":         "ansigreen",
         "diff-remove":      "ansired",
         "diff-header":      "bold ansicyan",
+        "log-transfer":     "ansigreen",
+        "log-skip":         "ansiyellow",
+        "log-error":        "ansired",
         "frame.label":      "bold",
     })
 
@@ -329,7 +502,7 @@ def show_tui(items: dict[str, list[str]], items_disabled: dict[str, set[str]], i
         ], padding=1, align=HorizontalAlign.CENTER),
         # help text
         Window(
-            FormattedTextControl(lambda: "[↑↓/jk] scroll  [PgUp/PgDn] page  [Home/End] first/last  [d/q/Esc] close" if state.diff_is_open() else "[Tab/←→] panel  [↑↓/jk] move  [Home/End] first/last  [Space] toggle  [a] all  [n] none  [d] diff  [Enter] confirm  [q/Esc] cancel"),
+            FormattedTextControl(tui_help),
             height=1, style="class:help", align=WindowAlign.CENTER
         )
     ], align=VerticalAlign.CENTER)
@@ -339,22 +512,31 @@ def show_tui(items: dict[str, list[str]], items_disabled: dict[str, set[str]], i
             Window(FormattedTextControl(tui_diff), get_vertical_scroll=lambda window: state.diff_scroll, wrap_lines=False),
             title=lambda: f"diff — {state.diff_title}",
         ),
-        filter=Condition(lambda: state.diff_is_open()),
+        filter=Condition(lambda: state.mode is Mode.DIFF),
     )
 
-    tui_layout = Layout(FloatContainer(content=tui_browser, floats=[Float(content=tui_diff_popup, left=4, right=4, top=2, bottom=2)]))
+    tui_progress_popup = ConditionalContainer(
+        Frame(Window(FormattedTextControl(tui_progress), wrap_lines=False), title="progress"),
+        filter=Condition(lambda: state.mode in (Mode.RUNNING, Mode.FINISHED)),
+    )
 
+    tui_confirm_popup = ConditionalContainer(
+        Frame(Window(FormattedTextControl(tui_confirm), wrap_lines=True), title="confirm"),
+        filter=Condition(lambda: state.mode is Mode.CONFIRM),
+    )
+
+    tui_layout = Layout(FloatContainer(content=tui_browser, floats=[
+        Float(content=tui_diff_popup, left=4, right=4, top=2, bottom=2),
+        Float(content=tui_progress_popup, left=4, right=4, top=2, bottom=2),
+        Float(content=tui_confirm_popup, width=70),
+    ]))
+
+    progress = Progress(on_change=lambda: tui.invalidate())
     tui = Application(layout=tui_layout, key_bindings=kb, style=tui_theme, full_screen=True, mouse_support=False)
 
     # --------------------------------------------------------------------------
     # run TUI
     # --------------------------------------------------------------------------
-    if not tui.run():
-        return []
-
-    return [
-        (panel, row.name)
-        for panel in (panel_left, panel_right)
-        for row in state.menu_rows
-        if isinstance(row, Item) and row.name in state.panel_selected[panel]
-    ]
+    tui.run()
+    if failures:
+        raise failures[0]
