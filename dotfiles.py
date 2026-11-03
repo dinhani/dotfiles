@@ -6,7 +6,7 @@ import platform
 import shutil
 import subprocess
 import sys
-from collections.abc import Callable, Iterable, Iterator
+from collections.abc import Callable, Generator, Iterable
 from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import Enum, StrEnum
@@ -52,7 +52,7 @@ def print_log(kind: LogKind, label: str, message: str) -> None:
 log_handler: Callable[[LogKind, str, str], None] = print_log
 
 @contextmanager
-def logging_to(progress: Progress) -> Iterator[None]:
+def logging_to(progress: Progress) -> Generator[None]:
     global log_handler
     log_handler = lambda kind, label, message: progress.log(kind.value, f"{label:<4}  {message}")
     try:
@@ -172,7 +172,7 @@ class File(Path):
 
     @classmethod
     @contextmanager
-    def session(cls, subdir: bool, transfer: Transfer) -> Iterator[None]:
+    def session(cls, subdir: bool, transfer: Transfer) -> Generator[None]:
         cls._subdir = subdir
         cls._transfer = transfer
         try:
