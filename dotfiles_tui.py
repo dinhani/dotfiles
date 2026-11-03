@@ -100,7 +100,13 @@ class TuiState:
         return panel == self.panel_active
 
 
-def show_tui(items: dict[str, list[str]], items_disabled: dict[str, set[str]], items_hint: Mapping[str, str], panel_left: str, panel_right: str) -> list[tuple[str, str]]:
+@dataclass(frozen=True)
+class Hint:
+    text: str
+    color: str
+
+
+def show_tui(items: dict[str, list[str]], items_disabled: dict[str, set[str]], items_hint: Mapping[str, Hint], panel_left: str, panel_right: str) -> list[tuple[str, str]]:
     """Two-panel picker over `items` (category → item names).
     Returns (panel_label, item_name) pairs in menu order.
     """
@@ -191,22 +197,22 @@ def show_tui(items: dict[str, list[str]], items_disabled: dict[str, set[str]], i
 
             # determine if on cursor or not
             on_cursor = row_index == state.panel_cursors[panel]
+            item_hint = items_hint.get(row.name, Hint(text="", color="ansibrightblack"))
             if on_cursor and state.is_active(panel):
-                row_style, hint_style, item_cursor = "class:focused", "class:focused", "▶"
+                row_style, hint_style, item_cursor = "class:focused", f"class:focused fg:{item_hint.color}", "▶"
             elif on_cursor:
-                row_style, hint_style, item_cursor = "class:cursor-inactive", "class:hint", "·"
+                row_style, hint_style, item_cursor = "class:cursor-inactive", f"fg:{item_hint.color}", "·"
             else:
-                row_style, hint_style, item_cursor = "class:item", "class:hint", " "
+                row_style, hint_style, item_cursor = "class:item", f"fg:{item_hint.color}", " "
 
             # determine if selected or not
             item_marker = "[●]" if row.name in state.panel_selected[panel] else "[ ]"
 
             # render item
             item_text = f" {item_cursor} {item_marker} {row.name}"
-            item_hint = items_hint.get(row.name, "")
-            item_padding = max(1, panel_width - 2 - len(item_text) - len(item_hint) - 1)
+            item_padding = max(1, panel_width - 2 - len(item_text) - len(item_hint.text) - 1)
             fragments.append((row_style, item_text + " " * item_padding))
-            fragments.append((hint_style, f"{item_hint} \n"))
+            fragments.append((hint_style, f"{item_hint.text} \n"))
 
         return FormattedText(fragments)
 
@@ -218,7 +224,6 @@ def show_tui(items: dict[str, list[str]], items_disabled: dict[str, set[str]], i
         "focused":          "reverse bold",
         "cursor-inactive":  "ansiblue",
         "disabled":         "ansibrightblack",
-        "hint":             "ansibrightblack",
         "help":             "ansibrightblack",
         "frame.label":      "bold",
     })

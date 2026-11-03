@@ -16,7 +16,7 @@ from collections.abc import Callable
 from prompt_toolkit.shortcuts import confirm
 from tqdm import tqdm
 
-from dotfiles_tui import show_tui
+from dotfiles_tui import Hint, show_tui
 
 # ------------------------------------------------------------------------------
 # Classes
@@ -45,6 +45,19 @@ class Sync(StrEnum):
 
     def has_machine_changes(self) -> bool:
         return self in (Sync.MACHINE_NEWER, Sync.MIXED)
+
+    def to_hint(self) -> Hint:
+        match self:
+            case Sync.IN_SYNC:
+                return Hint(text=self.value, color="ansigreen")
+            case Sync.MACHINE_NEWER:
+                return Hint(text=self.value, color="#d75f00")
+            case Sync.BACKUP_NEWER:
+                return Hint(text=self.value, color="#af8700")
+            case Sync.MIXED:
+                return Hint(text=self.value, color="ansired")
+            case Sync.NO_FILES:
+                return Hint(text=self.value, color="ansibrightblack")
 
 @dataclass(frozen=True)
 class BackupHistory:
@@ -682,7 +695,7 @@ if __name__ == "__main__":
     files_by_app: dict[str, set[Sync | None]] = {app: set() for app in handlers_backup}
     for app, machine, backup in tqdm(transfers, desc="Comparing files", unit="file"):
         files_by_app[app].add(machine.compare_to_backup(backup, history))
-    items_hint = {app: Sync.from_files(files - {None}) for app, files in files_by_app.items()}
+    syncs = {app: Sync.from_files(files - {None}) for app, files in files_by_app.items()}
 
     selections = show_tui(
         items={category: list(apps) for category, apps in REGISTRY_BY_CATEGORY.items()},
@@ -690,7 +703,7 @@ if __name__ == "__main__":
             op.value: {app for app, handlers in REGISTRY_BY_APP.items() if not handlers[op].is_supported()}
             for op in Op
         },
-        items_hint=items_hint,
+        items_hint={app: sync.to_hint() for app, sync in syncs.items()},
         panel_left=Op.BACKUP,
         panel_right=Op.RESTORE,
     )
@@ -698,7 +711,7 @@ if __name__ == "__main__":
         sys.exit(0)
 
     apps_restore_labels = [
-        f"{app} ({items_hint[app]})" if app in items_hint and items_hint[app].has_machine_changes() else app
+        f"{app} ({syncs[app]})" if app in syncs and syncs[app].has_machine_changes() else app
         for op_label, app in selections
         if op_label == Op.RESTORE
     ]
