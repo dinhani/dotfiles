@@ -1,8 +1,7 @@
 import asyncio
 import threading
 from collections.abc import Callable, Iterator, Mapping, Sequence
-from dataclasses import dataclass
-from enum import Enum, auto
+from dataclasses import dataclass, replace
 from typing import TypeVar
 
 from prompt_toolkit import Application
@@ -28,6 +27,19 @@ class Item:
 MenuRow = Category | Item
 
 
+@dataclass(frozen=True)
+class Hint:
+    text: str
+    color: str
+
+
+@dataclass(frozen=True)
+class Disabled:
+    icon: str
+    color: str
+    reason: str
+
+
 DIFF_PAGE = 20
 PROGRESS_BAR_WIDTH = 40
 PROGRESS_LAYOUT_ROWS = 13
@@ -35,12 +47,38 @@ PROGRESS_LAYOUT_ROWS = 13
 T = TypeVar("T")
 
 
-class Mode(Enum):
-    BROWSING = auto()
-    DIFF = auto()
-    CONFIRM = auto()
-    RUNNING = auto()
-    FINISHED = auto()
+@dataclass(frozen=True)
+class Browsing:
+    pass
+
+@dataclass(frozen=True)
+class Diffing:
+    title: str
+    lines: tuple[str, ...]
+    scroll: int # first visible line
+
+    def scrolled(self, delta: int) -> "Diffing":
+        return replace(self, scroll=max(0, min(len(self.lines) - 1, self.scroll + delta)))
+
+    def scrolled_to_start(self) -> "Diffing":
+        return replace(self, scroll=0)
+
+    def scrolled_to_end(self) -> "Diffing":
+        return replace(self, scroll=len(self.lines) - 1)
+
+@dataclass(frozen=True)
+class Confirming:
+    message: str
+
+@dataclass(frozen=True)
+class Running:
+    pass
+
+@dataclass(frozen=True)
+class Finished:
+    pass
+
+Mode = Browsing | Diffing | Confirming | Running | Finished
 
 
 class Progress:
@@ -53,14 +91,9 @@ class Progress:
     lines: list[tuple[str, str]] # (log kind, text)
 
     def __init__(self, on_change: Callable[[], None]):
-        self.total = 0
-        self.done = 0
-        self.phase = ""
-        self.current = ""
-        self.status = ""
-        self.errors = 0
-        self.lines = []
         self.on_change = on_change
+        self.lines = []
+        self.clear()
 
     def clear(self) -> None:
         self.total = 0
@@ -70,7 +103,6 @@ class Progress:
         self.status = "running..."
         self.errors = 0
         self.lines.clear()
-        self.on_change()
 
     def log(self, kind: str, text: str) -> None:
         if kind == "error":
@@ -90,37 +122,49 @@ class Progress:
             self.on_change()
 
 
+class Panel:
+    label: str
+    disabled: dict[str, Disabled] # disabled items, with the reason
+    item_rows: list[int] # indexes of menu_rows that are selectable (enabled Item rows)
+    selected: set[int]
+
+    def __init__(self, label: str, menu_rows: list[MenuRow], disabled: dict[str, Disabled]):
+        self.label = label
+        self.disabled = disabled
+        self.item_rows = [i for i, row in enumerate(menu_rows) if isinstance(row, Item) and row.name not in disabled]
+        self.selected = set()
+
+    def nearest_item(self, row: int) -> int | None:
+        return min(self.item_rows, key=lambda i: (abs(i - row), i), default=None)
+
+    def toggle(self, row: int) -> None:
+        self.selected ^= {row}
+
+    def select_all(self) -> None:
+        self.selected = set(self.item_rows)
+
+    def clear_selection(self) -> None:
+        self.selected.clear()
+
+    def is_selected(self, row: int) -> bool:
+        return row in self.selected
+
+
 class TuiState:
     # panels
-    panel_left: str # label for left panel
-    panel_right: str # label for right panel
-
-    # panel selection
-    panel_active: str # which panel is active (left or right)
+    left: Panel
+    right: Panel
+    active: Panel # which panel is active (left or right)
     cursor: int | None # menu_rows index of the cursor in the active panel (None when the active panel has no enabled items)
-    panel_selected: dict[str, set[str]] # selected item names in each panel
-    panel_disabled: dict[str, dict[str, "Disabled"]] # disabled items in each panel, with the reason
-    panel_item_indices: dict[str, list[int]] # indexes of menu_rows that are selectable in each panel (enabled Item rows)
 
     menu_rows: list[MenuRow] # category and item rows, in display order
-    items_hint: Mapping[str, "Hint"] # sync hint of each item
+    items_hint: Mapping[str, Hint] # sync hint of each item
 
-    mode: Mode # which popup is open (BROWSING when none)
+    mode: Mode # which popup is open (Browsing when none)
 
-    # diff popup
-    diff_title: str # title of the open diff popup
-    diff_lines: list[str] # lines of the open diff popup
-    diff_scroll: int # first visible line of the diff popup
-
-    # confirm popup
-    confirm_message: str
-
-    def __init__(self, panel_left: str, panel_right: str, items: dict[str, list[str]], items_disabled: dict[str, dict[str, "Disabled"]], items_hint: Mapping[str, "Hint"]):
-        self.panel_left = panel_left
-        self.panel_right = panel_right
+    def __init__(self, panel_left: str, panel_right: str, items: dict[str, list[str]], items_disabled: dict[str, dict[str, Disabled]], items_hint: Mapping[str, Hint]):
         self.items_hint = items_hint
-        self.mode = Mode.BROWSING
-        self.confirm_message = ""
+        self.mode = Browsing()
 
         # set menu state
         self.menu_rows = []
@@ -129,103 +173,70 @@ class TuiState:
             self.menu_rows.extend(Item(item_name) for item_name in item_names)
 
         # set panel state
-        self.panel_active = panel_left
-        self.panel_selected = {panel_left: set(), panel_right: set()}
-        self.panel_disabled = {panel: items_disabled.get(panel, {}) for panel in (panel_left, panel_right)}
-        self.panel_item_indices = {
-            panel: [i for i, row in enumerate(self.menu_rows) if isinstance(row, Item) and row.name not in self.panel_disabled[panel]]
-            for panel in (panel_left, panel_right)
-        }
-        self.cursor = next(iter(self.panel_item_indices[panel_left]), None)
-
-        # set diff popup state
-        self.diff_title = ""
-        self.diff_lines = []
-        self.diff_scroll = 0
+        self.left = Panel(panel_left, self.menu_rows, items_disabled.get(panel_left, {}))
+        self.right = Panel(panel_right, self.menu_rows, items_disabled.get(panel_right, {}))
+        self.active = self.left
+        self.cursor = next(iter(self.left.item_rows), None)
 
     def switch_panel(self) -> None:
-        self.activate_panel(self.panel_right if self.is_active(self.panel_left) else self.panel_left)
+        self.activate_panel(self.right if self.is_active(self.left) else self.left)
 
-    def activate_panel(self, panel: str) -> None:
-        self.panel_active = panel
-        cursor_previous = self.cursor or 0
-        self.cursor = min(self.panel_item_indices[panel], key=lambda i: (abs(i - cursor_previous), i), default=None)
+    def activate_panel(self, panel: Panel) -> None:
+        self.active = panel
+        self.cursor = panel.nearest_item(self.cursor or 0)
 
     def move_cursor(self, delta: int) -> None:
-        indices = self.panel_item_indices[self.panel_active]
+        rows = self.active.item_rows
         if self.cursor is None:
             return
-        new = max(0, min(len(indices) - 1, indices.index(self.cursor) + delta))
-        self.cursor = indices[new]
+        new = max(0, min(len(rows) - 1, rows.index(self.cursor) + delta))
+        self.cursor = rows[new]
 
     def cursor_to_first(self) -> None:
-        indices = self.panel_item_indices[self.panel_active]
-        if not indices:
+        rows = self.active.item_rows
+        if not rows:
             return
-        self.cursor = indices[0]
+        self.cursor = rows[0]
 
     def cursor_to_last(self) -> None:
-        indices = self.panel_item_indices[self.panel_active]
-        if not indices:
+        rows = self.active.item_rows
+        if not rows:
             return
-        self.cursor = indices[-1]
+        self.cursor = rows[-1]
 
     def toggle_item(self) -> None:
         if self.cursor is None:
             return
-        name = self.menu_rows[self.cursor].name
-        self.panel_selected[self.panel_active] ^= {name}
+        self.active.toggle(self.cursor)
 
-    def select_all(self) -> None:
-        self.panel_selected[self.panel_active] = {self.menu_rows[i].name for i in self.panel_item_indices[self.panel_active]}
-
-    def select_none(self) -> None:
-        self.panel_selected[self.panel_active].clear()
-
-    def select_nothing(self) -> None:
-        for selected in self.panel_selected.values():
-            selected.clear()
+    def clear_selections(self) -> None:
+        self.left.clear_selection()
+        self.right.clear_selection()
 
     def selections(self) -> list[tuple[str, str]]:
-        return [
-            (panel, row.name)
-            for panel in (self.panel_left, self.panel_right)
-            for row in self.menu_rows
-            if isinstance(row, Item) and row.name in self.panel_selected[panel]
-        ]
+        return [(panel.label, self.menu_rows[row].name) for panel in (self.left, self.right) for row in sorted(panel.selected)]
 
-    def is_active(self, panel: str) -> bool:
-        return panel == self.panel_active
-
-    def open_diff(self, title: str, text: str) -> None:
-        self.diff_title = title
-        self.diff_lines = text.splitlines() or ["no differences"]
-        self.diff_scroll = 0
-        self.mode = Mode.DIFF
-
-    def close_diff(self) -> None:
-        self.mode = Mode.BROWSING
-
-    def scroll_diff(self, delta: int) -> None:
-        self.diff_scroll = max(0, min(len(self.diff_lines) - 1, self.diff_scroll + delta))
+    def is_active(self, panel: Panel) -> bool:
+        return panel is self.active
 
     def cursor_item_name(self) -> str | None:
         if self.cursor is None:
             return None
         return self.menu_rows[self.cursor].name
 
+    def open_diff(self, title: str, text: str) -> None:
+        self.mode = Diffing(title=title, lines=tuple(text.splitlines()) or ("no differences",), scroll=0)
 
-@dataclass(frozen=True)
-class Hint:
-    text: str
-    color: str
+    def scroll_diff(self, scroll: Callable[[Diffing], Diffing]) -> None:
+        if not isinstance(self.mode, Diffing):
+            return
+        self.mode = scroll(self.mode)
 
+    def open_confirm(self, message: str) -> None:
+        self.mode = Confirming(message=message)
 
-@dataclass(frozen=True)
-class Disabled:
-    icon: str
-    color: str
-    reason: str
+    def close_popup(self) -> None:
+        self.mode = Browsing()
 
 
 def show_tui(
@@ -258,16 +269,15 @@ def show_tui(
     # TUI events
     # --------------------------------------------------------------------------
     kb = KeyBindings()
-    browsing = Condition(lambda: state.mode is Mode.BROWSING)
-    diffing = Condition(lambda: state.mode is Mode.DIFF)
-    confirming = Condition(lambda: state.mode is Mode.CONFIRM)
-    running = Condition(lambda: state.mode is Mode.RUNNING)
-    finished = Condition(lambda: state.mode is Mode.FINISHED)
-    not_running = Condition(lambda: state.mode is not Mode.RUNNING)
+    browsing = Condition(lambda: isinstance(state.mode, Browsing))
+    diffing = Condition(lambda: isinstance(state.mode, Diffing))
+    confirming = Condition(lambda: isinstance(state.mode, Confirming))
+    running = Condition(lambda: isinstance(state.mode, Running))
+    finished = Condition(lambda: isinstance(state.mode, Finished))
 
     def start_worker(app: Application, task: Callable[[], None], mode_after: Mode) -> None:
         loop = asyncio.get_running_loop()
-        state.mode = Mode.RUNNING
+        state.mode = Running()
 
         def work() -> None:
             try:
@@ -287,10 +297,10 @@ def show_tui(
             progress.status = "updating status..."
             progress.on_change()
             state.items_hint = refresh()
-            state.select_nothing()
+            state.clear_selections()
 
         progress.clear()
-        start_worker(app, run_task, Mode.FINISHED)
+        start_worker(app, run_task, Finished())
 
     @kb.add("tab", filter=browsing)
     @kb.add("s-tab", filter=browsing)
@@ -299,11 +309,11 @@ def show_tui(
 
     @kb.add("left", filter=browsing)
     def _(event):
-        state.activate_panel(panel_left)
+        state.activate_panel(state.left)
 
     @kb.add("right", filter=browsing)
     def _(event):
-        state.activate_panel(panel_right)
+        state.activate_panel(state.right)
 
     @kb.add("up", filter=browsing)
     @kb.add("k", filter=browsing)
@@ -329,11 +339,11 @@ def show_tui(
 
     @kb.add("a", filter=browsing)
     def _(event):
-        state.select_all()
+        state.active.select_all()
 
     @kb.add("n", filter=browsing)
     def _(event):
-        state.select_none()
+        state.active.clear_selection()
 
     @kb.add("enter", filter=browsing)
     def _(event):
@@ -344,8 +354,7 @@ def show_tui(
         if message is None:
             start_run(event.app, selections)
             return
-        state.confirm_message = message
-        state.mode = Mode.CONFIRM
+        state.open_confirm(message)
 
     @kb.add("y", filter=confirming)
     @kb.add("enter", filter=confirming)
@@ -356,48 +365,48 @@ def show_tui(
     @kb.add("q", filter=confirming)
     @kb.add("escape", filter=confirming)
     def _(event):
-        state.mode = Mode.BROWSING
+        state.close_popup()
 
     @kb.add("d", filter=browsing)
     def _(event):
         name = state.cursor_item_name()
         if name is None:
             return
-        state.open_diff(title=f"{state.panel_active}: {name}", text=item_diff(state.panel_active, name))
+        state.open_diff(title=f"{state.active.label}: {name}", text=item_diff(state.active.label, name))
 
     @kb.add("d", filter=diffing)
     @kb.add("q", filter=diffing)
     @kb.add("escape", filter=diffing)
     def _(event):
-        state.close_diff()
+        state.close_popup()
 
     @kb.add("up", filter=diffing)
     @kb.add("k", filter=diffing)
     def _(event):
-        state.scroll_diff(-1)
+        state.scroll_diff(lambda diff: diff.scrolled(-1))
 
     @kb.add("down", filter=diffing)
     @kb.add("j", filter=diffing)
     def _(event):
-        state.scroll_diff(1)
+        state.scroll_diff(lambda diff: diff.scrolled(1))
 
     @kb.add("pageup", filter=diffing)
     def _(event):
-        state.scroll_diff(-DIFF_PAGE)
+        state.scroll_diff(lambda diff: diff.scrolled(-DIFF_PAGE))
 
     @kb.add("pagedown", filter=diffing)
     def _(event):
-        state.scroll_diff(DIFF_PAGE)
+        state.scroll_diff(lambda diff: diff.scrolled(DIFF_PAGE))
 
     @kb.add("home", filter=diffing)
     def _(event):
-        state.scroll_diff(-len(state.diff_lines))
+        state.scroll_diff(Diffing.scrolled_to_start)
 
     @kb.add("end", filter=diffing)
     def _(event):
-        state.scroll_diff(len(state.diff_lines))
+        state.scroll_diff(Diffing.scrolled_to_end)
 
-    @kb.add("c-c", filter=not_running)
+    @kb.add("c-c", filter=~running)
     @kb.add("escape", filter=browsing)
     @kb.add("q", filter=browsing)
     def _(event):
@@ -405,7 +414,7 @@ def show_tui(
 
     @kb.add("<any>", filter=finished)
     def _(event):
-        state.mode = Mode.BROWSING
+        state.close_popup()
 
     # --------------------------------------------------------------------------
     # mount TUI
@@ -413,7 +422,7 @@ def show_tui(
     panel_width = 42
     panel_height = Dimension(min=1, max=len(state.menu_rows), preferred=len(state.menu_rows))
 
-    def tui_panel(panel: str) -> FormattedText:
+    def tui_panel(panel: Panel) -> FormattedText:
         fragments: list[tuple[str, str]] = []
 
         for row_index, row in enumerate(state.menu_rows):
@@ -422,7 +431,7 @@ def show_tui(
                 fragments.append(("class:category", f" {row.name}\n"))
                 continue
 
-            item_disabled = state.panel_disabled[panel].get(row.name)
+            item_disabled = panel.disabled.get(row.name)
             if item_disabled:
                 fragments.append(("class:disabled", "   "))
                 fragments.append((f"class:disabled fg:{item_disabled.color}", item_disabled.icon))
@@ -438,7 +447,7 @@ def show_tui(
                 row_style, hint_style, item_cursor = "class:item", f"fg:{item_hint.color}", " "
 
             # determine if selected or not
-            item_marker = "[●]" if row.name in state.panel_selected[panel] else "[ ]"
+            item_marker = "[●]" if panel.is_selected(row_index) else "[ ]"
 
             # render item
             item_text = f" {item_cursor}   {item_marker} {row.name}"
@@ -449,8 +458,10 @@ def show_tui(
         return FormattedText(fragments)
 
     def tui_diff() -> FormattedText:
+        if not isinstance(state.mode, Diffing):
+            return FormattedText([])
         fragments: list[tuple[str, str]] = []
-        for line in state.diff_lines or []:
+        for line in state.mode.lines:
             if line.startswith(("+++", "---", "@@")):
                 style = "class:diff-header"
             elif line.startswith("+"):
@@ -474,38 +485,40 @@ def show_tui(
         return FormattedText([(f"class:log-{kind}", f" {text}\n") for kind, text in progress.lines[-lines_visible:]])
 
     def tui_progress_result() -> FormattedText:
-        if state.mode is not Mode.FINISHED:
+        if not isinstance(state.mode, Finished):
             return FormattedText([("class:help", f" {progress.status}")])
         if progress.errors:
             return FormattedText([("class:log-error", f" done with {progress.errors} errors"), ("class:help", "   [any key] close")])
         return FormattedText([("class:log-transfer", " done, no errors"), ("class:help", "   [any key] close")])
 
     def tui_confirm() -> FormattedText:
-        return FormattedText([("", f" {state.confirm_message}\n\n"), ("class:help", " [y/Enter] run  [n/Esc] cancel")])
+        if not isinstance(state.mode, Confirming):
+            return FormattedText([])
+        return FormattedText([("", f" {state.mode.message}\n\n"), ("class:help", " [y/Enter] run  [n/Esc] cancel")])
 
     def tui_help() -> str:
         match state.mode:
-            case Mode.DIFF:
+            case Diffing():
                 return "[↑↓/jk] scroll  [PgUp/PgDn] page  [Home/End] first/last  [d/q/Esc] close"
-            case Mode.CONFIRM:
+            case Confirming():
                 return "[y/Enter] run  [n/Esc] cancel"
-            case Mode.RUNNING:
+            case Running():
                 return "running..."
-            case Mode.FINISHED:
+            case Finished():
                 return "[any key] close"
-            case Mode.BROWSING:
+            case Browsing():
                 return "[Tab/←→] panel  [↑↓/jk] move  [Home/End] first/last  [Space] toggle  [a] all  [n] none  [d] diff  [Enter] run  [q/Esc] quit"
 
     def tui_legend() -> FormattedText:
-        disabled_all = {disabled for disabled_by_item in state.panel_disabled.values() for disabled in disabled_by_item.values()}
+        disabled_all = {disabled for panel in (state.left, state.right) for disabled in panel.disabled.values()}
         fragments: list[tuple[str, str]] = []
         for disabled in sorted(disabled_all, key=lambda disabled: disabled.reason):
             fragments.append((f"fg:{disabled.color}", disabled.icon))
             fragments.append(("class:help", f" {disabled.reason}   "))
         return FormattedText(fragments)
 
-    def tui_panel_title(panel: str) -> str:
-        return f"{'●' if state.is_active(panel) else ' '} {panel} ({len(state.panel_selected[panel])})"
+    def tui_panel_title(panel: Panel) -> str:
+        return f"{'●' if state.is_active(panel) else ' '} {panel.label} ({len(panel.selected)})"
 
     tui_theme = Style.from_dict({
         "category":         "bold ansicyan",
@@ -525,8 +538,8 @@ def show_tui(
     tui_browser = HSplit([
         # side-by-side panels
         VSplit([
-            Frame(Window(FormattedTextControl(lambda: tui_panel(panel_left), get_cursor_position=lambda: Point(0, state.cursor or 0)), height=panel_height), width=panel_width, title=lambda: tui_panel_title(panel_left)),
-            Frame(Window(FormattedTextControl(lambda: tui_panel(panel_right), get_cursor_position=lambda: Point(0, state.cursor or 0)), height=panel_height), width=panel_width, title=lambda: tui_panel_title(panel_right)),
+            Frame(Window(FormattedTextControl(lambda: tui_panel(state.left), get_cursor_position=lambda: Point(0, state.cursor or 0)), height=panel_height), width=panel_width, title=lambda: tui_panel_title(state.left)),
+            Frame(Window(FormattedTextControl(lambda: tui_panel(state.right), get_cursor_position=lambda: Point(0, state.cursor or 0)), height=panel_height), width=panel_width, title=lambda: tui_panel_title(state.right)),
         ], padding=1, align=HorizontalAlign.CENTER),
         # help text
         Window(
@@ -539,10 +552,10 @@ def show_tui(
 
     tui_diff_popup = ConditionalContainer(
         Frame(
-            Window(FormattedTextControl(tui_diff), get_vertical_scroll=lambda window: state.diff_scroll, wrap_lines=False),
-            title=lambda: f"diff — {state.diff_title}",
+            Window(FormattedTextControl(tui_diff), get_vertical_scroll=lambda window: state.mode.scroll if isinstance(state.mode, Diffing) else 0, wrap_lines=False),
+            title=lambda: f"diff — {state.mode.title}" if isinstance(state.mode, Diffing) else "diff",
         ),
-        filter=Condition(lambda: state.mode is Mode.DIFF),
+        filter=diffing,
     )
 
     def tui_rule(title: str) -> Window:
@@ -557,12 +570,12 @@ def show_tui(
             tui_rule("Result"),
             Window(FormattedTextControl(tui_progress_result), height=1),
         ]), title="Run"),
-        filter=Condition(lambda: state.mode in (Mode.RUNNING, Mode.FINISHED)),
+        filter=running | finished,
     )
 
     tui_confirm_popup = ConditionalContainer(
         Frame(Window(FormattedTextControl(tui_confirm), wrap_lines=True), title="confirm"),
-        filter=Condition(lambda: state.mode is Mode.CONFIRM),
+        filter=confirming,
     )
 
     tui_layout = Layout(FloatContainer(content=tui_browser, floats=[
