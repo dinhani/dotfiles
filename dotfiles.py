@@ -29,7 +29,7 @@ class OS(StrEnum):
 SYSTEM = OS(platform.system())
 
 # ------------------------------------------------------------------------------
-# Log
+# Logging
 # ------------------------------------------------------------------------------
 COLOR_RESET  = "\033[0m"
 COLOR_RED    = "\033[91m"
@@ -74,7 +74,7 @@ def log_unsupported(item: str) -> None:
     log_handler(LogKind.SKIP, "skip", f"{item}: unsupported on {SYSTEM}")
 
 # ------------------------------------------------------------------------------
-# Domain values
+# Sync
 # ------------------------------------------------------------------------------
 class Transfer(Enum):
     COPY    = "copy"
@@ -146,6 +146,9 @@ class BackupHistory:
             return backup.stat().st_mtime
         return self.commit_times[backup]
 
+# ------------------------------------------------------------------------------
+# Files
+# ------------------------------------------------------------------------------
 @dataclass(frozen=True)
 class Rewrite:
     old: str
@@ -157,9 +160,6 @@ class Rewrite:
     def reversed(self) -> "Rewrite":
         return Rewrite(old=self.new, new=self.old)
 
-# ------------------------------------------------------------------------------
-# Files
-# ------------------------------------------------------------------------------
 class File(Path):
     # applied to the content of this file when it is the source of a copy or comparison
     _rewrite: Rewrite | None = None
@@ -326,7 +326,7 @@ class Dir(File):
         super().__rshift__(other)
 
 # ------------------------------------------------------------------------------
-# Constants - Directories
+# Paths
 # ------------------------------------------------------------------------------
 DOTFILES: File = File(Path(__file__).parent / "dotfiles")
 """Path of local dotfiles directory (relative to this script)."""
@@ -410,7 +410,7 @@ def operation(op: Op, app: str, dir: str, subdir: bool = False, source_of_truth:
     return decorator
 
 # ------------------------------------------------------------------------------
-# Items - Claude Code
+# App - Claude Code
 # ------------------------------------------------------------------------------
 @operation(Op.BACKUP, "Claude Code", "claude-code")
 def backup_claude_code(app: str, dir: Dir):
@@ -435,7 +435,7 @@ def restore_claude_code(app: str, dir: Dir):
         log_error("Failed to write Cursor rule", e)
 
 # ------------------------------------------------------------------------------
-# Items - Ghostty
+# App - Ghostty
 # ------------------------------------------------------------------------------
 @operation(Op.BACKUP, "Ghostty", "ghostty")
 def backup_ghostty(app: str, dir: Dir):
@@ -454,7 +454,7 @@ def restore_ghostty(app: str, dir: Dir):
             dir >> UNIX_HOME / ".config/ghostty"
 
 # ------------------------------------------------------------------------------
-# Items - Helix
+# App - Helix
 # ------------------------------------------------------------------------------
 @operation(Op.BACKUP, "Helix", "helix")
 def backup_helix(app: str, dir: Dir):
@@ -475,7 +475,7 @@ def restore_helix(app: str, dir: Dir):
             dir >> UNIX_HOME / ".config/helix"
 
 # ------------------------------------------------------------------------------
-# Items - JetBrains
+# App - JetBrains
 # ------------------------------------------------------------------------------
 JETBRAINS_TOOLS = (
     "CLion",
@@ -542,7 +542,7 @@ def restore_jetbrains(app: str, dir: Dir):
             source >> install / file
 
 # ------------------------------------------------------------------------------
-# Items - Notable
+# App - Notable
 # ------------------------------------------------------------------------------
 @operation(Op.BACKUP, "Notable", "notable")
 def backup_notable(app: str, dir: Dir):
@@ -553,7 +553,7 @@ def restore_notable(app: str, dir: Dir):
     dir / ".notable.json" >> HOME / ".notable.json"
 
 # ------------------------------------------------------------------------------
-# Items - OpenCode
+# App - OpenCode
 # ------------------------------------------------------------------------------
 OPENCODE_LAN = Rewrite(old="127.0.0.1", new="192.168.0.11")
 
@@ -575,7 +575,7 @@ def restore_opencode(app: str, dir: Dir):
             (dir / "opencode.json").rewriting(OPENCODE_LAN) >> UNIX_HOME / ".config/opencode/opencode.json"
 
 # ------------------------------------------------------------------------------
-# Items - PowerShell
+# App - PowerShell
 # ------------------------------------------------------------------------------
 @operation(Op.BACKUP, "PowerShell", "powershell", source_of_truth=OS.WIN)
 def backup_powershell(app: str, dir: Dir):
@@ -591,7 +591,7 @@ def restore_powershell(app: str, dir: Dir):
             log_unsupported(app)
 
 # ------------------------------------------------------------------------------
-# Items - RStudio
+# App - RStudio
 # ------------------------------------------------------------------------------
 @operation(Op.BACKUP, "RStudio", "rstudio", source_of_truth=OS.WIN)
 def backup_rstudio(app: str, dir: Dir):
@@ -613,7 +613,7 @@ def restore_rstudio(app: str, dir: Dir):
             Dir(dir / "keybindings") >> UNIX_HOME / ".config/rstudio/keybindings"
 
 # ------------------------------------------------------------------------------
-# Items - Starship
+# App - Starship
 # ------------------------------------------------------------------------------
 @operation(Op.BACKUP, "Starship", "starship")
 def backup_starship(app: str, dir: Dir):
@@ -632,7 +632,7 @@ def restore_starship(app: str, dir: Dir):
             dir / "starship.toml" >> UNIX_HOME / ".config/starship.toml"
 
 # ------------------------------------------------------------------------------
-# Items - VIM
+# App - VIM
 # ------------------------------------------------------------------------------
 @operation(Op.BACKUP, "VIM", "vim")
 def backup_vim(app: str, dir: Dir):
@@ -651,7 +651,7 @@ def restore_vim(app: str, dir: Dir):
             dir / ".vimrc" >> UNIX_HOME / ".vimrc"
 
 # ------------------------------------------------------------------------------
-# Items - VSCode / Cursor
+# App - VSCode / Cursor
 # ------------------------------------------------------------------------------
 @operation(Op.BACKUP, "VSCode / Cursor", "vscode")
 def backup_vscode(app: str, dir: Dir):
@@ -681,7 +681,7 @@ def restore_vscode(app: str, dir: Dir):
             dir >> MAC_APP_SUPPORT / "Cursor/User"
 
 # ------------------------------------------------------------------------------
-# Items - Warp
+# App - Warp
 # ------------------------------------------------------------------------------
 @operation(Op.BACKUP, "Warp", "warp")
 def backup_warp(app: str, dir: Dir):
@@ -701,7 +701,7 @@ def restore_warp(app: str, dir: Dir):
             dir >> UNIX_HOME / ".warp"
 
 # ------------------------------------------------------------------------------
-# Items - Windows Terminal
+# App - Windows Terminal
 # ------------------------------------------------------------------------------
 @operation(Op.BACKUP, "Windows Terminal", "windows-terminal", source_of_truth=OS.WIN)
 def backup_windows_terminal(app: str, dir: Dir):
