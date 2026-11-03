@@ -31,7 +31,8 @@ Cross-platform (Windows / Linux / Mac) Python script that backs up app config fi
 ### Adding a new app
 1. Write the backup/restore pair, decorated with `@operation`.
 2. Handle each OS case explicitly; for unsupported platforms write a `case` whose only statement is `log_unsupported(app)`. `@operation` parses the handler source for exactly that shape to disable the app in the TUI on those platforms.
-3. Register the app under a category (`Terminal`, `Editor`, `Notes`, ...).
+3. Wrap every directory path in `Dir(...)` (e.g. `Dir(dir) >> target`). On restore, `Dir` always creates the target directory, even if the backup has none; on backup, a missing source directory is skipped. Plain paths are for files.
+4. Register the app under a category (`Terminal`, `Editor`, `Notes`, ...).
 
 ## Goal 2: Unix machine setup (`setup-unix.sh` + `setup-unix-functions.sh`)
 

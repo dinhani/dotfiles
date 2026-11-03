@@ -163,6 +163,17 @@ class File(Path):
         shutil.rmtree(root, ignore_errors=True)
         File._deleted.add(root)
 
+class Dir(File):
+    """Path known to be a directory. On restore the target directory is always created, even if the backup has none."""
+
+    def __rshift__(self, other) -> None:
+        target = File(other)
+        if File._transfer is Transfer.COPY and not self.is_dir():
+            if not target._is_backup():
+                target.mkdir(parents=True, exist_ok=True)
+            return
+        super().__rshift__(other)
+
 def _ensure_trailing_newline(path: Path) -> None:
     """Append a newline if the file is non-empty and doesn't already end with one."""
     try:
@@ -298,7 +309,7 @@ def backup_claude_code(app: str, dir: File):
 
     home / ".claude/settings.json" >> dir / "settings.json"
     home / ".claude/CLAUDE.md" >> dir / "CLAUDE.md"
-    home / ".claude/hooks" >> dir / "hooks"
+    Dir(home / ".claude/hooks") >> dir / "hooks"
 
 @operation("Claude Code", "claude-code")
 def restore_claude_code(app: str, dir: File):
@@ -309,7 +320,7 @@ def restore_claude_code(app: str, dir: File):
             home = UNIX_HOME
 
     for profile in (".claude", ".claude-2", ".claude-3"):
-        dir >> home / profile
+        Dir(dir) >> home / profile
 
     dir / "CLAUDE.md" >> home / ".codex/AGENTS.md"
     dir / "CLAUDE.md" >> home / ".config/opencode/AGENTS.md"
@@ -339,7 +350,7 @@ def restore_ghostty(app: str, dir: File):
         case OS.WIN:
             log_unsupported(app)
         case OS.LINUX | OS.MAC:
-            dir >> UNIX_HOME / ".config/ghostty"
+            Dir(dir) >> UNIX_HOME / ".config/ghostty"
 
 # ------------------------------------------------------------------------------
 # Items - Helix
@@ -358,9 +369,9 @@ def backup_helix(app: str, dir: File):
 def restore_helix(app: str, dir: File):
     match SYSTEM:
         case OS.WIN:
-            dir >> WIN_ROAMING / "helix"
+            Dir(dir) >> WIN_ROAMING / "helix"
         case OS.LINUX | OS.MAC:
-            dir >> UNIX_HOME / ".config/helix"
+            Dir(dir) >> UNIX_HOME / ".config/helix"
 
 # ------------------------------------------------------------------------------
 # Items - JetBrains
@@ -491,7 +502,7 @@ def backup_powershell(app: str, dir: File):
 def restore_powershell(app: str, dir: File):
     match SYSTEM:
         case OS.WIN:
-            dir >> WIN_HOME / "Documents/PowerShell"
+            Dir(dir) >> WIN_HOME / "Documents/PowerShell"
         case OS.LINUX | OS.MAC:
             log_unsupported(app)
 
@@ -503,17 +514,19 @@ def backup_rstudio(app: str, dir: File):
     match SYSTEM:
         case OS.WIN:
             WIN_ROAMING / "RStudio/config.json" >> dir / "config.json"
-            WIN_ROAMING / "RStudio/keybindings" >> dir / "keybindings"
+            Dir(WIN_ROAMING / "RStudio/keybindings") >> dir / "keybindings"
         case OS.LINUX | OS.MAC:
-            log_unsupported(app)
+            UNIX_HOME / ".config/rstudio/rstudio-prefs.json" >> dir / "rstudio-prefs.json"
+            Dir(UNIX_HOME / ".config/rstudio/keybindings") >> dir / "keybindings"
 
 @operation("RStudio", "rstudio")
 def restore_rstudio(app: str, dir: File):
     match SYSTEM:
         case OS.WIN:
-            dir >> WIN_ROAMING / "RStudio"
+            Dir(dir) >> WIN_ROAMING / "RStudio"
         case OS.LINUX | OS.MAC:
-            log_unsupported(app)
+            dir / "rstudio-prefs.json" >> UNIX_HOME / ".config/rstudio/rstudio-prefs.json"
+            Dir(dir / "keybindings") >> UNIX_HOME / ".config/rstudio/keybindings"
 
 # ------------------------------------------------------------------------------
 # Items - Starship
@@ -574,14 +587,14 @@ def backup_vscode(app: str, dir: File):
 def restore_vscode(app: str, dir: File):
     match SYSTEM:
         case OS.WIN:
-            dir >> WIN_SCOOP / "persist/vscode/data/user-data/User"
-            dir >> WIN_ROAMING / "Cursor/User"
+            Dir(dir) >> WIN_SCOOP / "persist/vscode/data/user-data/User"
+            Dir(dir) >> WIN_ROAMING / "Cursor/User"
         case OS.LINUX:
-            dir >> UNIX_HOME / ".config/Code/User"
-            dir >> UNIX_HOME / ".config/Cursor/User"
+            Dir(dir) >> UNIX_HOME / ".config/Code/User"
+            Dir(dir) >> UNIX_HOME / ".config/Cursor/User"
         case OS.MAC:
-            dir >> MAC_APP_SUPPORT / "Code/User"
-            dir >> MAC_APP_SUPPORT / "Cursor/User"
+            Dir(dir) >> MAC_APP_SUPPORT / "Code/User"
+            Dir(dir) >> MAC_APP_SUPPORT / "Cursor/User"
 
 # ------------------------------------------------------------------------------
 # Items - Warp
@@ -601,7 +614,7 @@ def restore_warp(app: str, dir: File):
         case OS.WIN:
             log_unsupported(app)
         case OS.LINUX | OS.MAC:
-            dir >> UNIX_HOME / ".warp"
+            Dir(dir) >> UNIX_HOME / ".warp"
 
 # ------------------------------------------------------------------------------
 # Items - Windows Terminal
@@ -618,7 +631,7 @@ def backup_windows_terminal(app: str, dir: File):
 def restore_windows_terminal(app: str, dir: File):
     match SYSTEM:
         case OS.WIN:
-            dir >> WIN_LOCAL / "Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState"
+            Dir(dir) >> WIN_LOCAL / "Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState"
         case OS.LINUX | OS.MAC:
             log_unsupported(app)
 
