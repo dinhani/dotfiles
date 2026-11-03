@@ -99,7 +99,7 @@ class TuiState:
     panel_active: str # which panel is active (left or right)
     panel_cursors: dict[str, int | None] # position of cursor in each panel (None when the panel has no enabled items)
     panel_selected: dict[str, set[str]] # selected item names in each panel
-    panel_disabled: dict[str, set[str]] # disabled item names in each panel
+    panel_disabled: dict[str, dict[str, "Disabled"]] # disabled items in each panel, with the reason
     panel_item_indices: dict[str, list[int]] # indexes of menu_rows that are selectable in each panel (enabled Item rows)
 
     menu_rows: list[MenuRow] # category and item rows, in display order
@@ -115,7 +115,7 @@ class TuiState:
     # confirm popup
     confirm_message: str
 
-    def __init__(self, panel_left: str, panel_right: str, items: dict[str, list[str]], items_disabled: dict[str, set[str]], items_hint: Mapping[str, "Hint"]):
+    def __init__(self, panel_left: str, panel_right: str, items: dict[str, list[str]], items_disabled: dict[str, dict[str, "Disabled"]], items_hint: Mapping[str, "Hint"]):
         self.panel_left = panel_left
         self.panel_right = panel_right
         self.items_hint = items_hint
@@ -131,7 +131,7 @@ class TuiState:
         # set panel state
         self.panel_active = panel_left
         self.panel_selected = {panel_left: set(), panel_right: set()}
-        self.panel_disabled = {panel: items_disabled.get(panel, set()) for panel in (panel_left, panel_right)}
+        self.panel_disabled = {panel: items_disabled.get(panel, {}) for panel in (panel_left, panel_right)}
         self.panel_item_indices = {
             panel: [i for i, row in enumerate(self.menu_rows) if isinstance(row, Item) and row.name not in self.panel_disabled[panel]]
             for panel in (panel_left, panel_right)
@@ -222,9 +222,16 @@ class Hint:
     color: str
 
 
+@dataclass(frozen=True)
+class Disabled:
+    icon: str
+    color: str
+    reason: str
+
+
 def show_tui(
     items: dict[str, list[str]],
-    items_disabled: dict[str, set[str]],
+    items_disabled: dict[str, dict[str, Disabled]],
     items_hint: Mapping[str, Hint],
     item_diff: Callable[[str, str], str],
     run: Callable[[list[tuple[str, str]], Progress], None],
@@ -404,7 +411,7 @@ def show_tui(
     # --------------------------------------------------------------------------
     # mount TUI
     # --------------------------------------------------------------------------
-    panel_width = 40
+    panel_width = 42
     panel_height = Dimension(min=1, max=len(state.menu_rows), preferred=len(state.menu_rows))
 
     def tui_panel(panel: str) -> FormattedText:
@@ -416,8 +423,11 @@ def show_tui(
                 fragments.append(("class:category", f" {row.name}\n"))
                 continue
 
-            if row.name in state.panel_disabled[panel]:
-                fragments.append(("class:disabled", f"   [-] {row.name}\n"))
+            item_disabled = state.panel_disabled[panel].get(row.name)
+            if item_disabled:
+                fragments.append(("class:disabled", "   "))
+                fragments.append((f"fg:{item_disabled.color}", item_disabled.icon))
+                fragments.append(("class:disabled", f" [-] {row.name}\n"))
                 continue
 
             # determine if on cursor or not
@@ -434,7 +444,7 @@ def show_tui(
             item_marker = "[●]" if row.name in state.panel_selected[panel] else "[ ]"
 
             # render item
-            item_text = f" {item_cursor} {item_marker} {row.name}"
+            item_text = f" {item_cursor}   {item_marker} {row.name}"
             item_padding = max(1, panel_width - 2 - len(item_text) - len(item_hint.text) - 1)
             fragments.append((row_style, item_text + " " * item_padding))
             fragments.append((hint_style, f"{item_hint.text} \n"))
@@ -489,6 +499,14 @@ def show_tui(
             case Mode.BROWSING:
                 return "[Tab/←→] panel  [↑↓/jk] move  [Home/End] first/last  [Space] toggle  [a] all  [n] none  [d] diff  [Enter] run  [q/Esc] quit"
 
+    def tui_legend() -> FormattedText:
+        disabled_all = {disabled for disabled_by_item in state.panel_disabled.values() for disabled in disabled_by_item.values()}
+        fragments: list[tuple[str, str]] = []
+        for disabled in sorted(disabled_all, key=lambda disabled: disabled.reason):
+            fragments.append((f"fg:{disabled.color}", disabled.icon))
+            fragments.append(("class:help", f" {disabled.reason}   "))
+        return FormattedText(fragments)
+
     def tui_panel_title(panel: str) -> str:
         return f"{'●' if state.is_active(panel) else ' '} {panel} ({len(state.panel_selected[panel])})"
 
@@ -518,7 +536,9 @@ def show_tui(
         Window(
             FormattedTextControl(tui_help),
             height=1, style="class:help", align=WindowAlign.CENTER
-        )
+        ),
+        # legend of disabled reasons
+        Window(FormattedTextControl(tui_legend), height=1, align=WindowAlign.CENTER),
     ], align=VerticalAlign.CENTER)
 
     tui_diff_popup = ConditionalContainer(

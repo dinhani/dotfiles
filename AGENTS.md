@@ -22,7 +22,7 @@ Cross-platform (Windows / Linux / Mac) Python script that backs up app config fi
 
 ### TUI (`dotfiles_tui.py`)
 
-- Items can be disabled per panel (shown dimmed as `[-]`, not selectable). `dotfiles.py` disables apps whose handler is unsupported on the current OS.
+- Items can be disabled per panel (shown dimmed as `[-]`, not selectable). Every row has an icon column before the checkbox; on disabled rows it shows why the item is disabled (`Disabled` with icon, color and reason), and a legend line under the help line lists the reasons in use. `dotfiles.py` disables apps whose handler is unsupported on the current OS (`⊘`) and backups of apps whose `source_of_truth` OS is not the current one (`⇩`).
 - Keyboard: `Tab` switches panel · `←` / `→` activates the left / right panel · `↑` / `↓` / `k` / `j` moves cursor (skips category headers and disabled items) · `Home` / `End` jumps to first / last · `Space` toggles · `a` selects all · `n` clears all · `d` opens a diff popup for the cursor app (scroll with `↑` / `↓` / `k` / `j` / `PgUp` / `PgDn` / `Home` / `End`, close with `d` / `q` / `Esc`) · `Enter` runs the selection · `q` / `Esc` / `Ctrl-C` quits.
 - Each item can carry a short hint, shown dimmed and right-aligned in both panels.
 - Panel titles show the selected count. When any restore is selected, `dotfiles.py` asks for confirmation before running, flagging apps whose machine copy is newer.
@@ -33,7 +33,7 @@ Cross-platform (Windows / Linux / Mac) Python script that backs up app config fi
 
 ### Adding a new app
 1. Write the backup/restore pair, decorated with `@operation`.
-2. Handle each OS case explicitly; for unsupported platforms write a `case` whose only statement is `log_unsupported(app)`. `@operation` parses the handler source for exactly that shape to disable the app in the TUI on those platforms.
+2. Handle each OS case explicitly; for unsupported platforms write a `case` whose only statement is `log_unsupported(app)`. `@operation` parses the handler source for exactly that shape to disable the app in the TUI on those platforms. Use that only for apps that do not exist on the OS. For apps that exist everywhere but whose backup must only be taken from one OS, pass `source_of_truth=OS.X` to the backup's `@operation`; the backup is disabled on other OSes while restore stays available, and the backup body only needs the source OS case.
 3. Wrap every directory path in `Dir(...)` (e.g. `Dir(dir) >> target`). On restore, `Dir` always creates the target directory, even if the backup has none; on backup, a missing source directory is skipped. Plain paths are for files.
 4. Register the app under a category (`Terminal`, `Editor`, `Notes`, ...).
 

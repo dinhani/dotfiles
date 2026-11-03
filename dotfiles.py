@@ -16,7 +16,7 @@ from collections.abc import Callable, Iterable
 
 from tqdm import tqdm
 
-from dotfiles_tui import Hint, Progress, show_tui
+from dotfiles_tui import Disabled, Hint, Progress, show_tui
 
 # ------------------------------------------------------------------------------
 # Classes
@@ -300,6 +300,17 @@ class Op(StrEnum):
 # ------------------------------------------------------------------------------
 # Decorator
 # ------------------------------------------------------------------------------
+class Unavailable(Enum):
+    NOT_ON_PLATFORM     = "not on this platform"
+    NOT_SOURCE_OF_TRUTH = "not source of truth"
+
+    def to_disabled(self) -> Disabled:
+        match self:
+            case Unavailable.NOT_ON_PLATFORM:
+                return Disabled(icon="⊘", color="ansired", reason=self.value)
+            case Unavailable.NOT_SOURCE_OF_TRUTH:
+                return Disabled(icon="⇩", color="#af8700", reason=self.value)
+
 @dataclass(frozen=True)
 class Handler:
     app: str
@@ -307,6 +318,7 @@ class Handler:
     subdir: bool
     fn: Callable[[str, Dir], None]
     systems_unsupported: frozenset[OS]
+    source_of_truth: OS | None
 
     def __call__(self) -> None:
         File._subdir = self.subdir
@@ -315,8 +327,12 @@ class Handler:
         finally:
             File._subdir = False
 
-    def is_supported(self) -> bool:
-        return SYSTEM not in self.systems_unsupported
+    def find_unavailable(self) -> Unavailable | None:
+        if SYSTEM in self.systems_unsupported:
+            return Unavailable.NOT_ON_PLATFORM
+        if self.source_of_truth is not None and self.source_of_truth != SYSTEM:
+            return Unavailable.NOT_SOURCE_OF_TRUTH
+        return None
 
     def collect_transfers(self) -> list[tuple[File, File]]:
         File._transfer = Transfer.COMPARE
@@ -327,7 +343,7 @@ class Handler:
             File._transfer = Transfer.COPY
         return File._compared
 
-def operation(app: str, dir: str, subdir: bool = False) -> Callable[[Callable[[str, Dir], None]], Handler]:
+def operation(app: str, dir: str, subdir: bool = False, source_of_truth: OS | None = None) -> Callable[[Callable[[str, Dir], None]], Handler]:
     """Wrap a backup/restore function, injecting the app name and the resolved `dotfiles/<target_dir>` path.
 
     Set `subdir=True` for apps whose backup lives one level deeper (e.g. JetBrains, where each tool has
@@ -341,7 +357,7 @@ def operation(app: str, dir: str, subdir: bool = False) -> Callable[[Callable[[s
                 case ast.match_case(pattern, body=[ast.Expr(ast.Call(ast.Name(name)))]) if name == log_unsupported.__name__:
                     systems_unsupported |= {OS[value.attr] for value in ast.walk(pattern) if isinstance(value, ast.Attribute)}
 
-        return Handler(app=app, dir=dir, subdir=subdir, fn=fn, systems_unsupported=frozenset(systems_unsupported))
+        return Handler(app=app, dir=dir, subdir=subdir, fn=fn, systems_unsupported=frozenset(systems_unsupported), source_of_truth=source_of_truth)
     return decorator
 
 # ------------------------------------------------------------------------------
@@ -510,13 +526,9 @@ def restore_notable(app: str, dir: Dir):
 # ------------------------------------------------------------------------------
 # Items - OpenCode
 # ------------------------------------------------------------------------------
-@operation("OpenCode", "opencode")
+@operation("OpenCode", "opencode", source_of_truth=OS.WIN)
 def backup_opencode(app: str, dir: Dir):
-    match SYSTEM:
-        case OS.WIN:
-            WIN_HOME / ".config/opencode/opencode.json" >> dir / "opencode.json"
-        case OS.LINUX | OS.MAC:
-            log_unsupported(app)
+    WIN_HOME / ".config/opencode/opencode.json" >> dir / "opencode.json"
 
 @operation("OpenCode", "opencode")
 def restore_opencode(app: str, dir: Dir):
@@ -557,7 +569,7 @@ def restore_powershell(app: str, dir: Dir):
 # ------------------------------------------------------------------------------
 # Items - RStudio
 # ------------------------------------------------------------------------------
-@operation("RStudio", "rstudio")
+@operation("RStudio", "rstudio", source_of_truth=OS.WIN)
 def backup_rstudio(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
@@ -736,7 +748,7 @@ def compare_backups(
     return transfers_by_app, syncs
 
 if __name__ == "__main__":
-    handlers_backup = {app: handlers[Op.BACKUP] for app, handlers in REGISTRY_BY_APP.items() if handlers[Op.BACKUP].is_supported()}
+    handlers_backup = {app: handlers[Op.BACKUP] for app, handlers in REGISTRY_BY_APP.items() if handlers[Op.BACKUP].find_unavailable() is None}
     transfers_by_app, syncs = compare_backups(
         handlers_backup,
         BackupHistory.from_git(DOTFILES),
@@ -768,7 +780,7 @@ if __name__ == "__main__":
     show_tui(
         items={category: list(apps) for category, apps in REGISTRY_BY_CATEGORY.items()},
         items_disabled={
-            op.value: {app for app, handlers in REGISTRY_BY_APP.items() if not handlers[op].is_supported()}
+            op.value: {app: unavailable.to_disabled() for app, handlers in REGISTRY_BY_APP.items() if (unavailable := handlers[op].find_unavailable())}
             for op in Op
         },
         items_hint={app: sync.to_hint() for app, sync in syncs.items()},
