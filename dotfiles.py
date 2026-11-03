@@ -300,17 +300,6 @@ class Op(StrEnum):
 # ------------------------------------------------------------------------------
 # Decorator
 # ------------------------------------------------------------------------------
-class Unavailable(Enum):
-    NOT_ON_PLATFORM     = "not on this platform"
-    NOT_SOURCE_OF_TRUTH = "not source of truth"
-
-    def to_disabled(self) -> Disabled:
-        match self:
-            case Unavailable.NOT_ON_PLATFORM:
-                return Disabled(icon="⊘", color="ansired", reason=self.value)
-            case Unavailable.NOT_SOURCE_OF_TRUTH:
-                return Disabled(icon="⇩", color="#af8700", reason=self.value)
-
 @dataclass(frozen=True)
 class Handler:
     app: str
@@ -327,11 +316,11 @@ class Handler:
         finally:
             File._subdir = False
 
-    def find_unavailable(self) -> Unavailable | None:
-        if SYSTEM in self.systems_unsupported:
-            return Unavailable.NOT_ON_PLATFORM
+    def find_disabled(self) -> Disabled | None:
         if self.source_of_truth is not None and self.source_of_truth != SYSTEM:
-            return Unavailable.NOT_SOURCE_OF_TRUTH
+            return Disabled(icon=self.source_of_truth.name[0], color="#af8700", reason=f"backup only from {self.source_of_truth.name.title()}")
+        if SYSTEM in self.systems_unsupported:
+            return Disabled(icon="✗", color="ansired", reason="app not on this OS")
         return None
 
     def collect_transfers(self) -> list[tuple[File, File]]:
@@ -549,14 +538,10 @@ def restore_opencode(app: str, dir: Dir):
 # ------------------------------------------------------------------------------
 # Items - PowerShell
 # ------------------------------------------------------------------------------
-@operation("PowerShell", "powershell")
+@operation("PowerShell", "powershell", source_of_truth=OS.WIN)
 def backup_powershell(app: str, dir: Dir):
-    match SYSTEM:
-        case OS.WIN:
-            WIN_HOME / "Documents/PowerShell/Microsoft.PowerShell_profile.ps1" >> dir / "Microsoft.PowerShell_profile.ps1"
-            WIN_HOME / "Documents/PowerShell/Profile" >> dir / "Profile"
-        case OS.LINUX | OS.MAC:
-            log_unsupported(app)
+    WIN_HOME / "Documents/PowerShell/Microsoft.PowerShell_profile.ps1" >> dir / "Microsoft.PowerShell_profile.ps1"
+    WIN_HOME / "Documents/PowerShell/Profile" >> dir / "Profile"
 
 @operation("PowerShell", "powershell")
 def restore_powershell(app: str, dir: Dir):
@@ -679,13 +664,9 @@ def restore_warp(app: str, dir: Dir):
 # ------------------------------------------------------------------------------
 # Items - Windows Terminal
 # ------------------------------------------------------------------------------
-@operation("Windows Terminal", "windows-terminal")
+@operation("Windows Terminal", "windows-terminal", source_of_truth=OS.WIN)
 def backup_windows_terminal(app: str, dir: Dir):
-    match SYSTEM:
-        case OS.WIN:
-            WIN_LOCAL / "Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json" >> dir / "settings.json"
-        case OS.LINUX | OS.MAC:
-            log_unsupported(app)
+    WIN_LOCAL / "Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json" >> dir / "settings.json"
 
 @operation("Windows Terminal", "windows-terminal")
 def restore_windows_terminal(app: str, dir: Dir):
@@ -748,7 +729,7 @@ def compare_backups(
     return transfers_by_app, syncs
 
 if __name__ == "__main__":
-    handlers_backup = {app: handlers[Op.BACKUP] for app, handlers in REGISTRY_BY_APP.items() if handlers[Op.BACKUP].find_unavailable() is None}
+    handlers_backup = {app: handlers[Op.BACKUP] for app, handlers in REGISTRY_BY_APP.items() if handlers[Op.BACKUP].find_disabled() is None}
     transfers_by_app, syncs = compare_backups(
         handlers_backup,
         BackupHistory.from_git(DOTFILES),
@@ -780,7 +761,7 @@ if __name__ == "__main__":
     show_tui(
         items={category: list(apps) for category, apps in REGISTRY_BY_CATEGORY.items()},
         items_disabled={
-            op.value: {app: unavailable.to_disabled() for app, handlers in REGISTRY_BY_APP.items() if (unavailable := handlers[op].find_unavailable())}
+            op.value: {app: disabled for app, handlers in REGISTRY_BY_APP.items() if (disabled := handlers[op].find_disabled())}
             for op in Op
         },
         items_hint={app: sync.to_hint() for app, sync in syncs.items()},

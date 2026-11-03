@@ -426,7 +426,7 @@ def show_tui(
             item_disabled = state.panel_disabled[panel].get(row.name)
             if item_disabled:
                 fragments.append(("class:disabled", "   "))
-                fragments.append((f"fg:{item_disabled.color}", item_disabled.icon))
+                fragments.append((f"class:disabled fg:{item_disabled.color}", item_disabled.icon))
                 fragments.append(("class:disabled", f" [-] {row.name}\n"))
                 continue
 
@@ -514,7 +514,7 @@ def show_tui(
         "category":         "bold ansicyan",
         "focused":          "reverse bold",
         "cursor-inactive":  "ansiblue",
-        "disabled":         "ansibrightblack",
+        "disabled":         "ansibrightblack dim",
         "help":             "ansibrightblack",
         "diff-add":         "ansigreen",
         "diff-remove":      "ansired",
