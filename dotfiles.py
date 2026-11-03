@@ -87,7 +87,20 @@ class BackupHistory:
             return backup.stat().st_mtime
         return self.commit_times[backup]
 
+@dataclass(frozen=True)
+class Rewrite:
+    old: str
+    new: str
+
+    def apply(self, text: str) -> str:
+        return text.replace(self.old, self.new)
+
+    def reversed(self) -> "Rewrite":
+        return Rewrite(old=self.new, new=self.old)
+
 class File(Path):
+    # applied to the content of this file when it is the source of a copy or comparison
+    _rewrite: Rewrite | None = None
     # track dotfiles dirs that we already deleted
     _deleted: set = set()
     # when False, deletes dotfiles/<app>/; when True, deletes dotfiles/<category>/<app>/ (example: JetBrains/<app>/)
@@ -116,6 +129,29 @@ class File(Path):
         else:
             self._copy_dir(target)
 
+    def rewriting(self, rewrite: Rewrite) -> "File":
+        file = File(self)
+        file._rewrite = rewrite
+        return file
+
+    def read_content(self) -> bytes:
+        if self._rewrite is None:
+            return self.read_bytes()
+        return self._rewrite.apply(self.read_text(encoding="utf-8")).encode("utf-8")
+
+    def append_missing_newline(self) -> None:
+        """Append a newline if the file is non-empty and doesn't already end with one."""
+        try:
+            with open(self, "rb+") as f:
+                f.seek(0, os.SEEK_END)
+                if f.tell() == 0:
+                    return
+                f.seek(-1, os.SEEK_END)
+                if f.read(1) != b"\n":
+                    f.write(b"\n")
+        except Exception as e:
+            log_error("Failed to append missing newline", e)
+
     def compare_to_backup(self, backup: "File", history: BackupHistory) -> Sync | None:
         if not self.is_file() and not backup.is_file():
             return None
@@ -124,7 +160,7 @@ class File(Path):
         if not self.is_file():
             return Sync.BACKUP_NEWER
 
-        if self.read_bytes().removesuffix(b"\n") == backup.read_bytes().removesuffix(b"\n"):
+        if self.read_content().removesuffix(b"\n") == backup.read_content().removesuffix(b"\n"):
             return Sync.IN_SYNC
 
         if self.stat().st_mtime > history.get_time(backup):
@@ -133,8 +169,8 @@ class File(Path):
 
     def diff_to(self, other: "File") -> str:
         """Unified diff from this file to `other`; empty when contents are equal."""
-        old = self.read_bytes().removesuffix(b"\n") if self.is_file() else b""
-        new = other.read_bytes().removesuffix(b"\n") if other.is_file() else b""
+        old = self.read_content().removesuffix(b"\n") if self.is_file() else b""
+        new = other.read_content().removesuffix(b"\n") if other.is_file() else b""
         if old == new:
             return ""
 
@@ -156,7 +192,7 @@ class File(Path):
             if target._is_backup():
                 for path in target.rglob("*"):
                     if path.is_file():
-                        _ensure_trailing_newline(path)
+                        path.append_missing_newline()
         except Exception as e:
             log_error("Failed to copy directory", e)
 
@@ -165,9 +201,12 @@ class File(Path):
         try:
             log_transfer("file", self, target)
             target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(self, target)
+            if self._rewrite is None:
+                shutil.copy2(self, target)
+            else:
+                target.write_bytes(self.read_content())
             if target._is_backup():
-                _ensure_trailing_newline(target)
+                target.append_missing_newline()
         except Exception as e:
             log_error("Failed to copy file", e)
 
@@ -209,19 +248,6 @@ class Dir(File):
                 target.mkdir(parents=True, exist_ok=True)
             return
         super().__rshift__(other)
-
-def _ensure_trailing_newline(path: Path) -> None:
-    """Append a newline if the file is non-empty and doesn't already end with one."""
-    try:
-        with open(path, "rb+") as f:
-            f.seek(0, os.SEEK_END)
-            if f.tell() == 0:
-                return
-            f.seek(-1, os.SEEK_END)
-            if f.read(1) != b"\n":
-                f.write(b"\n")
-    except Exception as e:
-        log_error("Failed to ensure trailing newline", e)
 
 # ------------------------------------------------------------------------------
 # Constants - Directories
@@ -515,9 +541,15 @@ def restore_notable(app: str, dir: Dir):
 # ------------------------------------------------------------------------------
 # Items - OpenCode
 # ------------------------------------------------------------------------------
-@operation("OpenCode", "opencode", source_of_truth=OS.WIN)
+OPENCODE_LAN = Rewrite(old="127.0.0.1", new="192.168.0.11")
+
+@operation("OpenCode", "opencode")
 def backup_opencode(app: str, dir: Dir):
-    WIN_HOME / ".config/opencode/opencode.json" >> dir / "opencode.json"
+    match SYSTEM:
+        case OS.WIN:
+            WIN_HOME / ".config/opencode/opencode.json" >> dir / "opencode.json"
+        case OS.LINUX | OS.MAC:
+            (UNIX_HOME / ".config/opencode/opencode.json").rewriting(OPENCODE_LAN.reversed()) >> dir / "opencode.json"
 
 @operation("OpenCode", "opencode")
 def restore_opencode(app: str, dir: Dir):
@@ -526,14 +558,7 @@ def restore_opencode(app: str, dir: Dir):
             dir / "opencode.json" >> WIN_HOME / ".config/opencode/opencode.json"
         case OS.LINUX | OS.MAC:
             # llama-server runs on the Windows machine; point other machines at it over the LAN
-            source = dir / "opencode.json"
-            target = UNIX_HOME / ".config/opencode/opencode.json"
-            try:
-                log_transfer("file", source, target)
-                target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_text(source.read_text(encoding="utf-8").replace("127.0.0.1", "192.168.0.11"), encoding="utf-8")
-            except Exception as e:
-                log_error("Failed to write OpenCode config", e)
+            (dir / "opencode.json").rewriting(OPENCODE_LAN) >> UNIX_HOME / ".config/opencode/opencode.json"
 
 # ------------------------------------------------------------------------------
 # Items - PowerShell
