@@ -106,6 +106,10 @@ class File(Path):
                 File._compared.append((self, target))
             return
 
+        if not self.exists():
+            log_missing(self)
+            return
+
         target._delete_dotfiles_root_once()
         if self.is_file():
             self._copy_file(target)
@@ -272,6 +276,9 @@ errors_logged: list[Exception] = []
 def log_error(message: str, exception: Exception) -> None:
     errors_logged.append(exception)
     log_handler(LogKind.ERROR, "err", f"{message}: {exception}")
+
+def log_missing(source: Path) -> None:
+    log_handler(LogKind.SKIP, "skip", f"{source}: not found")
 
 def log_unsupported(item: str) -> None:
     log_handler(LogKind.SKIP, "skip", f"{item}: unsupported on {SYSTEM}")
