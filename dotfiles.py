@@ -166,6 +166,9 @@ class File(Path):
 class Dir(File):
     """Path known to be a directory. On restore the target directory is always created, even if the backup has none."""
 
+    def __truediv__(self, key) -> File:
+        return File(super().__truediv__(key))
+
     def __rshift__(self, other) -> None:
         target = File(other)
         if File._transfer is Transfer.COPY and not self.is_dir():
@@ -257,13 +260,13 @@ class Handler:
     app: str
     dir: str
     subdir: bool
-    fn: Callable[[str, File], None]
+    fn: Callable[[str, Dir], None]
     systems_unsupported: frozenset[OS]
 
     def __call__(self) -> None:
         File._subdir = self.subdir
         try:
-            self.fn(self.app, DOTFILES / self.dir)
+            self.fn(self.app, Dir(DOTFILES / self.dir))
         finally:
             File._subdir = False
 
@@ -279,14 +282,14 @@ class Handler:
             File._transfer = Transfer.COPY
         return File._compared
 
-def operation(app: str, dir: str, subdir: bool = False) -> Callable[[Callable[[str, File], None]], Handler]:
+def operation(app: str, dir: str, subdir: bool = False) -> Callable[[Callable[[str, Dir], None]], Handler]:
     """Wrap a backup/restore function, injecting the app name and the resolved `dotfiles/<target_dir>` path.
 
     Set `subdir=True` for apps whose backup lives one level deeper (e.g. JetBrains, where each tool has
     its own subdir under `dotfiles/jetbrains/` that must be preserved when the tool isn't installed on
     the current machine).
     """
-    def decorator(fn: Callable[[str, File], None]) -> Handler:
+    def decorator(fn: Callable[[str, Dir], None]) -> Handler:
         systems_unsupported: set[OS] = set()
         for node in ast.walk(ast.parse(inspect.getsource(fn))):
             match node:
@@ -300,7 +303,7 @@ def operation(app: str, dir: str, subdir: bool = False) -> Callable[[Callable[[s
 # Items - Claude Code
 # ------------------------------------------------------------------------------
 @operation("Claude Code", "claude-code")
-def backup_claude_code(app: str, dir: File):
+def backup_claude_code(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
             home = WIN_HOME
@@ -312,7 +315,7 @@ def backup_claude_code(app: str, dir: File):
     Dir(home / ".claude/hooks") >> dir / "hooks"
 
 @operation("Claude Code", "claude-code")
-def restore_claude_code(app: str, dir: File):
+def restore_claude_code(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
             home = WIN_HOME
@@ -320,7 +323,7 @@ def restore_claude_code(app: str, dir: File):
             home = UNIX_HOME
 
     for profile in (".claude", ".claude-2", ".claude-3"):
-        Dir(dir) >> home / profile
+        dir >> home / profile
 
     dir / "CLAUDE.md" >> home / ".codex/AGENTS.md"
     dir / "CLAUDE.md" >> home / ".config/opencode/AGENTS.md"
@@ -337,7 +340,7 @@ def restore_claude_code(app: str, dir: File):
 # Items - Ghostty
 # ------------------------------------------------------------------------------
 @operation("Ghostty", "ghostty")
-def backup_ghostty(app: str, dir: File):
+def backup_ghostty(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
             log_unsupported(app)
@@ -345,18 +348,18 @@ def backup_ghostty(app: str, dir: File):
             UNIX_HOME / ".config/ghostty/config" >> dir / "config"
 
 @operation("Ghostty", "ghostty")
-def restore_ghostty(app: str, dir: File):
+def restore_ghostty(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
             log_unsupported(app)
         case OS.LINUX | OS.MAC:
-            Dir(dir) >> UNIX_HOME / ".config/ghostty"
+            dir >> UNIX_HOME / ".config/ghostty"
 
 # ------------------------------------------------------------------------------
 # Items - Helix
 # ------------------------------------------------------------------------------
 @operation("Helix", "helix")
-def backup_helix(app: str, dir: File):
+def backup_helix(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
             WIN_ROAMING / "helix/config.toml" >> dir / "config.toml"
@@ -366,12 +369,12 @@ def backup_helix(app: str, dir: File):
             UNIX_HOME / ".config/helix/languages.toml" >> dir / "languages.toml"
 
 @operation("Helix", "helix")
-def restore_helix(app: str, dir: File):
+def restore_helix(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
-            Dir(dir) >> WIN_ROAMING / "helix"
+            dir >> WIN_ROAMING / "helix"
         case OS.LINUX | OS.MAC:
-            Dir(dir) >> UNIX_HOME / ".config/helix"
+            dir >> UNIX_HOME / ".config/helix"
 
 # ------------------------------------------------------------------------------
 # Items - JetBrains
@@ -423,7 +426,7 @@ def jetbrains_installs() -> dict[str, File]:
     return installs
 
 @operation("JetBrains", "jetbrains", subdir=True)
-def backup_jetbrains(app: str, dir: File):
+def backup_jetbrains(app: str, dir: Dir):
     for tool, install in jetbrains_installs().items():
         for file in JETBRAINS_FILES:
             source = install / file
@@ -432,7 +435,7 @@ def backup_jetbrains(app: str, dir: File):
             source >> dir / tool / file
 
 @operation("JetBrains", "jetbrains")
-def restore_jetbrains(app: str, dir: File):
+def restore_jetbrains(app: str, dir: Dir):
     for tool, install in jetbrains_installs().items():
         for file in JETBRAINS_FILES:
             source = dir / tool / file
@@ -444,26 +447,26 @@ def restore_jetbrains(app: str, dir: File):
 # Items - Notable
 # ------------------------------------------------------------------------------
 @operation("Notable", "notable")
-def backup_notable(app: str, dir: File):
+def backup_notable(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
             WIN_HOME / ".notable.json" >> dir / ".notable.json"
         case OS.LINUX | OS.MAC:
-            log_unsupported(app)
+            UNIX_HOME / ".notable.json" >> dir / ".notable.json"
 
 @operation("Notable", "notable")
-def restore_notable(app: str, dir: File):
+def restore_notable(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
             dir / ".notable.json" >> WIN_HOME / ".notable.json"
         case OS.LINUX | OS.MAC:
-            log_unsupported(app)
+            dir / ".notable.json" >> UNIX_HOME / ".notable.json"
 
 # ------------------------------------------------------------------------------
 # Items - OpenCode
 # ------------------------------------------------------------------------------
 @operation("OpenCode", "opencode")
-def backup_opencode(app: str, dir: File):
+def backup_opencode(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
             WIN_HOME / ".config/opencode/opencode.json" >> dir / "opencode.json"
@@ -471,7 +474,7 @@ def backup_opencode(app: str, dir: File):
             log_unsupported(app)
 
 @operation("OpenCode", "opencode")
-def restore_opencode(app: str, dir: File):
+def restore_opencode(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
             dir / "opencode.json" >> WIN_HOME / ".config/opencode/opencode.json"
@@ -490,7 +493,7 @@ def restore_opencode(app: str, dir: File):
 # Items - PowerShell
 # ------------------------------------------------------------------------------
 @operation("PowerShell", "powershell")
-def backup_powershell(app: str, dir: File):
+def backup_powershell(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
             WIN_HOME / "Documents/PowerShell/Microsoft.PowerShell_profile.ps1" >> dir / "Microsoft.PowerShell_profile.ps1"
@@ -499,10 +502,10 @@ def backup_powershell(app: str, dir: File):
             log_unsupported(app)
 
 @operation("PowerShell", "powershell")
-def restore_powershell(app: str, dir: File):
+def restore_powershell(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
-            Dir(dir) >> WIN_HOME / "Documents/PowerShell"
+            dir >> WIN_HOME / "Documents/PowerShell"
         case OS.LINUX | OS.MAC:
             log_unsupported(app)
 
@@ -510,7 +513,7 @@ def restore_powershell(app: str, dir: File):
 # Items - RStudio
 # ------------------------------------------------------------------------------
 @operation("RStudio", "rstudio")
-def backup_rstudio(app: str, dir: File):
+def backup_rstudio(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
             WIN_ROAMING / "RStudio/config.json" >> dir / "config.json"
@@ -520,10 +523,10 @@ def backup_rstudio(app: str, dir: File):
             Dir(UNIX_HOME / ".config/rstudio/keybindings") >> dir / "keybindings"
 
 @operation("RStudio", "rstudio")
-def restore_rstudio(app: str, dir: File):
+def restore_rstudio(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
-            Dir(dir) >> WIN_ROAMING / "RStudio"
+            dir >> WIN_ROAMING / "RStudio"
         case OS.LINUX | OS.MAC:
             dir / "rstudio-prefs.json" >> UNIX_HOME / ".config/rstudio/rstudio-prefs.json"
             Dir(dir / "keybindings") >> UNIX_HOME / ".config/rstudio/keybindings"
@@ -532,7 +535,7 @@ def restore_rstudio(app: str, dir: File):
 # Items - Starship
 # ------------------------------------------------------------------------------
 @operation("Starship", "starship")
-def backup_starship(app: str, dir: File):
+def backup_starship(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
             log_unsupported(app)
@@ -540,7 +543,7 @@ def backup_starship(app: str, dir: File):
             UNIX_HOME / ".config/starship.toml" >> dir / "starship.toml"
 
 @operation("Starship", "starship")
-def restore_starship(app: str, dir: File):
+def restore_starship(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
             log_unsupported(app)
@@ -551,7 +554,7 @@ def restore_starship(app: str, dir: File):
 # Items - VIM
 # ------------------------------------------------------------------------------
 @operation("VIM", "vim")
-def backup_vim(app: str, dir: File):
+def backup_vim(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
             log_unsupported(app)
@@ -559,7 +562,7 @@ def backup_vim(app: str, dir: File):
             UNIX_HOME / ".vimrc" >> dir / ".vimrc"
 
 @operation("VIM", "vim")
-def restore_vim(app: str, dir: File):
+def restore_vim(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
             log_unsupported(app)
@@ -570,7 +573,7 @@ def restore_vim(app: str, dir: File):
 # Items - VSCode / Cursor
 # ------------------------------------------------------------------------------
 @operation("VSCode / Cursor", "vscode")
-def backup_vscode(app: str, dir: File):
+def backup_vscode(app: str, dir: Dir):
     # Scoop installs VSCode as a portable app, so its config lives under persist/ instead of %AppData%\Code.
     match SYSTEM:
         case OS.WIN:
@@ -584,23 +587,23 @@ def backup_vscode(app: str, dir: File):
             MAC_APP_SUPPORT / "Code/User/settings.json" >> dir / "settings.json"
 
 @operation("VSCode / Cursor", "vscode")
-def restore_vscode(app: str, dir: File):
+def restore_vscode(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
-            Dir(dir) >> WIN_SCOOP / "persist/vscode/data/user-data/User"
-            Dir(dir) >> WIN_ROAMING / "Cursor/User"
+            dir >> WIN_SCOOP / "persist/vscode/data/user-data/User"
+            dir >> WIN_ROAMING / "Cursor/User"
         case OS.LINUX:
-            Dir(dir) >> UNIX_HOME / ".config/Code/User"
-            Dir(dir) >> UNIX_HOME / ".config/Cursor/User"
+            dir >> UNIX_HOME / ".config/Code/User"
+            dir >> UNIX_HOME / ".config/Cursor/User"
         case OS.MAC:
-            Dir(dir) >> MAC_APP_SUPPORT / "Code/User"
-            Dir(dir) >> MAC_APP_SUPPORT / "Cursor/User"
+            dir >> MAC_APP_SUPPORT / "Code/User"
+            dir >> MAC_APP_SUPPORT / "Cursor/User"
 
 # ------------------------------------------------------------------------------
 # Items - Warp
 # ------------------------------------------------------------------------------
 @operation("Warp", "warp")
-def backup_warp(app: str, dir: File):
+def backup_warp(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
             log_unsupported(app)
@@ -609,18 +612,18 @@ def backup_warp(app: str, dir: File):
             UNIX_HOME / ".warp/settings.toml" >> dir / "settings.toml"
 
 @operation("Warp", "warp")
-def restore_warp(app: str, dir: File):
+def restore_warp(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
             log_unsupported(app)
         case OS.LINUX | OS.MAC:
-            Dir(dir) >> UNIX_HOME / ".warp"
+            dir >> UNIX_HOME / ".warp"
 
 # ------------------------------------------------------------------------------
 # Items - Windows Terminal
 # ------------------------------------------------------------------------------
 @operation("Windows Terminal", "windows-terminal")
-def backup_windows_terminal(app: str, dir: File):
+def backup_windows_terminal(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
             WIN_LOCAL / "Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json" >> dir / "settings.json"
@@ -628,10 +631,10 @@ def backup_windows_terminal(app: str, dir: File):
             log_unsupported(app)
 
 @operation("Windows Terminal", "windows-terminal")
-def restore_windows_terminal(app: str, dir: File):
+def restore_windows_terminal(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
-            Dir(dir) >> WIN_LOCAL / "Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState"
+            dir >> WIN_LOCAL / "Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState"
         case OS.LINUX | OS.MAC:
             log_unsupported(app)
 
