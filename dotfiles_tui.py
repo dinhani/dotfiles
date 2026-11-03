@@ -97,7 +97,7 @@ class TuiState:
 
     # panel selection
     panel_active: str # which panel is active (left or right)
-    panel_cursors: dict[str, int | None] # position of cursor in each panel (None when the panel has no enabled items)
+    cursor: int | None # menu_rows index of the cursor in the active panel (None when the active panel has no enabled items)
     panel_selected: dict[str, set[str]] # selected item names in each panel
     panel_disabled: dict[str, dict[str, "Disabled"]] # disabled items in each panel, with the reason
     panel_item_indices: dict[str, list[int]] # indexes of menu_rows that are selectable in each panel (enabled Item rows)
@@ -136,7 +136,7 @@ class TuiState:
             panel: [i for i, row in enumerate(self.menu_rows) if isinstance(row, Item) and row.name not in self.panel_disabled[panel]]
             for panel in (panel_left, panel_right)
         }
-        self.panel_cursors = {panel: indices[0] if indices else None for panel, indices in self.panel_item_indices.items()}
+        self.cursor = next(iter(self.panel_item_indices[panel_left]), None)
 
         # set diff popup state
         self.diff_title = ""
@@ -144,36 +144,36 @@ class TuiState:
         self.diff_scroll = 0
 
     def switch_panel(self) -> None:
-        self.panel_active = self.panel_right if self.is_active(self.panel_left) else self.panel_left
+        self.activate_panel(self.panel_right if self.is_active(self.panel_left) else self.panel_left)
 
     def activate_panel(self, panel: str) -> None:
         self.panel_active = panel
+        cursor_previous = self.cursor or 0
+        self.cursor = min(self.panel_item_indices[panel], key=lambda i: (abs(i - cursor_previous), i), default=None)
 
     def move_cursor(self, delta: int) -> None:
         indices = self.panel_item_indices[self.panel_active]
-        cursor = self.panel_cursors[self.panel_active]
-        if cursor is None:
+        if self.cursor is None:
             return
-        new = max(0, min(len(indices) - 1, indices.index(cursor) + delta))
-        self.panel_cursors[self.panel_active] = indices[new]
+        new = max(0, min(len(indices) - 1, indices.index(self.cursor) + delta))
+        self.cursor = indices[new]
 
     def cursor_to_first(self) -> None:
         indices = self.panel_item_indices[self.panel_active]
         if not indices:
             return
-        self.panel_cursors[self.panel_active] = indices[0]
+        self.cursor = indices[0]
 
     def cursor_to_last(self) -> None:
         indices = self.panel_item_indices[self.panel_active]
         if not indices:
             return
-        self.panel_cursors[self.panel_active] = indices[-1]
+        self.cursor = indices[-1]
 
     def toggle_item(self) -> None:
-        cursor = self.panel_cursors[self.panel_active]
-        if cursor is None:
+        if self.cursor is None:
             return
-        name = self.menu_rows[cursor].name
+        name = self.menu_rows[self.cursor].name
         self.panel_selected[self.panel_active] ^= {name}
 
     def select_all(self) -> None:
@@ -210,10 +210,9 @@ class TuiState:
         self.diff_scroll = max(0, min(len(self.diff_lines) - 1, self.diff_scroll + delta))
 
     def cursor_item_name(self) -> str | None:
-        cursor = self.panel_cursors[self.panel_active]
-        if cursor is None:
+        if self.cursor is None:
             return None
-        return self.menu_rows[cursor].name
+        return self.menu_rows[self.cursor].name
 
 
 @dataclass(frozen=True)
@@ -431,12 +430,10 @@ def show_tui(
                 continue
 
             # determine if on cursor or not
-            on_cursor = row_index == state.panel_cursors[panel]
+            on_cursor = state.is_active(panel) and row_index == state.cursor
             item_hint = state.items_hint.get(row.name, Hint(text="", color="ansibrightblack"))
-            if on_cursor and state.is_active(panel):
+            if on_cursor:
                 row_style, hint_style, item_cursor = "class:focused", f"class:focused fg:{item_hint.color}", "▶"
-            elif on_cursor:
-                row_style, hint_style, item_cursor = "class:cursor-inactive", f"fg:{item_hint.color}", "·"
             else:
                 row_style, hint_style, item_cursor = "class:item", f"fg:{item_hint.color}", " "
 
@@ -513,7 +510,6 @@ def show_tui(
     tui_theme = Style.from_dict({
         "category":         "bold ansicyan",
         "focused":          "reverse bold",
-        "cursor-inactive":  "ansiblue",
         "disabled":         "ansibrightblack dim",
         "help":             "ansibrightblack",
         "diff-add":         "ansigreen",
@@ -529,8 +525,8 @@ def show_tui(
     tui_browser = HSplit([
         # side-by-side panels
         VSplit([
-            Frame(Window(FormattedTextControl(lambda: tui_panel(panel_left), get_cursor_position=lambda: Point(0, state.panel_cursors[panel_left] or 0)), height=panel_height), width=panel_width, title=lambda: tui_panel_title(panel_left)),
-            Frame(Window(FormattedTextControl(lambda: tui_panel(panel_right), get_cursor_position=lambda: Point(0, state.panel_cursors[panel_right] or 0)), height=panel_height), width=panel_width, title=lambda: tui_panel_title(panel_right)),
+            Frame(Window(FormattedTextControl(lambda: tui_panel(panel_left), get_cursor_position=lambda: Point(0, state.cursor or 0)), height=panel_height), width=panel_width, title=lambda: tui_panel_title(panel_left)),
+            Frame(Window(FormattedTextControl(lambda: tui_panel(panel_right), get_cursor_position=lambda: Point(0, state.cursor or 0)), height=panel_height), width=panel_width, title=lambda: tui_panel_title(panel_right)),
         ], padding=1, align=HorizontalAlign.CENTER),
         # help text
         Window(
