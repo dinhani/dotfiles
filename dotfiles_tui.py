@@ -48,6 +48,7 @@ class Progress:
     done: int
     phase: str
     current: str
+    status: str
     errors: int
     lines: list[tuple[str, str]] # (log kind, text)
 
@@ -56,6 +57,7 @@ class Progress:
         self.done = 0
         self.phase = ""
         self.current = ""
+        self.status = ""
         self.errors = 0
         self.lines = []
         self.on_change = on_change
@@ -65,6 +67,7 @@ class Progress:
         self.done = 0
         self.phase = ""
         self.current = ""
+        self.status = "running..."
         self.errors = 0
         self.lines.clear()
         self.on_change()
@@ -225,7 +228,7 @@ def show_tui(
     items_hint: Mapping[str, Hint],
     item_diff: Callable[[str, str], str],
     run: Callable[[list[tuple[str, str]], Progress], None],
-    refresh: Callable[[Progress], Mapping[str, Hint]],
+    refresh: Callable[[], Mapping[str, Hint]],
     confirm: Callable[[list[tuple[str, str]]], str | None],
     panel_left: str,
     panel_right: str,
@@ -275,7 +278,9 @@ def show_tui(
     def start_run(app: Application, selections: list[tuple[str, str]]) -> None:
         def run_task() -> None:
             run(selections, progress)
-            state.items_hint = refresh(progress)
+            progress.status = "updating status..."
+            progress.on_change()
+            state.items_hint = refresh()
             state.select_nothing()
 
         progress.clear()
@@ -463,7 +468,7 @@ def show_tui(
 
     def tui_progress_result() -> FormattedText:
         if state.mode is not Mode.FINISHED:
-            return FormattedText([("class:help", " running...")])
+            return FormattedText([("class:help", f" {progress.status}")])
         if progress.errors:
             return FormattedText([("class:log-error", f" done with {progress.errors} errors"), ("class:help", "   [any key] close")])
         return FormattedText([("class:log-transfer", " done, no errors"), ("class:help", "   [any key] close")])

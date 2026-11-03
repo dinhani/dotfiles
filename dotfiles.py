@@ -753,11 +753,11 @@ if __name__ == "__main__":
         finally:
             log_handler = print_log
 
-    def refresh(progress: Progress) -> dict[str, Hint]:
+    def refresh() -> dict[str, Hint]:
         transfers_by_app_new, syncs_new = compare_backups(
             handlers_backup,
             BackupHistory.from_git(DOTFILES),
-            track=lambda transfers: progress.track(transfers, phase="Comparing", label=lambda transfer: str(transfer[1])),
+            track=lambda transfers: transfers,
         )
         transfers_by_app.clear()
         transfers_by_app.update(transfers_by_app_new)
