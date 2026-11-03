@@ -269,8 +269,13 @@ def show_tui(
         threading.Thread(target=work).start()
 
     def start_run(app: Application, selections: list[tuple[str, str]]) -> None:
+        def run_task() -> None:
+            run(selections, progress)
+            state.items_hint = refresh(progress)
+            state.select_nothing()
+
         progress.clear()
-        start_worker(app, lambda: run(selections, progress), Mode.FINISHED)
+        start_worker(app, run_task, Mode.FINISHED)
 
     @kb.add("tab", filter=browsing)
     @kb.add("s-tab", filter=browsing)
@@ -385,11 +390,7 @@ def show_tui(
 
     @kb.add("<any>", filter=finished)
     def _(event):
-        def refresh_task() -> None:
-            state.items_hint = refresh(progress)
-            state.select_nothing()
-
-        start_worker(event.app, refresh_task, Mode.BROWSING)
+        state.mode = Mode.BROWSING
 
     # --------------------------------------------------------------------------
     # mount TUI
@@ -472,7 +473,7 @@ def show_tui(
             case Mode.RUNNING:
                 return "running..."
             case Mode.FINISHED:
-                return "[any key] continue"
+                return "[any key] close"
             case Mode.BROWSING:
                 return "[Tab/←→] panel  [↑↓/jk] move  [Home/End] first/last  [Space] toggle  [a] all  [n] none  [d] diff  [Enter] run  [q/Esc] quit"
 
