@@ -13,7 +13,8 @@ Cross-platform (Windows / Linux / Mac) Python script that backs up app config fi
 
 ### Core (`dotfiles.py`)
 
-- Each app has a backup/restore pair decorated with `@operation`, which turns the function into a callable `Handler` that injects the app name and resolved `dotfiles/<subdir>` path.
+- Each app has a backup/restore pair decorated with `@operation(Op.BACKUP, ...)` / `@operation(Op.RESTORE, ...)`, which turns the function into a callable `Handler` that injects the app name and resolved `dotfiles/<subdir>` path, and registers it in `HANDLERS_BY_APP`. `CATEGORIES` lists the app names per category; an import-time check fails if an app lacks a category or either handler.
+- `Comparison` holds the per-app transfers and sync results of the backup comparison and provides the TUI callbacks (`diff`, `restore_warning`, `hints`, `refresh`).
 - Copy errors are logged and the run continues; the script exits with code 1 at the end if any error was logged.
 - File copies use a `>>` operator on a `Path` subclass: `source >> target`. First write into a `dotfiles/<app>/` subtree deletes that subtree once per session to avoid stale files.
 - OS dispatch is via `match` on a `SYSTEM` enum; unsupported combos call `log_unsupported`.
@@ -32,10 +33,10 @@ Cross-platform (Windows / Linux / Mac) Python script that backs up app config fi
 - Selections run in menu order, left-panel picks before right-panel picks. Exceptions raised in a callback end the TUI and are re-raised.
 
 ### Adding a new app
-1. Write the backup/restore pair, decorated with `@operation`.
+1. Write the backup/restore pair, decorated with `@operation(Op.BACKUP, ...)` and `@operation(Op.RESTORE, ...)`.
 2. Handle each OS case explicitly; for unsupported platforms write a `case` whose only statement is `log_unsupported(app)`. `@operation` parses the handler source for exactly that shape to disable the app in the TUI on those platforms. Use that only for apps that do not exist on the OS. For apps that exist everywhere but whose backup must only be taken from one OS, pass `source_of_truth=OS.X` to the backup's `@operation`; the backup is disabled on other OSes while restore stays available, and the backup body only needs the source OS case. The source-of-truth check comes before the unsupported check, so a Windows-only app (PowerShell, Windows Terminal) shows the source icon on the Backup panel and `✗` on the Restore panel.
 3. Wrap every directory path in `Dir(...)` (e.g. `Dir(dir) >> target`). On restore, `Dir` always creates the target directory, even if the backup has none; on backup, a missing source directory is skipped. Plain paths are for files.
-4. Register the app under a category (`Terminal`, `Editor`, `Notes`, ...).
+4. Add the app name under a category in `CATEGORIES` (`Terminal`, `Editor`, `Notes`, ...).
 
 ## Goal 2: Unix machine setup (`setup-unix.sh` + `setup-unix-functions.sh`)
 

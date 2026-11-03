@@ -6,24 +6,85 @@ import platform
 import shutil
 import subprocess
 import sys
+from collections.abc import Callable, Iterable, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import Enum, StrEnum
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent / "vendor"))
 
-from collections.abc import Callable, Iterable
-
 from tqdm import tqdm
 
 from dotfiles_tui import Disabled, Hint, Progress, show_tui
 
 # ------------------------------------------------------------------------------
-# Classes
+# Platform
+# ------------------------------------------------------------------------------
+class OS(StrEnum):
+    WIN   = "Windows"
+    MAC   = "Darwin"
+    LINUX = "Linux"
+
+SYSTEM = OS(platform.system())
+
+# ------------------------------------------------------------------------------
+# Log
+# ------------------------------------------------------------------------------
+COLOR_RESET  = "\033[0m"
+COLOR_RED    = "\033[91m"
+COLOR_GREEN  = "\033[92m"
+COLOR_YELLOW = "\033[93m"
+
+class LogKind(StrEnum):
+    TRANSFER = "transfer"
+    ERROR    = "error"
+    SKIP     = "skip"
+
+LOG_COLORS = {LogKind.TRANSFER: COLOR_GREEN, LogKind.ERROR: COLOR_RED, LogKind.SKIP: COLOR_YELLOW}
+
+errors_logged: list[Exception] = []
+
+def print_log(kind: LogKind, label: str, message: str) -> None:
+    print("")
+    print(f"{LOG_COLORS[kind]}{label:<4}{COLOR_RESET}  {message}")
+
+log_handler: Callable[[LogKind, str, str], None] = print_log
+
+@contextmanager
+def logging_to(progress: Progress) -> Iterator[None]:
+    global log_handler
+    log_handler = lambda kind, label, message: progress.log(kind.value, f"{label:<4}  {message}")
+    try:
+        yield
+    finally:
+        log_handler = print_log
+
+def log_transfer(kind: str, source: Path, target: Path) -> None:
+    log_handler(LogKind.TRANSFER, kind, f"{source} → {target}")
+
+def log_error(message: str, exception: Exception) -> None:
+    errors_logged.append(exception)
+    log_handler(LogKind.ERROR, "err", f"{message}: {exception}")
+
+def log_missing(source: Path) -> None:
+    log_handler(LogKind.SKIP, "skip", f"{source}: not found")
+
+def log_unsupported(item: str) -> None:
+    log_handler(LogKind.SKIP, "skip", f"{item}: unsupported on {SYSTEM}")
+
+# ------------------------------------------------------------------------------
+# Domain values
 # ------------------------------------------------------------------------------
 class Transfer(Enum):
     COPY    = "copy"
     COMPARE = "compare"
+
+HINT_COLOR_GREEN  = "ansigreen"
+HINT_COLOR_ORANGE = "#d75f00"
+HINT_COLOR_YELLOW = "#af8700"
+HINT_COLOR_RED    = "ansired"
+HINT_COLOR_GRAY   = "ansibrightblack"
 
 class Sync(StrEnum):
     IN_SYNC       = "in sync"
@@ -47,17 +108,15 @@ class Sync(StrEnum):
         return self in (Sync.MACHINE_NEWER, Sync.MIXED)
 
     def to_hint(self) -> Hint:
-        match self:
-            case Sync.IN_SYNC:
-                return Hint(text=self.value, color="ansigreen")
-            case Sync.MACHINE_NEWER:
-                return Hint(text=self.value, color="#d75f00")
-            case Sync.BACKUP_NEWER:
-                return Hint(text=self.value, color="#af8700")
-            case Sync.MIXED:
-                return Hint(text=self.value, color="ansired")
-            case Sync.NO_FILES:
-                return Hint(text=self.value, color="ansibrightblack")
+        return Hint(text=self.value, color=SYNC_COLORS[self])
+
+SYNC_COLORS = {
+    Sync.IN_SYNC:       HINT_COLOR_GREEN,
+    Sync.MACHINE_NEWER: HINT_COLOR_ORANGE,
+    Sync.BACKUP_NEWER:  HINT_COLOR_YELLOW,
+    Sync.MIXED:         HINT_COLOR_RED,
+    Sync.NO_FILES:      HINT_COLOR_GRAY,
+}
 
 @dataclass(frozen=True)
 class BackupHistory:
@@ -98,17 +157,31 @@ class Rewrite:
     def reversed(self) -> "Rewrite":
         return Rewrite(old=self.new, new=self.old)
 
+# ------------------------------------------------------------------------------
+# Files
+# ------------------------------------------------------------------------------
 class File(Path):
     # applied to the content of this file when it is the source of a copy or comparison
     _rewrite: Rewrite | None = None
     # track dotfiles dirs that we already deleted
-    _deleted: set = set()
+    _deleted: set[Path] = set()
     # when False, deletes dotfiles/<app>/; when True, deletes dotfiles/<category>/<app>/ (example: JetBrains/<app>/)
     _subdir: bool = False
-    _transfer: "Transfer" = Transfer.COPY
+    _transfer: Transfer = Transfer.COPY
     _compared: list[tuple["File", "File"]] = []
 
-    def __rshift__(self, other) -> None:
+    @classmethod
+    @contextmanager
+    def session(cls, subdir: bool, transfer: Transfer) -> Iterator[None]:
+        cls._subdir = subdir
+        cls._transfer = transfer
+        try:
+            yield
+        finally:
+            cls._subdir = False
+            cls._transfer = Transfer.COPY
+
+    def __rshift__(self, other: Path | str) -> None:
         """Copy a source to a target. Automatically detects if source is a file or directory."""
         target = File(other)
         if File._transfer is Transfer.COMPARE:
@@ -139,6 +212,9 @@ class File(Path):
             return self.read_bytes()
         return self._rewrite.apply(self.read_text(encoding="utf-8")).encode("utf-8")
 
+    def read_comparable(self) -> bytes:
+        return self.read_content().removesuffix(b"\n")
+
     def append_missing_newline(self) -> None:
         """Append a newline if the file is non-empty and doesn't already end with one."""
         try:
@@ -160,7 +236,7 @@ class File(Path):
         if not self.is_file():
             return Sync.BACKUP_NEWER
 
-        if self.read_content().removesuffix(b"\n") == backup.read_content().removesuffix(b"\n"):
+        if self.read_comparable() == backup.read_comparable():
             return Sync.IN_SYNC
 
         if self.stat().st_mtime > history.get_time(backup):
@@ -169,8 +245,8 @@ class File(Path):
 
     def diff_to(self, other: "File") -> str:
         """Unified diff from this file to `other`; empty when contents are equal."""
-        old = self.read_content().removesuffix(b"\n") if self.is_file() else b""
-        new = other.read_content().removesuffix(b"\n") if other.is_file() else b""
+        old = self.read_comparable() if self.is_file() else b""
+        new = other.read_comparable() if other.is_file() else b""
         if old == new:
             return ""
 
@@ -238,10 +314,10 @@ class File(Path):
 class Dir(File):
     """Path known to be a directory. On restore the target directory is always created, even if the backup has none."""
 
-    def __truediv__(self, key) -> File:
+    def __truediv__(self, key: str | Path) -> File:
         return File(super().__truediv__(key))
 
-    def __rshift__(self, other) -> None:
+    def __rshift__(self, other: Path | str) -> None:
         target = File(other)
         if File._transfer is Transfer.COPY and not self.is_dir():
             if not target._is_backup():
@@ -261,6 +337,9 @@ UNIX_HOME: File = File(Path.home())
 WIN_HOME: File = File(os.environ.get("USERPROFILE", ""))
 """Path of Windows home directory."""
 
+HOME: File = WIN_HOME if SYSTEM is OS.WIN else UNIX_HOME
+"""Path of the home directory of the current OS."""
+
 WIN_ROAMING: File = WIN_HOME / "AppData" / "Roaming"
 """Path of Windows AppData/Roaming directory."""
 
@@ -274,60 +353,15 @@ MAC_APP_SUPPORT: File = File(Path.home() / "Library" / "Application Support")
 """Path of Mac Application Support directory."""
 
 # ------------------------------------------------------------------------------
-# Functions - Log
+# Handlers
 # ------------------------------------------------------------------------------
-COLOR_RESET  = "\033[0m"
-COLOR_RED    = "\033[91m"
-COLOR_GREEN  = "\033[92m"
-COLOR_YELLOW = "\033[93m"
-
-class LogKind(StrEnum):
-    TRANSFER = "transfer"
-    ERROR    = "error"
-    SKIP     = "skip"
-
-LOG_COLORS = {LogKind.TRANSFER: COLOR_GREEN, LogKind.ERROR: COLOR_RED, LogKind.SKIP: COLOR_YELLOW}
-
-def print_log(kind: LogKind, label: str, message: str) -> None:
-    print("")
-    print(f"{LOG_COLORS[kind]}{label:<4}{COLOR_RESET}  {message}")
-
-log_handler: Callable[[LogKind, str, str], None] = print_log
-
-def log_transfer(kind: str, source: Path, target: Path) -> None:
-    log_handler(LogKind.TRANSFER, kind, f"{source} → {target}")
-
-errors_logged: list[Exception] = []
-
-def log_error(message: str, exception: Exception) -> None:
-    errors_logged.append(exception)
-    log_handler(LogKind.ERROR, "err", f"{message}: {exception}")
-
-def log_missing(source: Path) -> None:
-    log_handler(LogKind.SKIP, "skip", f"{source}: not found")
-
-def log_unsupported(item: str) -> None:
-    log_handler(LogKind.SKIP, "skip", f"{item}: unsupported on {SYSTEM}")
-
-# ------------------------------------------------------------------------------
-# Platform
-# ------------------------------------------------------------------------------
-class OS(StrEnum):
-    WIN   = "Windows"
-    MAC   = "Darwin"
-    LINUX = "Linux"
-
-SYSTEM = OS(platform.system())
-
 class Op(StrEnum):
     BACKUP  = "Backup"
     RESTORE = "Restore"
 
-# ------------------------------------------------------------------------------
-# Decorator
-# ------------------------------------------------------------------------------
 @dataclass(frozen=True)
 class Handler:
+    op: Op
     app: str
     dir: str
     subdir: bool
@@ -335,31 +369,26 @@ class Handler:
     systems_unsupported: frozenset[OS]
     source_of_truth: OS | None
 
-    def __call__(self) -> None:
-        File._subdir = self.subdir
-        try:
+    def __call__(self, transfer: Transfer = Transfer.COPY) -> None:
+        with File.session(subdir=self.subdir, transfer=transfer):
             self.fn(self.app, Dir(DOTFILES / self.dir))
-        finally:
-            File._subdir = False
 
     def find_disabled(self) -> Disabled | None:
         if self.source_of_truth is not None and self.source_of_truth != SYSTEM:
-            return Disabled(icon=self.source_of_truth.name[0], color="#af8700", reason=f"backup only from {self.source_of_truth.name.title()}")
+            return Disabled(icon=self.source_of_truth.name[0], color=HINT_COLOR_YELLOW, reason=f"backup only from {self.source_of_truth.name.title()}")
         if SYSTEM in self.systems_unsupported:
-            return Disabled(icon="✗", color="ansired", reason="app not on this OS")
+            return Disabled(icon="✗", color=HINT_COLOR_RED, reason="app not on this OS")
         return None
 
     def collect_transfers(self) -> list[tuple[File, File]]:
-        File._transfer = Transfer.COMPARE
         File._compared = []
-        try:
-            self()
-        finally:
-            File._transfer = Transfer.COPY
+        self(transfer=Transfer.COMPARE)
         return File._compared
 
-def operation(app: str, dir: str, subdir: bool = False, source_of_truth: OS | None = None) -> Callable[[Callable[[str, Dir], None]], Handler]:
-    """Wrap a backup/restore function, injecting the app name and the resolved `dotfiles/<target_dir>` path.
+HANDLERS_BY_APP: dict[str, dict[Op, Handler]] = {}
+
+def operation(op: Op, app: str, dir: str, subdir: bool = False, source_of_truth: OS | None = None) -> Callable[[Callable[[str, Dir], None]], Handler]:
+    """Wrap a backup/restore function, injecting the app name and the resolved `dotfiles/<dir>` path, and register it in `HANDLERS_BY_APP`.
 
     Set `subdir=True` for apps whose backup lives one level deeper (e.g. JetBrains, where each tool has
     its own subdir under `dotfiles/jetbrains/` that must be preserved when the tool isn't installed on
@@ -372,39 +401,32 @@ def operation(app: str, dir: str, subdir: bool = False, source_of_truth: OS | No
                 case ast.match_case(pattern, body=[ast.Expr(ast.Call(ast.Name(name)))]) if name == log_unsupported.__name__:
                     systems_unsupported |= {OS[value.attr] for value in ast.walk(pattern) if isinstance(value, ast.Attribute)}
 
-        return Handler(app=app, dir=dir, subdir=subdir, fn=fn, systems_unsupported=frozenset(systems_unsupported), source_of_truth=source_of_truth)
+        handler = Handler(op=op, app=app, dir=dir, subdir=subdir, fn=fn, systems_unsupported=frozenset(systems_unsupported), source_of_truth=source_of_truth)
+        handlers = HANDLERS_BY_APP.setdefault(app, {})
+        if op in handlers:
+            raise ValueError(f"{app}: {op.value} registered twice")
+        handlers[op] = handler
+        return handler
     return decorator
 
 # ------------------------------------------------------------------------------
 # Items - Claude Code
 # ------------------------------------------------------------------------------
-@operation("Claude Code", "claude-code")
+@operation(Op.BACKUP, "Claude Code", "claude-code")
 def backup_claude_code(app: str, dir: Dir):
-    match SYSTEM:
-        case OS.WIN:
-            home = WIN_HOME
-        case OS.LINUX | OS.MAC:
-            home = UNIX_HOME
+    HOME / ".claude/settings.json" >> dir / "settings.json"
+    HOME / ".claude/CLAUDE.md" >> dir / "CLAUDE.md"
+    Dir(HOME / ".claude/hooks") >> dir / "hooks"
 
-    home / ".claude/settings.json" >> dir / "settings.json"
-    home / ".claude/CLAUDE.md" >> dir / "CLAUDE.md"
-    Dir(home / ".claude/hooks") >> dir / "hooks"
-
-@operation("Claude Code", "claude-code")
+@operation(Op.RESTORE, "Claude Code", "claude-code")
 def restore_claude_code(app: str, dir: Dir):
-    match SYSTEM:
-        case OS.WIN:
-            home = WIN_HOME
-        case OS.LINUX | OS.MAC:
-            home = UNIX_HOME
-
     for profile in (".claude", ".claude-2", ".claude-3"):
-        dir >> home / profile
+        dir >> HOME / profile
 
-    dir / "CLAUDE.md" >> home / ".codex/AGENTS.md"
-    dir / "CLAUDE.md" >> home / ".config/opencode/AGENTS.md"
+    dir / "CLAUDE.md" >> HOME / ".codex/AGENTS.md"
+    dir / "CLAUDE.md" >> HOME / ".config/opencode/AGENTS.md"
 
-    rule = home / ".cursor/rules/global-rules.mdc"
+    rule = HOME / ".cursor/rules/global-rules.mdc"
     try:
         log_transfer("file", dir / "CLAUDE.md", rule)
         rule.parent.mkdir(parents=True, exist_ok=True)
@@ -415,7 +437,7 @@ def restore_claude_code(app: str, dir: Dir):
 # ------------------------------------------------------------------------------
 # Items - Ghostty
 # ------------------------------------------------------------------------------
-@operation("Ghostty", "ghostty")
+@operation(Op.BACKUP, "Ghostty", "ghostty")
 def backup_ghostty(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
@@ -423,7 +445,7 @@ def backup_ghostty(app: str, dir: Dir):
         case OS.LINUX | OS.MAC:
             UNIX_HOME / ".config/ghostty/config" >> dir / "config"
 
-@operation("Ghostty", "ghostty")
+@operation(Op.RESTORE, "Ghostty", "ghostty")
 def restore_ghostty(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
@@ -434,7 +456,7 @@ def restore_ghostty(app: str, dir: Dir):
 # ------------------------------------------------------------------------------
 # Items - Helix
 # ------------------------------------------------------------------------------
-@operation("Helix", "helix")
+@operation(Op.BACKUP, "Helix", "helix")
 def backup_helix(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
@@ -444,7 +466,7 @@ def backup_helix(app: str, dir: Dir):
             UNIX_HOME / ".config/helix/config.toml" >> dir / "config.toml"
             UNIX_HOME / ".config/helix/languages.toml" >> dir / "languages.toml"
 
-@operation("Helix", "helix")
+@operation(Op.RESTORE, "Helix", "helix")
 def restore_helix(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
@@ -501,7 +523,7 @@ def jetbrains_installs() -> dict[str, File]:
             installs[tool] = File(versions[-1])
     return installs
 
-@operation("JetBrains", "jetbrains", subdir=True)
+@operation(Op.BACKUP, "JetBrains", "jetbrains", subdir=True)
 def backup_jetbrains(app: str, dir: Dir):
     for tool, install in jetbrains_installs().items():
         for file in JETBRAINS_FILES:
@@ -510,7 +532,7 @@ def backup_jetbrains(app: str, dir: Dir):
                 continue
             source >> dir / tool / file
 
-@operation("JetBrains", "jetbrains")
+@operation(Op.RESTORE, "JetBrains", "jetbrains")
 def restore_jetbrains(app: str, dir: Dir):
     for tool, install in jetbrains_installs().items():
         for file in JETBRAINS_FILES:
@@ -522,28 +544,20 @@ def restore_jetbrains(app: str, dir: Dir):
 # ------------------------------------------------------------------------------
 # Items - Notable
 # ------------------------------------------------------------------------------
-@operation("Notable", "notable")
+@operation(Op.BACKUP, "Notable", "notable")
 def backup_notable(app: str, dir: Dir):
-    match SYSTEM:
-        case OS.WIN:
-            WIN_HOME / ".notable.json" >> dir / ".notable.json"
-        case OS.LINUX | OS.MAC:
-            UNIX_HOME / ".notable.json" >> dir / ".notable.json"
+    HOME / ".notable.json" >> dir / ".notable.json"
 
-@operation("Notable", "notable")
+@operation(Op.RESTORE, "Notable", "notable")
 def restore_notable(app: str, dir: Dir):
-    match SYSTEM:
-        case OS.WIN:
-            dir / ".notable.json" >> WIN_HOME / ".notable.json"
-        case OS.LINUX | OS.MAC:
-            dir / ".notable.json" >> UNIX_HOME / ".notable.json"
+    dir / ".notable.json" >> HOME / ".notable.json"
 
 # ------------------------------------------------------------------------------
 # Items - OpenCode
 # ------------------------------------------------------------------------------
 OPENCODE_LAN = Rewrite(old="127.0.0.1", new="192.168.0.11")
 
-@operation("OpenCode", "opencode")
+@operation(Op.BACKUP, "OpenCode", "opencode")
 def backup_opencode(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
@@ -551,7 +565,7 @@ def backup_opencode(app: str, dir: Dir):
         case OS.LINUX | OS.MAC:
             (UNIX_HOME / ".config/opencode/opencode.json").rewriting(OPENCODE_LAN.reversed()) >> dir / "opencode.json"
 
-@operation("OpenCode", "opencode")
+@operation(Op.RESTORE, "OpenCode", "opencode")
 def restore_opencode(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
@@ -563,12 +577,12 @@ def restore_opencode(app: str, dir: Dir):
 # ------------------------------------------------------------------------------
 # Items - PowerShell
 # ------------------------------------------------------------------------------
-@operation("PowerShell", "powershell", source_of_truth=OS.WIN)
+@operation(Op.BACKUP, "PowerShell", "powershell", source_of_truth=OS.WIN)
 def backup_powershell(app: str, dir: Dir):
     WIN_HOME / "Documents/PowerShell/Microsoft.PowerShell_profile.ps1" >> dir / "Microsoft.PowerShell_profile.ps1"
     WIN_HOME / "Documents/PowerShell/Profile" >> dir / "Profile"
 
-@operation("PowerShell", "powershell")
+@operation(Op.RESTORE, "PowerShell", "powershell")
 def restore_powershell(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
@@ -579,7 +593,7 @@ def restore_powershell(app: str, dir: Dir):
 # ------------------------------------------------------------------------------
 # Items - RStudio
 # ------------------------------------------------------------------------------
-@operation("RStudio", "rstudio", source_of_truth=OS.WIN)
+@operation(Op.BACKUP, "RStudio", "rstudio", source_of_truth=OS.WIN)
 def backup_rstudio(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
@@ -589,7 +603,7 @@ def backup_rstudio(app: str, dir: Dir):
             UNIX_HOME / ".config/rstudio/rstudio-prefs.json" >> dir / "rstudio-prefs.json"
             Dir(UNIX_HOME / ".config/rstudio/keybindings") >> dir / "keybindings"
 
-@operation("RStudio", "rstudio")
+@operation(Op.RESTORE, "RStudio", "rstudio")
 def restore_rstudio(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
@@ -601,7 +615,7 @@ def restore_rstudio(app: str, dir: Dir):
 # ------------------------------------------------------------------------------
 # Items - Starship
 # ------------------------------------------------------------------------------
-@operation("Starship", "starship")
+@operation(Op.BACKUP, "Starship", "starship")
 def backup_starship(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
@@ -609,7 +623,7 @@ def backup_starship(app: str, dir: Dir):
         case OS.LINUX | OS.MAC:
             UNIX_HOME / ".config/starship.toml" >> dir / "starship.toml"
 
-@operation("Starship", "starship")
+@operation(Op.RESTORE, "Starship", "starship")
 def restore_starship(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
@@ -620,7 +634,7 @@ def restore_starship(app: str, dir: Dir):
 # ------------------------------------------------------------------------------
 # Items - VIM
 # ------------------------------------------------------------------------------
-@operation("VIM", "vim")
+@operation(Op.BACKUP, "VIM", "vim")
 def backup_vim(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
@@ -628,7 +642,7 @@ def backup_vim(app: str, dir: Dir):
         case OS.LINUX | OS.MAC:
             UNIX_HOME / ".vimrc" >> dir / ".vimrc"
 
-@operation("VIM", "vim")
+@operation(Op.RESTORE, "VIM", "vim")
 def restore_vim(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
@@ -639,7 +653,7 @@ def restore_vim(app: str, dir: Dir):
 # ------------------------------------------------------------------------------
 # Items - VSCode / Cursor
 # ------------------------------------------------------------------------------
-@operation("VSCode / Cursor", "vscode")
+@operation(Op.BACKUP, "VSCode / Cursor", "vscode")
 def backup_vscode(app: str, dir: Dir):
     # Scoop installs VSCode as a portable app, so its config lives under persist/ instead of %AppData%\Code.
     match SYSTEM:
@@ -653,7 +667,7 @@ def backup_vscode(app: str, dir: Dir):
             MAC_APP_SUPPORT / "Code/User/keybindings.json" >> dir / "keybindings.json"
             MAC_APP_SUPPORT / "Code/User/settings.json" >> dir / "settings.json"
 
-@operation("VSCode / Cursor", "vscode")
+@operation(Op.RESTORE, "VSCode / Cursor", "vscode")
 def restore_vscode(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
@@ -669,7 +683,7 @@ def restore_vscode(app: str, dir: Dir):
 # ------------------------------------------------------------------------------
 # Items - Warp
 # ------------------------------------------------------------------------------
-@operation("Warp", "warp")
+@operation(Op.BACKUP, "Warp", "warp")
 def backup_warp(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
@@ -678,7 +692,7 @@ def backup_warp(app: str, dir: Dir):
             UNIX_HOME / ".warp/keybindings.yaml" >> dir / "keybindings.yaml"
             UNIX_HOME / ".warp/settings.toml" >> dir / "settings.toml"
 
-@operation("Warp", "warp")
+@operation(Op.RESTORE, "Warp", "warp")
 def restore_warp(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
@@ -689,11 +703,11 @@ def restore_warp(app: str, dir: Dir):
 # ------------------------------------------------------------------------------
 # Items - Windows Terminal
 # ------------------------------------------------------------------------------
-@operation("Windows Terminal", "windows-terminal", source_of_truth=OS.WIN)
+@operation(Op.BACKUP, "Windows Terminal", "windows-terminal", source_of_truth=OS.WIN)
 def backup_windows_terminal(app: str, dir: Dir):
     WIN_LOCAL / "Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json" >> dir / "settings.json"
 
-@operation("Windows Terminal", "windows-terminal")
+@operation(Op.RESTORE, "Windows Terminal", "windows-terminal")
 def restore_windows_terminal(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
@@ -704,111 +718,112 @@ def restore_windows_terminal(app: str, dir: Dir):
 # ------------------------------------------------------------------------------
 # Registry
 # ------------------------------------------------------------------------------
-REGISTRY_BY_CATEGORY: dict[str, dict[str, dict[Op, Handler]]] = {
-    "AI": {
-        "Claude Code": {Op.BACKUP: backup_claude_code, Op.RESTORE: restore_claude_code},
-        "OpenCode":    {Op.BACKUP: backup_opencode,    Op.RESTORE: restore_opencode},
-    },
-    "Terminal": {
-        "Ghostty":          {Op.BACKUP: backup_ghostty,          Op.RESTORE: restore_ghostty},
-        "PowerShell":       {Op.BACKUP: backup_powershell,       Op.RESTORE: restore_powershell},
-        "Starship":         {Op.BACKUP: backup_starship,         Op.RESTORE: restore_starship},
-        "Warp":             {Op.BACKUP: backup_warp,             Op.RESTORE: restore_warp},
-        "Windows Terminal": {Op.BACKUP: backup_windows_terminal, Op.RESTORE: restore_windows_terminal},
-    },
-    "Editor": {
-        "Helix":           {Op.BACKUP: backup_helix,     Op.RESTORE: restore_helix},
-        "JetBrains":       {Op.BACKUP: backup_jetbrains, Op.RESTORE: restore_jetbrains},
-        "RStudio":         {Op.BACKUP: backup_rstudio,   Op.RESTORE: restore_rstudio},
-        "VIM":             {Op.BACKUP: backup_vim,       Op.RESTORE: restore_vim},
-        "VSCode / Cursor": {Op.BACKUP: backup_vscode,    Op.RESTORE: restore_vscode},
-    },
-    "Notes": {
-        "Notable": {Op.BACKUP: backup_notable, Op.RESTORE: restore_notable},
-    },
+CATEGORIES: dict[str, tuple[str, ...]] = {
+    "AI":       ("Claude Code", "OpenCode"),
+    "Terminal": ("Ghostty", "PowerShell", "Starship", "Warp", "Windows Terminal"),
+    "Editor":   ("Helix", "JetBrains", "RStudio", "VIM", "VSCode / Cursor"),
+    "Notes":    ("Notable",),
 }
 
-REGISTRY_BY_APP: dict[str, dict[Op, Handler]] = {
-    app: handlers
-    for category in REGISTRY_BY_CATEGORY.values()
-    for app, handlers in category.items()
-}
+apps_categorized = {app for apps in CATEGORIES.values() for app in apps}
+if apps_categorized != HANDLERS_BY_APP.keys():
+    raise ValueError(f"Apps missing a category or a handler: {sorted(apps_categorized ^ HANDLERS_BY_APP.keys())}")
+for app_registered, handlers_registered in HANDLERS_BY_APP.items():
+    if handlers_registered.keys() != set(Op):
+        raise ValueError(f"{app_registered}: needs both a backup and a restore handler")
+
+HANDLERS_BY_APP = {app: HANDLERS_BY_APP[app] for apps in CATEGORIES.values() for app in apps}
+
+# ------------------------------------------------------------------------------
+# Comparison
+# ------------------------------------------------------------------------------
+@dataclass
+class Comparison:
+    handlers_backup: dict[str, Handler]
+    transfers_by_app: dict[str, list[tuple[File, File]]]
+    syncs: dict[str, Sync]
+
+    @classmethod
+    def from_handlers(
+        cls,
+        handlers_backup: dict[str, Handler],
+        track: Callable[[list[tuple[str, File, File]]], Iterable[tuple[str, File, File]]] = lambda transfers: transfers,
+    ) -> "Comparison":
+        history = BackupHistory.from_git(DOTFILES)
+        transfers = [(app, machine, backup) for app, handler in handlers_backup.items() for machine, backup in handler.collect_transfers()]
+
+        transfers_by_app: dict[str, list[tuple[File, File]]] = {app: [] for app in handlers_backup}
+        files_by_app: dict[str, set[Sync | None]] = {app: set() for app in handlers_backup}
+        for app, machine, backup in track(transfers):
+            transfers_by_app[app].append((machine, backup))
+            files_by_app[app].add(machine.compare_to_backup(backup, history))
+
+        syncs = {app: Sync.from_files(files - {None}) for app, files in files_by_app.items()}
+        return cls(handlers_backup=handlers_backup, transfers_by_app=transfers_by_app, syncs=syncs)
+
+    def refresh(self) -> None:
+        comparison = Comparison.from_handlers(self.handlers_backup)
+        self.transfers_by_app = comparison.transfers_by_app
+        self.syncs = comparison.syncs
+
+    def hints(self) -> dict[str, Hint]:
+        return {app: sync.to_hint() for app, sync in self.syncs.items()}
+
+    def diff(self, op_label: str, app: str) -> str:
+        return "\n\n".join(
+            diff
+            for machine, backup in self.transfers_by_app.get(app, [])
+            if (diff := (backup.diff_to(machine) if op_label == Op.BACKUP else machine.diff_to(backup)))
+        )
+
+    def restore_warning(self, selections: list[tuple[str, str]]) -> str | None:
+        apps_restore = [app for op_label, app in selections if op_label == Op.RESTORE]
+        if not apps_restore:
+            return None
+
+        restore_labels = [
+            f"{app} ({self.syncs[app]})" if app in self.syncs and self.syncs[app].has_machine_changes() else app
+            for app in apps_restore
+        ]
+        return "Restore overwrites local config for: " + ", ".join(restore_labels) + ". Continue?"
 
 # ------------------------------------------------------------------------------
 # Main
 # ------------------------------------------------------------------------------
-def compare_backups(
-    handlers_backup: dict[str, Handler],
-    history: BackupHistory,
-    track: Callable[[list[tuple[str, File, File]]], Iterable[tuple[str, File, File]]],
-) -> tuple[dict[str, list[tuple[File, File]]], dict[str, Sync]]:
-    transfers = [(app, machine, backup) for app, handler in handlers_backup.items() for machine, backup in handler.collect_transfers()]
-
-    transfers_by_app: dict[str, list[tuple[File, File]]] = {app: [] for app in handlers_backup}
-    files_by_app: dict[str, set[Sync | None]] = {app: set() for app in handlers_backup}
-    for app, machine, backup in track(transfers):
-        transfers_by_app[app].append((machine, backup))
-        files_by_app[app].add(machine.compare_to_backup(backup, history))
-
-    syncs = {app: Sync.from_files(files - {None}) for app, files in files_by_app.items()}
-    return transfers_by_app, syncs
-
-if __name__ == "__main__":
-    handlers_backup = {app: handlers[Op.BACKUP] for app, handlers in REGISTRY_BY_APP.items() if handlers[Op.BACKUP].find_disabled() is None}
-    transfers_by_app, syncs = compare_backups(
+def main() -> None:
+    handlers_backup = {app: handlers[Op.BACKUP] for app, handlers in HANDLERS_BY_APP.items() if handlers[Op.BACKUP].find_disabled() is None}
+    comparison = Comparison.from_handlers(
         handlers_backup,
-        BackupHistory.from_git(DOTFILES),
         track=lambda transfers: tqdm(transfers, desc="Comparing files", unit="file"),
     )
 
     def run(selections: list[tuple[str, str]], progress: Progress) -> None:
-        global log_handler
-        log_handler = lambda kind, label, message: progress.log(kind.value, f"{label:<4}  {message}")
         File._deleted.clear()
-        try:
+        with logging_to(progress):
             for op_label, app in progress.track(selections, phase="Running", label=lambda selection: f"{selection[0]} {selection[1]}"):
-                REGISTRY_BY_APP[app][Op(op_label)]()
-        finally:
-            log_handler = print_log
+                HANDLERS_BY_APP[app][Op(op_label)]()
 
     def refresh() -> dict[str, Hint]:
-        transfers_by_app_new, syncs_new = compare_backups(
-            handlers_backup,
-            BackupHistory.from_git(DOTFILES),
-            track=lambda transfers: transfers,
-        )
-        transfers_by_app.clear()
-        transfers_by_app.update(transfers_by_app_new)
-        syncs.clear()
-        syncs.update(syncs_new)
-        return {app: sync.to_hint() for app, sync in syncs.items()}
+        comparison.refresh()
+        return comparison.hints()
 
     show_tui(
-        items={category: list(apps) for category, apps in REGISTRY_BY_CATEGORY.items()},
+        items={category: list(apps) for category, apps in CATEGORIES.items()},
         items_disabled={
-            op.value: {app: disabled for app, handlers in REGISTRY_BY_APP.items() if (disabled := handlers[op].find_disabled())}
+            op.value: {app: disabled for app, handlers in HANDLERS_BY_APP.items() if (disabled := handlers[op].find_disabled())}
             for op in Op
         },
-        items_hint={app: sync.to_hint() for app, sync in syncs.items()},
-        item_diff=lambda panel, app: "\n\n".join(
-            diff
-            for machine, backup in transfers_by_app.get(app, [])
-            if (diff := (backup.diff_to(machine) if panel == Op.BACKUP else machine.diff_to(backup)))
-        ),
+        items_hint=comparison.hints(),
+        item_diff=comparison.diff,
         run=run,
         refresh=refresh,
-        confirm=lambda selections: (
-            "Restore overwrites local config for: " + ", ".join(
-                f"{app} ({syncs[app]})" if app in syncs and syncs[app].has_machine_changes() else app
-                for op_label, app in selections
-                if op_label == Op.RESTORE
-            ) + ". Continue?"
-            if any(op_label == Op.RESTORE for op_label, app in selections)
-            else None
-        ),
+        confirm=comparison.restore_warning,
         panel_left=Op.BACKUP,
         panel_right=Op.RESTORE,
     )
 
     if errors_logged:
         sys.exit(1)
+
+if __name__ == "__main__":
+    main()
