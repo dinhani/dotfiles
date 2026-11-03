@@ -1,4 +1,5 @@
 import ast
+import difflib
 import inspect
 import os
 import platform
@@ -126,6 +127,22 @@ class File(Path):
         if self.stat().st_mtime > history.get_time(backup):
             return Sync.MACHINE_NEWER
         return Sync.BACKUP_NEWER
+
+    def diff_to(self, other: "File") -> str:
+        """Unified diff from this file to `other`; empty when contents are equal."""
+        old = self.read_bytes().removesuffix(b"\n") if self.is_file() else b""
+        new = other.read_bytes().removesuffix(b"\n") if other.is_file() else b""
+        if old == new:
+            return ""
+
+        try:
+            lines_old, lines_new = old.decode("utf-8").splitlines(), new.decode("utf-8").splitlines()
+        except UnicodeDecodeError:
+            return f"{self} -> {other}\nbinary files differ"
+
+        label_old = str(self) if self.is_file() else "(missing)"
+        label_new = str(other) if other.is_file() else "(missing)"
+        return "\n".join(difflib.unified_diff(lines_old, lines_new, fromfile=label_old, tofile=label_new, lineterm=""))
 
     def _copy_dir(self, target: "File") -> None:
         """Copy a local directory to a local target."""
@@ -691,6 +708,9 @@ if __name__ == "__main__":
     history = BackupHistory.from_git(DOTFILES)
     handlers_backup = {app: handlers[Op.BACKUP] for app, handlers in REGISTRY_BY_APP.items() if handlers[Op.BACKUP].is_supported()}
     transfers = [(app, machine, backup) for app, handler in handlers_backup.items() for machine, backup in handler.collect_transfers()]
+    transfers_by_app: dict[str, list[tuple[File, File]]] = {app: [] for app in handlers_backup}
+    for app, machine, backup in transfers:
+        transfers_by_app[app].append((machine, backup))
 
     files_by_app: dict[str, set[Sync | None]] = {app: set() for app in handlers_backup}
     for app, machine, backup in tqdm(transfers, desc="Comparing files", unit="file"):
@@ -704,6 +724,11 @@ if __name__ == "__main__":
             for op in Op
         },
         items_hint={app: sync.to_hint() for app, sync in syncs.items()},
+        item_diff=lambda panel, app: "\n\n".join(
+            diff
+            for machine, backup in transfers_by_app.get(app, [])
+            if (diff := (backup.diff_to(machine) if panel == Op.BACKUP else machine.diff_to(backup)))
+        ),
         panel_left=Op.BACKUP,
         panel_right=Op.RESTORE,
     )
