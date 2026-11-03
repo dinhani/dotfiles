@@ -30,7 +30,7 @@ MenuRow = Category | Item
 
 DIFF_PAGE = 20
 PROGRESS_BAR_WIDTH = 40
-PROGRESS_LAYOUT_ROWS = 10
+PROGRESS_LAYOUT_ROWS = 13
 
 T = TypeVar("T")
 
@@ -46,6 +46,7 @@ class Mode(Enum):
 class Progress:
     total: int
     done: int
+    phase: str
     current: str
     errors: int
     lines: list[tuple[str, str]] # (log kind, text)
@@ -53,6 +54,7 @@ class Progress:
     def __init__(self, on_change: Callable[[], None]):
         self.total = 0
         self.done = 0
+        self.phase = ""
         self.current = ""
         self.errors = 0
         self.lines = []
@@ -61,6 +63,7 @@ class Progress:
     def clear(self) -> None:
         self.total = 0
         self.done = 0
+        self.phase = ""
         self.current = ""
         self.errors = 0
         self.lines.clear()
@@ -72,7 +75,8 @@ class Progress:
         self.lines.append((kind, text))
         self.on_change()
 
-    def track(self, items: Sequence[T], label: Callable[[T], str]) -> Iterator[T]:
+    def track(self, items: Sequence[T], phase: str, label: Callable[[T], str]) -> Iterator[T]:
+        self.phase = phase
         self.total = len(items)
         self.done = 0
         for item in items:
@@ -446,20 +450,23 @@ def show_tui(
             fragments.append((style, f"{line}\n"))
         return FormattedText(fragments)
 
-    def tui_progress() -> FormattedText:
+    def tui_progress_status() -> FormattedText:
         filled = PROGRESS_BAR_WIDTH * progress.done // progress.total if progress.total else 0
-        fragments: list[tuple[str, str]] = [
-            ("", f" [{'█' * filled}{'░' * (PROGRESS_BAR_WIDTH - filled)}] {progress.done}/{progress.total}  {progress.current}\n"),
-        ]
-        if state.mode is Mode.FINISHED:
-            fragments.append(("class:log-error" if progress.errors else "class:log-transfer", f" done, {progress.errors} errors\n"))
-        else:
-            fragments.append(("", "\n"))
+        return FormattedText([
+            ("", f" {progress.phase}  {progress.done}/{progress.total}\n"),
+            ("", f" [{'█' * filled}{'░' * (PROGRESS_BAR_WIDTH - filled)}]  {progress.current}"),
+        ])
 
+    def tui_progress_log() -> FormattedText:
         lines_visible = max(1, tui.output.get_size().rows - PROGRESS_LAYOUT_ROWS)
-        for kind, text in progress.lines[-lines_visible:]:
-            fragments.append((f"class:log-{kind}", f" {text}\n"))
-        return FormattedText(fragments)
+        return FormattedText([(f"class:log-{kind}", f" {text}\n") for kind, text in progress.lines[-lines_visible:]])
+
+    def tui_progress_result() -> FormattedText:
+        if state.mode is not Mode.FINISHED:
+            return FormattedText([("class:help", " running...")])
+        if progress.errors:
+            return FormattedText([("class:log-error", f" done with {progress.errors} errors"), ("class:help", "   [any key] close")])
+        return FormattedText([("class:log-transfer", " done, no errors"), ("class:help", "   [any key] close")])
 
     def tui_confirm() -> FormattedText:
         return FormattedText([("", f" {state.confirm_message}\n\n"), ("class:help", " [y/Enter] run  [n/Esc] cancel")])
@@ -489,6 +496,7 @@ def show_tui(
         "diff-add":         "ansigreen",
         "diff-remove":      "ansired",
         "diff-header":      "bold ansicyan",
+        "rule":             "bold ansicyan",
         "log-transfer":     "ansigreen",
         "log-skip":         "ansiyellow",
         "log-error":        "ansired",
@@ -516,8 +524,18 @@ def show_tui(
         filter=Condition(lambda: state.mode is Mode.DIFF),
     )
 
+    def tui_rule(title: str) -> Window:
+        return Window(FormattedTextControl(f"── {title} " + "─" * 300), height=1, style="class:rule")
+
     tui_progress_popup = ConditionalContainer(
-        Frame(Window(FormattedTextControl(tui_progress), wrap_lines=False), title="progress"),
+        Frame(HSplit([
+            tui_rule("Progress"),
+            Window(FormattedTextControl(tui_progress_status), height=2),
+            tui_rule("Log"),
+            Window(FormattedTextControl(tui_progress_log), wrap_lines=False),
+            tui_rule("Result"),
+            Window(FormattedTextControl(tui_progress_result), height=1),
+        ]), title="Run"),
         filter=Condition(lambda: state.mode in (Mode.RUNNING, Mode.FINISHED)),
     )
 

@@ -748,7 +748,7 @@ if __name__ == "__main__":
         log_handler = lambda kind, label, message: progress.log(kind.value, f"{label:<4}  {message}")
         File._deleted.clear()
         try:
-            for op_label, app in progress.track(selections, label=lambda selection: f"{selection[0]} {selection[1]}"):
+            for op_label, app in progress.track(selections, phase="Running", label=lambda selection: f"{selection[0]} {selection[1]}"):
                 REGISTRY_BY_APP[app][Op(op_label)]()
         finally:
             log_handler = print_log
@@ -757,7 +757,7 @@ if __name__ == "__main__":
         transfers_by_app_new, syncs_new = compare_backups(
             handlers_backup,
             BackupHistory.from_git(DOTFILES),
-            track=lambda transfers: progress.track(transfers, label=lambda transfer: f"comparing {transfer[1]}"),
+            track=lambda transfers: progress.track(transfers, phase="Comparing", label=lambda transfer: str(transfer[1])),
         )
         transfers_by_app.clear()
         transfers_by_app.update(transfers_by_app_new)
