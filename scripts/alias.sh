@@ -20,7 +20,14 @@ if is_zsh; then
 fi
 
 # claude
-alias claude="python3 ~/scripts/claude.py"
+function claude() {
+  local config_dir
+  config_dir=$(python3 ~/scripts/claude.py) || return
+  (
+    if [ -n "$config_dir" ]; then export CLAUDE_CONFIG_DIR=$config_dir; else unset CLAUDE_CONFIG_DIR; fi
+    command claude --dangerously-skip-permissions "$@"
+  )
+}
 
 # clear
 alias c="clear"

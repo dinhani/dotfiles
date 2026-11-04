@@ -2,7 +2,6 @@ import hashlib
 import json
 import locale
 import os
-import signal
 import subprocess
 import sys
 import time
@@ -179,20 +178,12 @@ def main() -> None:
         encoding="utf-8",
     )
     if fzf.returncode != 0:
-        return
+        sys.exit(1)
 
     profile_selected = Profile(fzf.stdout.split("\t")[0])
     selection_file.parent.mkdir(parents=True, exist_ok=True)
     selection_file.write_text(profile_selected.name + "\n", encoding="utf-8")
-
-    environment = {name: value for name, value in os.environ.items() if name != "CLAUDE_CONFIG_DIR"}
-    if profile_selected.config_dir:
-        environment["CLAUDE_CONFIG_DIR"] = str(profile_selected.config_dir)
-    command = ["claude", "--dangerously-skip-permissions", *sys.argv[1:]]
-    if sys.platform == "win32":
-        signal.signal(signal.SIGINT, signal.SIG_IGN)
-        sys.exit(subprocess.run(command, env=environment).returncode)
-    os.execvpe("claude", command, environment)
+    print(profile_selected.config_dir or "")
 
 
 if __name__ == "__main__":
