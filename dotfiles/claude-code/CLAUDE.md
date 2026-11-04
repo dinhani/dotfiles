@@ -19,6 +19,7 @@ These rules apply to every coding agent working with me (Claude, Codex, Cursor A
   - `default` is the first recipe and only lists the recipes (`@just --list --unsorted`); plain `just` never runs a task.
   - Every recipe has a `[doc("...")]` and a `[group("...")]`, not a `#` doc comment. Doc text is short and direct, with no articles or filler words.
   - Groups, in this order: `project` for setup and lint; `run` for the steps that build and run the app; `llm` for starting the local LLM servers the app calls; `test` for tests; `data` for data refresh; `debug` for debugging tools. Within a group, recipes of the same subject sit together; subjects, and the recipes within each, are ordered by importance, the most important first.
+  - A group can have subgroups, named `<group>/<subgroup>` (e.g. `project/report`). A subgroup's recipes sit right after its parent group's recipes.
   - Each component has its own recipe. Recipes call each other only through `just` dependencies; a script never runs another step itself.
   - Recipes run often get an `alias` right after the recipe. An alias is any useful second name, not necessarily a shorter one, and never a single letter.
   - If a project has a justfile, use its recipes. Don't run `uv`, `gradle`, `mvn`, `npm` or other tool commands directly when a recipe covers the task; fall back to the raw command only for what the justfile doesn't cover.
