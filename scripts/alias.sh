@@ -25,7 +25,11 @@ function claude() {
   config_dir=$(python3 ~/scripts/claude.py) || return
   (
     if [ -n "$config_dir" ]; then export CLAUDE_CONFIG_DIR=$config_dir; else unset CLAUDE_CONFIG_DIR; fi
-    command claude --dangerously-skip-permissions "$@"
+    if [ "$(id -u)" -eq 0 ]; then
+      command claude "$@"
+    else
+      command claude --dangerously-skip-permissions "$@"
+    fi
   )
 }
 
