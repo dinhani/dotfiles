@@ -80,7 +80,7 @@ recipes=$(jq -r '
   | map(if type == "string" then . else "\u0001" end) | join("")
   | sub("^\\s*[@-]+"; "")
   | sub("^\\s*([A-Za-z_][A-Za-z0-9_]*=\\S*\\s+)+"; "")
-  | split("\u0001")[0]
+  | (split("\u0001")[0] // "")
   | sub("\\s\"?(\\$[@*1-9]|[@$]args)\"?(\\s.*)?$"; "")
   | sub("^\\s+"; "") | sub("\\s+$"; "")
   | select(. != "" and (test("^(#|cd\\b|echo\\b|exit\\b|just\\b|[^\\w./~]|(then|else|elif|fi|do|done|esac)\\b)") | not))
