@@ -514,7 +514,7 @@ def show_tui(
     tui_theme = Style.from_dict({
         "category":         "bold ansicyan",
         "focused":          "reverse bold",
-        "disabled":         "ansibrightblack dim",
+        "disabled":         "#808080",
         "help":             "ansibrightblack",
         "diff-add":         "ansigreen",
         "diff-remove":      "ansired",
