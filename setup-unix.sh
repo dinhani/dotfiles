@@ -157,6 +157,7 @@ reload
 # config: aliases
 log "Configuring aliases"
 cp scripts/alias.sh $DIR_SCRIPTS
+cp scripts/claude.py $DIR_SCRIPTS
 
 # config: global justfile
 if [ ! -e ~/justfile ]; then

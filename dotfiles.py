@@ -331,6 +331,8 @@ class Dir(File):
 DOTFILES: File = File(Path(__file__).parent / "dotfiles")
 """Path of local dotfiles directory (relative to this script)."""
 
+SCRIPTS: File = File(Path(__file__).parent / "scripts")
+
 UNIX_HOME: File = File(Path.home())
 """Path of Unix home directory (Linux and Mac)."""
 
@@ -591,6 +593,7 @@ def restore_powershell(app: str, dir: Dir):
     match SYSTEM:
         case OS.WIN:
             dir >> WIN_HOME / "Documents/PowerShell"
+            SCRIPTS / "claude.py" >> WIN_HOME / "scripts/claude.py"
         case OS.LINUX | OS.MAC:
             log_unsupported(app)
 

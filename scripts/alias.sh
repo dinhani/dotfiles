@@ -19,6 +19,9 @@ if is_zsh; then
   alias s="echo 'Reloading .zshrc...'; source ~/.zshrc"
 fi
 
+# claude
+alias claude="python3 ~/scripts/claude.py"
+
 # clear
 alias c="clear"
 
