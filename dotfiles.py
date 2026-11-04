@@ -768,8 +768,8 @@ class Comparison:
         syncs = {app: Sync.from_files(files - {None}) for app, files in files_by_app.items()}
         return cls(handlers_backup=handlers_backup, transfers_by_app=transfers_by_app, syncs=syncs)
 
-    def refresh(self) -> None:
-        comparison = Comparison.from_handlers(self.handlers_backup)
+    def refresh(self, track: Callable[[list[tuple[str, File, File]]], Iterable[tuple[str, File, File]]]) -> None:
+        comparison = Comparison.from_handlers(self.handlers_backup, track=track)
         self.transfers_by_app = comparison.transfers_by_app
         self.syncs = comparison.syncs
 
@@ -810,8 +810,8 @@ def main() -> None:
             for op_label, app in progress.track(selections, phase="Running", label=lambda selection: f"{selection[0]} {selection[1]}"):
                 HANDLERS_BY_APP[app][Op(op_label)]()
 
-    def refresh() -> dict[str, Hint]:
-        comparison.refresh()
+    def refresh(progress: Progress) -> dict[str, Hint]:
+        comparison.refresh(track=lambda transfers: progress.track(transfers, phase="Updating status", label=lambda transfer: str(transfer[1])))
         return comparison.hints()
 
     show_tui(

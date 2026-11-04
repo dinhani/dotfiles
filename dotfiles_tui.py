@@ -42,7 +42,7 @@ class Disabled:
 
 DIFF_PAGE = 20
 PROGRESS_BAR_WIDTH = 40
-PROGRESS_LAYOUT_ROWS = 13
+PROGRESS_LAYOUT_ROWS = 11
 
 T = TypeVar("T")
 
@@ -86,7 +86,6 @@ class Progress:
     done: int
     phase: str
     current: str
-    status: str
     errors: int
     lines: list[tuple[str, str]] # (log kind, text)
 
@@ -100,7 +99,6 @@ class Progress:
         self.done = 0
         self.phase = ""
         self.current = ""
-        self.status = "running..."
         self.errors = 0
         self.lines.clear()
 
@@ -245,14 +243,14 @@ def show_tui(
     items_hint: Mapping[str, Hint],
     item_diff: Callable[[str, str], str],
     run: Callable[[list[tuple[str, str]], Progress], None],
-    refresh: Callable[[], Mapping[str, Hint]],
+    refresh: Callable[[Progress], Mapping[str, Hint]],
     confirm: Callable[[list[tuple[str, str]]], str | None],
     panel_left: str,
     panel_right: str,
 ) -> None:
     """Two-panel picker over `items` (category → item names).
     Enter runs the selected (panel_label, item_name) pairs through `run` with a progress popup,
-    then calls `refresh` to get new hints and returns to the menu. `confirm` returns a warning
+    then calls `refresh` with the same progress to get new hints and returns to the menu. `confirm` returns a warning
     message to confirm before running, or None. Re-raises any exception raised by a callback.
     """
 
@@ -294,9 +292,7 @@ def show_tui(
     def start_run(app: Application, selections: list[tuple[str, str]]) -> None:
         def run_task() -> None:
             run(selections, progress)
-            progress.status = "updating status..."
-            progress.on_change()
-            state.items_hint = refresh()
+            state.items_hint = refresh(progress)
             state.clear_selections()
 
         progress.clear()
@@ -475,21 +471,16 @@ def show_tui(
 
     def tui_progress_status() -> FormattedText:
         filled = PROGRESS_BAR_WIDTH * progress.done // progress.total if progress.total else 0
-        return FormattedText([
-            ("", f" {progress.phase}  {progress.done}/{progress.total}\n"),
-            ("", f" [{'█' * filled}{'░' * (PROGRESS_BAR_WIDTH - filled)}]  {progress.current}"),
-        ])
+        bar = ("", f" [{'█' * filled}{'░' * (PROGRESS_BAR_WIDTH - filled)}]  {progress.current}")
+        if not isinstance(state.mode, Finished):
+            return FormattedText([("", f" {progress.phase}  {progress.done}/{progress.total}\n"), bar])
+        if progress.errors:
+            return FormattedText([("class:log-error", f" done with {progress.errors} errors"), ("class:help", "   [any key] close\n"), bar])
+        return FormattedText([("class:log-transfer", " done, no errors"), ("class:help", "   [any key] close\n"), bar])
 
     def tui_progress_log() -> FormattedText:
         lines_visible = max(1, tui.output.get_size().rows - PROGRESS_LAYOUT_ROWS)
         return FormattedText([(f"class:log-{kind}", f" {text}\n") for kind, text in progress.lines[-lines_visible:]])
-
-    def tui_progress_result() -> FormattedText:
-        if not isinstance(state.mode, Finished):
-            return FormattedText([("class:help", f" {progress.status}")])
-        if progress.errors:
-            return FormattedText([("class:log-error", f" done with {progress.errors} errors"), ("class:help", "   [any key] close")])
-        return FormattedText([("class:log-transfer", " done, no errors"), ("class:help", "   [any key] close")])
 
     def tui_confirm() -> FormattedText:
         if not isinstance(state.mode, Confirming):
@@ -567,8 +558,6 @@ def show_tui(
             Window(FormattedTextControl(tui_progress_status), height=2),
             tui_rule("Log"),
             Window(FormattedTextControl(tui_progress_log), wrap_lines=False),
-            tui_rule("Result"),
-            Window(FormattedTextControl(tui_progress_result), height=1),
         ]), title="Run"),
         filter=running | finished,
     )
