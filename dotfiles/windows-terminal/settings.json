@@ -87,6 +87,11 @@
     "centerOnLaunch": true,
     "copyFormatting": "none",
     "copyOnSelect": true,
+    "disabledProfileSources": 
+    [
+        "Windows.Terminal.Wsl",
+        "Microsoft.WSL"
+    ],
     "defaultProfile": "{61c54bbd-c2c6-5271-96e7-009a87ff44bf}",
     "focusFollowMouse": false,
     "keybindings": 
@@ -165,12 +170,6 @@
                 "startingDirectory": "%USERPROFILE%",
                 "suppressApplicationTitle": true,
                 "tabTitle": "PS7"
-            },
-            {
-                "guid": "{41a51f66-42e8-548c-91aa-eee0464288d5}",
-                "hidden": false,
-                "name": "Alpine",
-                "source": "Microsoft.WSL"
             }
         ]
     },
