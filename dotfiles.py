@@ -432,7 +432,7 @@ def restore_claude_code(app: str, dir: Dir):
     try:
         log_transfer("file", dir / "CLAUDE.md", rule)
         rule.parent.mkdir(parents=True, exist_ok=True)
-        rule.write_text("---\ndescription: Global programming rules\nalwaysApply: true\n---\n" + (dir / "CLAUDE.md").read_text(encoding="utf-8"), encoding="utf-8")
+        rule.write_text("---\ndescription: Global programming rules\nalwaysApply: true\n---\n" + (dir / "CLAUDE.md").read_text(encoding="utf-8"), encoding="utf-8", newline="\n")
     except Exception as e:
         log_error("Failed to write Cursor rule", e)
 

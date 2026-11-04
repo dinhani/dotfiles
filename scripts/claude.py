@@ -182,7 +182,7 @@ def main() -> None:
 
     profile_selected = Profile(fzf.stdout.split("\t")[0])
     selection_file.parent.mkdir(parents=True, exist_ok=True)
-    selection_file.write_text(profile_selected.name + "\n", encoding="utf-8")
+    selection_file.write_text(profile_selected.name + "\n", encoding="utf-8", newline="\n")
     print(profile_selected.config_dir or "")
 
 
