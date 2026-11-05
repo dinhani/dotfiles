@@ -53,6 +53,16 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "matcher": "Bash|PowerShell|Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/check-crlf.sh\"",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -72,6 +82,7 @@
     "pyright-lsp@claude-plugins-official": true
   },
   "feedbackDrafts": "off",
+  "autoMemoryEnabled": false,
   "effortLevel": "high",
   "modelSettings": {
     "claude-opus-5-5": {

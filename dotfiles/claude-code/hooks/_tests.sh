@@ -15,7 +15,7 @@
 #   fixture changes between cases.
 # - The Windows-style paths in the check-memory cases are input data: they test that the
 #   hooks handle \ separators.
-# - check-jq only acts on Windows, so its blocked cases expect deny on Windows and pass on
+# - check-jq and check-crlf only act on Windows, so their blocked cases expect deny on Windows and pass on
 #   Linux and macOS.
 # - Multi-line commands are printed with \n so cases stay distinguishable on one line.
 set -uo pipefail
@@ -55,6 +55,18 @@ command_case() {
 file_case() {
   local expected=$1 hook=$2 file=$3 content=${4:-}
   run_case "$expected" "$hook" "$(jq -nc --arg f "$file" --arg c "$content" '{tool_input:{file_path:$f,content:$c}}')" "$file"
+}
+bash_case() {
+  local expected=$1 command=$2
+  run_case "$expected" check-crlf.sh "$(jq -nc --arg c "$command" '{tool_name:"Bash",tool_input:{command:$c}}')" "$command"
+}
+powershell_case() {
+  local expected=$1 command=$2
+  run_case "$expected" check-crlf.sh "$(jq -nc --arg c "$command" '{tool_name:"PowerShell",tool_input:{command:$c}}')" "powershell: $command"
+}
+python_file_case() {
+  local expected=$1 file=$2 content=$3
+  run_case "$expected" check-crlf.sh "$(jq -nc --arg f "$file" --arg c "$content" '{tool_name:"Write",tool_input:{file_path:$f,content:$c}}')" "$file: $content"
 }
 parse_json_case() {
   local expected=$1 key=$2 json=$3
@@ -361,9 +373,68 @@ echo "== check-memory"
 file_case deny check-memory.sh "$memory_windows\\rule.md" "$memory_feedback"
 file_case deny check-memory.sh "$memory_unix/rule.md" "$memory_feedback"
 run_case deny check-memory.sh "$(jq -nc --arg f "$memory_unix/rule.md" --arg c "$memory_feedback" '{tool_input:{file_path:$f,old_string:"x",new_string:$c}}')" "edit: $memory_unix/rule.md"
-file_case pass check-memory.sh "$memory_windows\\user.md" "$memory_user"
+file_case deny check-memory.sh "$memory_windows\\user.md" "$memory_user"
+file_case deny check-memory.sh "$memory_unix/MEMORY.md" "- [x](x.md) — x"
 file_case pass check-memory.sh 'C:\src\notes.md' "$memory_feedback"
 BYPASS_MEMORY=1 file_case pass check-memory.sh "$memory_windows\\rule.md" "$memory_feedback"
+
+# ------------------------------------------------------------------------------
+# check-crlf
+# ------------------------------------------------------------------------------
+echo "== check-crlf"
+bash_case "$deny_on_windows" "python - <<'EOF'
+import pathlib
+p = pathlib.Path('a.py'); p.write_text(p.read_text(encoding='utf-8').replace('a', 'b'), encoding='utf-8')
+EOF"
+bash_case "$deny_on_windows" "python -c \"open('out.txt', 'w', encoding='utf-8').write('x')\""
+bash_case "$deny_on_windows" "python -c \"open('out.txt', mode='a').write('x')\""
+bash_case "$deny_on_windows" "python -c \"import csv; csv.writer(open('o.csv', 'w', newline=''))\""
+bash_case "$deny_on_windows" "uv run python -c \"import pandas; frame.to_csv('o.csv', index=False)\""
+bash_case "$deny_on_windows" "python script.py > out.txt"
+bash_case "$deny_on_windows" "python -c \"print(1)\" > out.txt"
+bash_case "$deny_on_windows" "x=\$(date) && python -c 'print(len(\"a|b\"))' >out.txt"
+bash_case "$deny_on_windows" "cd src && uv run build.py >> log.txt 2>&1"
+bash_case "$deny_on_windows" "pwsh -NoProfile -c 'Get-Process' > procs.txt"
+bash_case "$deny_on_windows" "pwsh -c '\$text | Set-Content out.txt'"
+powershell_case "$deny_on_windows" "Get-ChildItem | Out-File list.txt"
+powershell_case "$deny_on_windows" "\"a\", \"b\" | set-content x.txt"
+powershell_case "$deny_on_windows" "Add-Content log.txt 'line'"
+powershell_case "$deny_on_windows" "Get-Process > procs.txt"
+powershell_case "$deny_on_windows" "git status >> log.txt"
+python_file_case "$deny_on_windows" 'C:\scratch\edit.py' "for file in files:
+    file.write_text(text, encoding=\"utf-8\")"
+python_file_case "$deny_on_windows" '/tmp/edit.py' "with open(path, \"w\") as f:
+    f.write(text)"
+run_case "$deny_on_windows" check-crlf.sh "$(jq -nc '{tool_name:"Edit",tool_input:{file_path:"/src/a.py",old_string:"x",new_string:"Path(p).write_text(s)"}}')" "edit: /src/a.py"
+bash_case pass "python - <<'EOF'
+p.write_text(
+    text,
+    encoding='utf-8',
+    newline='\\n',
+)
+EOF"
+bash_case pass "python -c \"open('out.txt', 'w', encoding='utf-8', newline='\\n').write('x')\""
+bash_case pass "python -c \"open('in.txt', encoding='utf-8').read()\""
+bash_case pass "python -c \"open('out.bin', 'wb').write(b'x')\""
+bash_case pass "python -c \"import csv; csv.writer(f, lineterminator='\\n')\""
+bash_case pass "python script.py | tr -d '\\r' > out.txt"
+bash_case pass "python script.py > /dev/null 2>&1"
+bash_case pass "python -c \"print(2 > 1)\""
+powershell_case pass "Write-Host 'a > b'"
+bash_case pass "uv run pytest -q 2>&1 | tail -5"
+bash_case pass "cat > notes.txt <<'EOF'
+a
+EOF"
+bash_case pass "grep -n 'write_text(' src/*.py"
+bash_case pass "git log > history.txt"
+bash_case pass "pwsh -c '\$text | Set-Content out.txt -NoNewline'"
+powershell_case pass "[IO.File]::WriteAllText(\$path, \"a\`nb\`n\")"
+powershell_case pass "Get-Process 2>&1 > \$null"
+powershell_case pass "Get-Content x.txt | Select-Object -First 3"
+python_file_case pass 'C:\scratch\edit.py' "file.write_text(text, encoding=\"utf-8\", newline=\"\\n\")"
+python_file_case pass 'C:\src\README.md' "Use p.write_text(text) to save."
+bash_case pass "BYPASS_CRLF=1 python script.py > out.txt"
+BYPASS_CRLF=1 python_file_case pass '/tmp/edit.py' "open(path, \"w\")"
 
 # ------------------------------------------------------------------------------
 # check-justfile

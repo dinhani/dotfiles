@@ -419,6 +419,7 @@ def backup_claude_code(app: str, dir: Dir):
     HOME / ".claude/settings.json" >> dir / "settings.json"
     HOME / ".claude/CLAUDE.md" >> dir / "CLAUDE.md"
     Dir(HOME / ".claude/hooks") >> dir / "hooks"
+    Dir(HOME / ".claude/scripts") >> dir / "scripts"
 
 @operation(Op.RESTORE, "Claude Code", "claude-code")
 def restore_claude_code(app: str, dir: Dir):
