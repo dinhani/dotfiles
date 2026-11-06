@@ -66,4 +66,4 @@ environment=${environment//$'\r'/}
 if [ -n "$environment" ]; then
   deny_hook "'$violation' runs without UV_PROJECT_ENVIRONMENT, so uv would create .venv inside the project. Prefix the command with UV_PROJECT_ENVIRONMENT='$environment' (the value the justfile exports), or run the matching just recipe. To run it as is, prefix the command with 'BYPASS_UV_ENV=1 '."
 fi
-deny_hook "'$violation' runs without UV_PROJECT_ENVIRONMENT, so uv would create .venv inside the project. Prefix the command with UV_PROJECT_ENVIRONMENT=<local data folder>/uv/envs/<project> (on Windows: \$LOCALAPPDATA/uv/envs/<project>). To run it as is, prefix the command with 'BYPASS_UV_ENV=1 '."
+deny_hook "'$violation' runs without UV_PROJECT_ENVIRONMENT, so uv would create .venv inside the project. Prefix the command with UV_PROJECT_ENVIRONMENT=<local data folder>/_dev/uv/envs/<project> (on Windows: \$LOCALAPPDATA/_dev/uv/envs/<project>). To run it as is, prefix the command with 'BYPASS_UV_ENV=1 '."

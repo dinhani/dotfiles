@@ -34,7 +34,7 @@ These rules apply to every coding agent working with me (Claude, Codex, Cursor A
   - A **run task** (`just run`): starts the application in local dev mode against that infrastructure.
 
   No copy-paste shell blocks in the README: every required step is a `just` recipe.
-- **HARD GATE — Python projects: uv, never pip.** The justfile exports `UV_PROJECT_ENVIRONMENT := data_local_directory() / "uv" / "envs" / "<project>"` so the venv lives outside the project.
+- **HARD GATE — Python projects: uv, never pip.** The justfile exports `UV_PROJECT_ENVIRONMENT := data_local_directory() / "_dev" / "uv" / "envs" / "<project>"` so the venv lives outside the project.
 - **Conventional Commits** in every repo.
 
 ## Code (applies to everything)
