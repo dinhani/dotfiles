@@ -11,7 +11,7 @@ lint:
     yapf -i dotfiles.py dotfiles_tui.py
 
 [doc("List line counts")]
-[group("project")]
+[group("project/report")]
 cloc:
     cloc dotfiles.py dotfiles_tui.py setup-unix.sh setup-unix-functions.sh scripts
 
