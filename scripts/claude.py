@@ -1,7 +1,9 @@
 import hashlib
 import json
 import locale
+import math
 import os
+import re
 import subprocess
 import sys
 import time
@@ -12,9 +14,12 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from enum import StrEnum
 from pathlib import Path
+from typing import Any
 
 PROFILES = ("claude", "claude-2", "claude-3")
 USAGE_URL = "https://api.anthropic.com/api/oauth/usage"
+TOKEN_URL = "https://platform.claude.com/v1/oauth/token"
+OAUTH_CLIENT_ID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"
 
 ORANGE = "\033[38;2;217;119;87m"
 YELLOW = "\033[38;2;229;192;123m"
@@ -37,23 +42,68 @@ class Profile:
             return None
         return json.loads(config_file.read_text(encoding="utf-8")).get("oauthAccount", {}).get("emailAddress")
 
+    @property
+    def keychain_service(self) -> str:
+        service = "Claude Code-credentials"
+        if self.config_dir:
+            service += "-" + hashlib.sha256(str(self.config_dir).encode()).hexdigest()[:8]
+        return service
+
+    @property
+    def credentials_file(self) -> Path:
+        return (self.config_dir or Path.home() / ".claude") / ".credentials.json"
+
     def find_access_token(self) -> str | None:
-        if sys.platform == "darwin":
-            service = "Claude Code-credentials"
-            if self.config_dir:
-                service += "-" + hashlib.sha256(str(self.config_dir).encode()).hexdigest()[:8]
-            keychain = subprocess.run(["security", "find-generic-password", "-s", service, "-w"], capture_output=True, text=True)
-            credentials = keychain.stdout if keychain.returncode == 0 else None
-        else:
-            credentials_file = (self.config_dir or Path.home() / ".claude") / ".credentials.json"
-            credentials = credentials_file.read_text(encoding="utf-8") if credentials_file.exists() else None
+        credentials = self.find_credentials()
         if credentials is None:
             return None
-
-        oauth = json.loads(credentials).get("claudeAiOauth")
-        if not oauth or oauth.get("expiresAt", 0) <= time.time() * 1000:
+        oauth = credentials.get("claudeAiOauth")
+        if not oauth:
             return None
-        return oauth["accessToken"]
+        now_ms = time.time() * 1000
+        if oauth.get("expiresAt", 0) > now_ms:
+            return oauth["accessToken"]
+        if not oauth.get("refreshToken") or oauth.get("refreshTokenExpiresAt", math.inf) <= now_ms:
+            return None
+
+        body = {"grant_type": "refresh_token", "refresh_token": oauth["refreshToken"], "client_id": OAUTH_CLIENT_ID, "scope": " ".join(oauth.get("scopes", []))}
+        request = urllib.request.Request(TOKEN_URL, data=json.dumps(body).encode(), headers={"Content-Type": "application/json", "User-Agent": "claude-cli"})
+        try:
+            with urllib.request.urlopen(request, timeout=10) as response:
+                payload = json.load(response)
+        except (urllib.error.URLError, TimeoutError):
+            return None
+
+        oauth_refreshed = {
+            **oauth,
+            "accessToken": payload["access_token"],
+            "refreshToken": payload.get("refresh_token", oauth["refreshToken"]),
+            "expiresAt": round(now_ms + payload["expires_in"] * 1000),
+        }
+        if "refresh_token_expires_in" in payload:
+            oauth_refreshed["refreshTokenExpiresAt"] = round(now_ms + payload["refresh_token_expires_in"] * 1000)
+        self.save_credentials({**credentials, "claudeAiOauth": oauth_refreshed})
+        return oauth_refreshed["accessToken"]
+
+    def find_credentials(self) -> dict[str, Any] | None:
+        if sys.platform == "darwin":
+            keychain = subprocess.run(["security", "find-generic-password", "-s", self.keychain_service, "-w"], capture_output=True, text=True)
+            credentials_text = keychain.stdout if keychain.returncode == 0 else None
+        else:
+            credentials_text = self.credentials_file.read_text(encoding="utf-8") if self.credentials_file.exists() else None
+        return json.loads(credentials_text) if credentials_text else None
+
+    def save_credentials(self, credentials: dict[str, Any]) -> None:
+        credentials_text = json.dumps(credentials, separators=(",", ":"))
+        if sys.platform == "darwin":
+            keychain = subprocess.run(["security", "find-generic-password", "-s", self.keychain_service], capture_output=True, text=True, check=True)
+            account = re.search(r'"acct"<blob>="(.*)"', keychain.stdout).group(1)
+            subprocess.run(["security", "add-generic-password", "-U", "-a", account, "-s", self.keychain_service, "-w", credentials_text], check=True)
+            return
+
+        credentials_temp = self.credentials_file.with_suffix(".tmp")
+        credentials_temp.write_text(credentials_text, encoding="utf-8", newline="\n")
+        credentials_temp.replace(self.credentials_file)
 
 
 @dataclass(frozen=True)
