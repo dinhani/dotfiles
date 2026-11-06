@@ -19,7 +19,7 @@ Cross-platform (Windows / Linux / Mac) Python script that backs up app config fi
 - File copies use a `>>` operator on a `Path` subclass: `source >> target`. First write into a `dotfiles/<app>/` subtree deletes that subtree once per session to avoid stale files.
 - OS dispatch is via `match` on a `SYSTEM` enum; unsupported combos call `log_unsupported`.
 - Before the TUI opens, `Handler.collect_transfers()` runs each backup handler in compare mode (`Transfer.COMPARE`): `>>` records (machine, backup) file pairs instead of copying. `File.compare_to_backup` compares each pair by content (ignoring one trailing newline on either side); when content differs, the machine mtime is compared with `BackupHistory.get_time` (last git commit time, or mtime if uncommitted). The per-app `Sync` result is shown as a hint in the TUI.
-- Dependencies are vendored under `vendor/` and added to `sys.path` at import time.
+- Dependencies are vendored under `_vendor/` and added to `sys.path` at import time.
 
 ### TUI (`dotfiles_tui.py`)
 
