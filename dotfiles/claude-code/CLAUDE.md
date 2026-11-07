@@ -28,7 +28,7 @@ These rules apply to every coding agent working with me (Claude, Codex, Cursor A
 - **HARD GATE — Task runner: `just`, no other runner** (no `make`, npm scripts, or shell scripts as the runner). In a project with a justfile, use its recipes instead of raw `uv`/`gradle`/`mvn`/`npm`; raw commands only for what it doesn't cover. Add or change recipes only when I ask or when a convention already established in the project calls for it; never add one for your own work (a check, a debug run, a one-off script). Justfile shape:
   - Windows: `windows-shell := ["pwsh.exe", "-NoLogo", "-NoProfile", "-Command"]`.
   - First recipe is `default`, which only runs `@just --list --unsorted`; plain `just` never runs a task.
-  - Every recipe has `[doc("...")]` (short, no articles or filler) and `[group("...")]`; no `#` doc comments.
+  - Every recipe has `[doc("...")]` and `[group("...")]`; no `#` doc comments. The doc is one simple statement, direct and to the point: no stopwords, no conjunctions.
   - Groups in order: `project` (setup, lint), `run` (build, run), `llm` (local LLM servers the app calls), `test`, `data` (refresh), `debug`. Subgroups `<group>/<subgroup>` (e.g. `project/report`) follow their parent. Within a group, same-subject recipes sit together; subjects and recipes ordered by importance.
   - Frequent recipes get an `alias` right after them: a different name, not a variant (no `tests` for `test`), never one letter.
 - **Local-first runnability** (enterprise projects, and personal projects past a single-file script). A project boots from a fresh clone in a few commands. The `justfile` is the source of truth for how to run things; read it first. Every project has:
