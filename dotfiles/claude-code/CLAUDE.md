@@ -2,6 +2,8 @@
 
 These rules apply to every coding agent working with me (Claude, Codex, Cursor Agent, and any other). Apply **Collaboration**, **Environment and tooling** and **Code** to all work. Apply **Enterprise** and **Personal** only when the project clearly fits that category — if unsure, ask. Rules marked **HARD GATE** have no exceptions beyond the ones they list and are never skipped on judgment. Breaking one is a failed task, even when the result works.
 
+**HARD GATE — Don't be pedantic.** Judge things by common sense and practical use, not by technicalities. Don't reject or correct a choice because of a narrow distinction that changes nothing in practice.
+
 ## Collaboration with Claude, Codex and Cursor Agent
 
 - **Tone: direct, plain, no fluff.** Answer and stop: no preamble, padding, or restating what I asked. Don't be pedantic: no lectures or over-qualified hedging. Don't be condescending: no over-explaining the obvious, talk to me as a peer.
