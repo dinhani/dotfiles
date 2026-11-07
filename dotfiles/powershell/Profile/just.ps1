@@ -26,9 +26,18 @@ Register-ArgumentCompleter -Native -CommandName just -ScriptBlock {
     }
 
     # load justfile
+    $summary = [System.Diagnostics.Process]::Start([System.Diagnostics.ProcessStartInfo]@{
+        FileName = 'just'
+        Arguments = '--summary --unsorted'
+        WorkingDirectory = $PWD.ProviderPath
+        RedirectStandardOutput = $true
+        RedirectStandardError = $true
+        UseShellExecute = $false
+    })
     $dump = just --dump --dump-format json 2>$null | Out-String | ConvertFrom-Json
+    $fullNames = -split $summary.StandardOutput.ReadToEnd()
+    $summary.WaitForExit()
     if (-not $dump) { return }
-    $fullNames = -split (just --summary --unsorted 2>$null)
 
     # module scope
     $module = $dump
@@ -84,7 +93,11 @@ Set-PSReadLineKeyHandler -Key Tab -BriefDescription JustFzfComplete -ScriptBlock
         [Microsoft.PowerShell.PSConsoleReadLine]::TabCompleteNext($key, $arg)
         return
     }
-    $completion = TabExpansion2 -inputScript $line -cursorColumn $cursor
+    $typed = ($line.Substring(0, $cursor) -split '\s')[-1]
+    $wordStart = $cursor - $typed.Length
+    $completion = $typed.StartsWith('-') ?
+        (TabExpansion2 -inputScript $line -cursorColumn $cursor) :
+        (TabExpansion2 -inputScript $line.Remove($wordStart, $typed.Length) -cursorColumn $wordStart)
     $candidates = $completion.CompletionMatches
     if (-not $candidates -or ($candidates | Where-Object ResultType -notin 'ParameterValue', 'ParameterName')) {
         [Microsoft.PowerShell.PSConsoleReadLine]::TabCompleteNext($key, $arg)
@@ -92,11 +105,11 @@ Set-PSReadLineKeyHandler -Key Tab -BriefDescription JustFzfComplete -ScriptBlock
     }
 
     # pick
-    $scope = @($line.Substring(0, $completion.ReplacementIndex) -replace '^.*\bjust\s+', '' -split '\s+' | Where-Object { $_ -and -not $_.StartsWith('-') })
+    $scope = @($line.Substring(0, $wordStart) -replace '^.*\bjust\s+', '' -split '\s+' | Where-Object { $_ -and -not $_.StartsWith('-') })
     $scope = $scope ? ($scope -join '::') + '::' : ''
-    $preview = $candidates[0].ResultType -eq 'ParameterValue' ? @('--preview', 'just --show {4}', '--preview-window', 'right,50%,wrap', '--bind', '?:toggle-preview') : @()
+    $recipeOptions = $candidates[0].ResultType -eq 'ParameterValue' ? @('--preview', 'just --show {4}', '--preview-window', 'right,50%,wrap', '--bind', '?:toggle-preview', '--header', 'enter run · tab fill') : @()
     $width = ($candidates.ListItemText | Measure-Object -Property Length -Maximum).Maximum
-    $choice = $candidates |
+    $pressed, $choice = $candidates |
         ForEach-Object {
             $name = $_.CompletionText
             $padding = ' ' * ($width - $_.ListItemText.Length + 2)
@@ -109,13 +122,14 @@ Set-PSReadLineKeyHandler -Key Tab -BriefDescription JustFzfComplete -ScriptBlock
             $description = ($doc -and $doc -ne $name ? "`e[34m# $doc " : '') + ($aliases ? "`e[35m$aliases" : '')
             "$name`t`e[2m$module`e[22;1m$recipe`e[22;36m$parameters`e[0m$padding$description`e[0m`t$parameters`t$scope$name"
         } |
-        fzf --ansi --delimiter "`t" --with-nth 2 --height 40% --layout reverse --exit-0 --prompt 'just> ' @preview
+        fzf --ansi --delimiter "`t" --with-nth 2 --height 40% --layout reverse --tiebreak index --exit-0 --prompt 'just> ' --query $typed --expect tab @recipeOptions
     [Microsoft.PowerShell.PSConsoleReadLine]::InvokePrompt()
     if (-not $choice) { return }
 
     # insert
     $name, $null, $parameters, $null = $choice.Split("`t")
-    [Microsoft.PowerShell.PSConsoleReadLine]::Replace($completion.ReplacementIndex, $completion.ReplacementLength, "$name ")
+    [Microsoft.PowerShell.PSConsoleReadLine]::Replace($wordStart, $typed.Length, "$name ")
     $argumentsRequired = $parameters -split ' ' | Where-Object { $_ -and $_ -notmatch '^\*|=' }
-    if (-not $name.StartsWith('-') -and -not $argumentsRequired) { [Microsoft.PowerShell.PSConsoleReadLine]::AcceptLine() }
+    if ($pressed -eq 'tab' -or $name.StartsWith('-') -or $argumentsRequired) { return }
+    [Microsoft.PowerShell.PSConsoleReadLine]::AcceptLine()
 }
