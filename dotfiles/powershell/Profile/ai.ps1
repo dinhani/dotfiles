@@ -316,6 +316,362 @@ function Start-LlamaCoder {
     }
 }
 
+# Lists the models under Z:\apps\ai with their metadata.
+function Show-AiModel {
+    param (
+        [Parameter(Mandatory = $false, Position = 0)]
+        [string]$Name
+    )
+
+    $modelRoot = "Z:/apps/ai"
+    $ggufQuantPattern = "(?i)[-._](I?Q\d+(_[A-Z0-9]+)*|MXFP4(_MOE)?|BF16|F16|F32)$"
+    $ct2QuantPattern = "(?i)ct2-(\w+)$"
+    $paramsPattern = "(?i)(?<![a-z\d])(\d+(\.\d+)?[BM])(?![a-z])"
+    $vramGB = [math]::Round((Get-GpuMemory).Total / 1GB, 1)
+    $typeOrder = @("llm", "llm + vision", "mtp draft", "translation", "speech", "embedding", "reranker", "image", "upscaler", "metric", "*", "unknown", "downloading")
+
+    # model families
+    $families = @(
+        [PSCustomObject]@{ Name = "Qwen-Image";       Type = "image";       Pattern = "qwen[-_]image" }
+        [PSCustomObject]@{ Name = "Qwen";             Type = $null;         Pattern = "qwen" }
+        [PSCustomObject]@{ Name = "Gemma";            Type = $null;         Pattern = "gemma" }
+        [PSCustomObject]@{ Name = "Mistral";          Type = $null;         Pattern = "mistral|magistral|ministral|devstral|codestral|pixtral|mixtral" }
+        [PSCustomObject]@{ Name = "gpt-oss";          Type = $null;         Pattern = "gpt[-_]?oss" }
+        [PSCustomObject]@{ Name = "Nemotron";         Type = $null;         Pattern = "nemotron" }
+        [PSCustomObject]@{ Name = "Kimi";             Type = $null;         Pattern = "kimi|moonlight" }
+        [PSCustomObject]@{ Name = "DeepSeek";         Type = $null;         Pattern = "deepseek" }
+        [PSCustomObject]@{ Name = "GLM";              Type = $null;         Pattern = "glm" }
+        [PSCustomObject]@{ Name = "MiniMax";          Type = $null;         Pattern = "minimax" }
+        [PSCustomObject]@{ Name = "Cohere";           Type = $null;         Pattern = "aya|command[-_]?r|c4ai|cohere" }
+        [PSCustomObject]@{ Name = "ERNIE";            Type = $null;         Pattern = "ernie" }
+        [PSCustomObject]@{ Name = "Hunyuan";          Type = $null;         Pattern = "hunyuan|hy[-_]mt|hy_v\d" }
+        [PSCustomObject]@{ Name = "Phi";              Type = $null;         Pattern = "(?<![a-z])phi" }
+        [PSCustomObject]@{ Name = "Granite";          Type = $null;         Pattern = "granite" }
+        [PSCustomObject]@{ Name = "OLMo";             Type = $null;         Pattern = "olmo" }
+        [PSCustomObject]@{ Name = "SmolLM";           Type = $null;         Pattern = "smollm" }
+        [PSCustomObject]@{ Name = "LFM";              Type = $null;         Pattern = "(?<![a-z])lfm" }
+        [PSCustomObject]@{ Name = "EXAONE";           Type = $null;         Pattern = "exaone" }
+        [PSCustomObject]@{ Name = "Falcon";           Type = $null;         Pattern = "falcon" }
+        [PSCustomObject]@{ Name = "InternLM";         Type = $null;         Pattern = "intern" }
+        [PSCustomObject]@{ Name = "Seed";             Type = $null;         Pattern = "seed[-_]oss" }
+        [PSCustomObject]@{ Name = "Llama";            Type = $null;         Pattern = "llama" }
+        [PSCustomObject]@{ Name = "NLLB";             Type = "translation"; Pattern = "nllb|m2m_100" }
+        [PSCustomObject]@{ Name = "MADLAD";           Type = "translation"; Pattern = "madlad" }
+        [PSCustomObject]@{ Name = "Opus-MT";          Type = "translation"; Pattern = "opus[-_]mt|marian" }
+        [PSCustomObject]@{ Name = "Seamless";         Type = "translation"; Pattern = "seamless" }
+        [PSCustomObject]@{ Name = "Whisper";          Type = "speech";      Pattern = "whisper" }
+        [PSCustomObject]@{ Name = "COMET";            Type = $null;         Pattern = "comet" }
+        [PSCustomObject]@{ Name = "BGE";              Type = $null;         Pattern = "bge" }
+        [PSCustomObject]@{ Name = "mxbai";            Type = $null;         Pattern = "mxbai" }
+        [PSCustomObject]@{ Name = "Jina";             Type = $null;         Pattern = "jina" }
+        [PSCustomObject]@{ Name = "Nomic";            Type = $null;         Pattern = "nomic" }
+        [PSCustomObject]@{ Name = "E5";               Type = $null;         Pattern = "(?<![a-z])e5[-_]" }
+        [PSCustomObject]@{ Name = "GTE";              Type = $null;         Pattern = "(?<![a-z])gte[-_]" }
+        [PSCustomObject]@{ Name = "XLM-R";            Type = $null;         Pattern = "xlm[-_]roberta" }
+        [PSCustomObject]@{ Name = "BERT";             Type = $null;         Pattern = "bert" }
+        [PSCustomObject]@{ Name = "Z-Image";          Type = "image";       Pattern = "z[-_]image" }
+        [PSCustomObject]@{ Name = "FLUX";             Type = "image";       Pattern = "flux" }
+        [PSCustomObject]@{ Name = "Stable Diffusion"; Type = "image";       Pattern = "stable[-_]diffusion|sdxl|(?<![a-z])sd[-_]?(1\.5|2|3)" }
+        [PSCustomObject]@{ Name = "ESRGAN";           Type = "upscaler";    Pattern = "esrgan" }
+        [PSCustomObject]@{ Name = "Other";            Type = $null;         Pattern = "." }
+    )
+
+    # gguf value reader for the $reader of the file being read
+    $readScalar = {
+        param ([uint32]$type)
+        switch ($type) {
+            0 { $reader.ReadByte() }
+            1 { $reader.ReadSByte() }
+            2 { $reader.ReadUInt16() }
+            3 { $reader.ReadInt16() }
+            4 { $reader.ReadUInt32() }
+            5 { $reader.ReadInt32() }
+            6 { $reader.ReadSingle() }
+            7 { $reader.ReadBoolean() }
+            8 { [System.Text.Encoding]::UTF8.GetString($reader.ReadBytes([int]$reader.ReadUInt64())) }
+            10 { $reader.ReadUInt64() }
+            11 { $reader.ReadInt64() }
+            12 { $reader.ReadDouble() }
+        }
+    }
+
+    # repos: <uploader>/<repo>, skipping the hf cache folders
+    $repos = Get-ChildItem -LiteralPath $modelRoot -Directory |
+        Where-Object Name -notin "hub", "xet" |
+        Get-ChildItem -Directory |
+        Where-Object { -not $Name -or "$($_.Parent.Name)/$($_.Name)" -like "*$Name*" }
+
+    $models = foreach ($repo in $repos) {
+        $files = @(Get-ChildItem -LiteralPath $repo.FullName -Recurse -File | Where-Object FullName -notmatch "\\\.cache\\")
+        $incomplete = @(Get-ChildItem -LiteralPath (Join-Path $repo.FullName ".cache\huggingface\download") -Filter "*.incomplete" -File -ErrorAction SilentlyContinue | Where-Object Length -gt 0)
+        $readme = $files | Where-Object Name -eq "README.md" | Select-Object -First 1
+        $readme = if ($readme) { Get-Content -LiteralPath $readme.FullName -Raw }
+        $config = $files | Where-Object { $_.Name -eq "config.json" -and $_.DirectoryName -eq $repo.FullName }
+        $config = if ($config) { Get-Content -LiteralPath $config.FullName -Raw }
+        $hparams = $files | Where-Object Name -eq "hparams.yaml" | Select-Object -First 1
+        $hparams = if ($hparams) { Get-Content -LiteralPath $hparams.FullName -Raw }
+
+        if ($incomplete) {
+            [PSCustomObject]@{
+                Model     = $repo.Name
+                Repo      = "$($repo.Parent.Name)/$($repo.Name)"
+                Format    = "incomplete"
+                Type      = "downloading"
+                Size      = ($incomplete | Measure-Object Length -Sum).Sum
+            }
+        }
+
+        # gguf: one row per model file, read from the header up to the tokenizer block
+        $ggufs = @($files | Where-Object Extension -eq ".gguf")
+        $vision = @($ggufs | Where-Object Name -like "mmproj-*").Count -gt 0
+        foreach ($group in $ggufs | Where-Object Name -notlike "mmproj-*" | Group-Object { $_.FullName -replace "-\d{5}-of-\d{5}\.gguf$", ".gguf" }) {
+            $file = $group.Group | Sort-Object Name | Select-Object -First 1
+            $stem = [System.IO.Path]::GetFileNameWithoutExtension($group.Name)
+
+            $values = @{}
+            $stream = [System.IO.File]::OpenRead($file.FullName)
+            try {
+                $reader = [System.IO.BinaryReader]::new($stream)
+                $null = $reader.ReadBytes(16)
+                $count = $reader.ReadUInt64()
+                for ($i = 0; $i -lt $count; $i++) {
+                    $key = & $readScalar 8
+                    if ($key.StartsWith("tokenizer.")) {
+                        break
+                    }
+                    $type = $reader.ReadUInt32()
+                    if ($type -ne 9) {
+                        $values[$key] = & $readScalar $type
+                        continue
+                    }
+                    $itemType = $reader.ReadUInt32()
+                    $itemCount = $reader.ReadUInt64()
+                    for ($j = 0; $j -lt $itemCount; $j++) {
+                        $null = & $readScalar $itemType
+                    }
+                }
+            } finally {
+                $stream.Dispose()
+            }
+
+            $architecture = $values["general.architecture"]
+            $encoder = $values["$architecture.attention.causal"] -eq $false
+            [PSCustomObject]@{
+                Model     = $stem -replace $ggufQuantPattern, "" -replace "^[^_]{2,}_(?=[^_]+$)", ""
+                Repo      = "$($repo.Parent.Name)/$($repo.Name)"
+                Format    = "gguf"
+                Type      = if (-not $architecture) {
+                    $null
+                } elseif ($file.Name -like "mtp-*" -or $architecture -like "*-assistant") {
+                    "mtp draft"
+                } elseif ($encoder -and $stem -match "rerank") {
+                    "reranker"
+                } elseif ($encoder) {
+                    "embedding"
+                } elseif ($vision) {
+                    "llm + vision"
+                } else {
+                    "llm"
+                }
+                Arch      = $architecture
+                Params    = if ($values["general.size_label"] -match "\d") {
+                    $values["general.size_label"]
+                } elseif ($stem -match $paramsPattern) {
+                    $Matches[1].ToUpper()
+                } elseif ($values["general.base_model.0.name"] -match $paramsPattern) {
+                    $Matches[1].ToUpper()
+                }
+                Quant     = if ($stem -match $ggufQuantPattern) { $Matches[1] }
+                Context   = $values["$architecture.context_length"]
+                Size      = ($group.Group | Measure-Object Length -Sum).Sum
+            }
+        }
+        if ($ggufs) {
+            continue
+        }
+
+        # other formats: one row per repo, from its name, config.json, README and hparams.yaml
+        $format = if ($files.Name -contains "model.bin") {
+            "ct2"
+        } elseif ($files.Extension -contains ".safetensors") {
+            "safetensors"
+        } elseif ($hparams) {
+            "comet"
+        } elseif ($config) {
+            "no weights"
+        }
+        if (-not $format) {
+            continue
+        }
+        [PSCustomObject]@{
+            Model     = $repo.Name -replace "(?i)-ct2-.*$", ""
+            Repo      = "$($repo.Parent.Name)/$($repo.Name)"
+            Format    = $format
+            Type      = if ($readme -match "(?m)^pipeline_tag:\s*(\S+)" -and $format -ne "comet") {
+                $Matches[1]
+            } elseif ($format -eq "comet") {
+                "metric"
+            } elseif ($config -match '"architectures"\s*:\s*\[\s*"\w+For(MaskedLM|CausalLM|SequenceClassification)"') {
+                @{ MaskedLM = "fill-mask"; CausalLM = "text-generation"; SequenceClassification = "text-classification" }[$Matches[1]]
+            }
+            Arch      = if ($hparams -match "(?m)^pretrained_model:\s*(\S+)") {
+                $Matches[1]
+            } elseif ($config -match '"model_type"\s*:\s*"([^"]+)"') {
+                $Matches[1]
+            }
+            Params    = if ($repo.Name -match $paramsPattern) { $Matches[1].ToUpper() }
+            Quant     = if ($repo.Name -match $ct2QuantPattern) {
+                $Matches[1]
+            } elseif ($config -match '"(?:torch_)?dtype"\s*:\s*"([^"]+)"') {
+                $Matches[1]
+            }
+            Context   = if ($config -match '"max_position_embeddings"\s*:\s*(\d+)') { [int]$Matches[1] }
+            Size      = ($files | Measure-Object Length -Sum).Sum
+        }
+    }
+    $models = @(
+        $models |
+            ForEach-Object {
+                $model = $_
+                $family = $families | Where-Object { "$($model.Model) $($model.Arch)" -match $_.Pattern } | Select-Object -First 1
+                $model | Add-Member -NotePropertyName Family -NotePropertyValue $family.Name
+                if (-not $model.Type) {
+                    $model.Type = if ($family.Type) {
+                        $family.Type
+                    } else {
+                        "unknown"
+                    }
+                }
+                $model
+            } |
+            Sort-Object {
+                    $index = $typeOrder.IndexOf("$($_.Type)")
+                    if ($index -lt 0) {
+                        $typeOrder.IndexOf("*")
+                    } else {
+                        $index
+                    }
+                },
+                Type,
+                { $_.Family -eq "Other" },
+                Family,
+                { [regex]::Replace($_.Model, "\d+", { $args[0].Value.PadLeft(10, "0") }) }
+    )
+    if ($models.Count -eq 0) {
+        Write-Error "No models found in $modelRoot"
+        return
+    }
+
+    # rows: display text per model
+    $culture = [cultureinfo]::InvariantCulture
+    $formatSize = {
+        param ([double]$bytes)
+        if ($bytes -ge 1GB) {
+            [string]::Format($culture, "{0:0.0} GB", $bytes / 1GB)
+        } else {
+            [string]::Format($culture, "{0:0} MB", $bytes / 1MB)
+        }
+    }
+    $rows = foreach ($model in $models) {
+        [PSCustomObject]@{
+            Type      = $model.Type
+            Family    = $model.Family
+            Model     = $model.Model
+            Params    = "$($model.Params)" -replace "\.0(?=[KMBT])", ""
+            Quant     = "$($model.Quant)"
+            Context   = if ($model.Context -ge 1048576) {
+                "{0}M" -f [math]::Round($model.Context / 1048576)
+            } elseif ($model.Context -ge 1024) {
+                "{0}K" -f [math]::Round($model.Context / 1024)
+            } else {
+                "$($model.Context)"
+            }
+            Size      = & $formatSize $model.Size
+            Repo      = $model.Repo
+            Bytes     = $model.Size
+            SizeStyle = if ($model.Format -in "incomplete", "no weights") {
+                $PSStyle.Foreground.White
+            } elseif ($model.Size / 1GB + 2 -le $vramGB) {
+                $PSStyle.Foreground.Green
+            } elseif ($model.Size / 1GB -le $vramGB) {
+                $PSStyle.Foreground.Yellow
+            } else {
+                $PSStyle.Foreground.BrightRed
+            }
+        }
+    }
+
+    # styles
+    $reset = $PSStyle.Reset
+    $titleStyle = $PSStyle.Bold + $PSStyle.Foreground.BrightCyan
+    $frameStyle = $PSStyle.Foreground.Cyan
+    $headerStyle = $PSStyle.Foreground.FromRgb(0x808080)
+
+    # columns: width from the longest value
+    $columns = @(
+        [PSCustomObject]@{ Name = "Family";  Alignment = "Left";  Style = $PSStyle.Bold + $PSStyle.Foreground.BrightMagenta }
+        [PSCustomObject]@{ Name = "Model";   Alignment = "Left";  Style = $PSStyle.Foreground.BrightWhite }
+        [PSCustomObject]@{ Name = "Params";  Alignment = "Right"; Style = $PSStyle.Foreground.White }
+        [PSCustomObject]@{ Name = "Quant";   Alignment = "Left";  Style = $PSStyle.Foreground.White }
+        [PSCustomObject]@{ Name = "Context"; Alignment = "Right"; Style = $PSStyle.Foreground.White }
+        [PSCustomObject]@{ Name = "Size";    Alignment = "Right"; Style = $null }
+        [PSCustomObject]@{ Name = "Repo";    Alignment = "Left";  Style = $PSStyle.Foreground.FromRgb(0xA0A0A0) }
+    )
+    foreach ($column in $columns) {
+        $longest = ($rows | ForEach-Object { "$($_.($column.Name))".Length } | Measure-Object -Maximum).Maximum
+        $column | Add-Member -NotePropertyName Width -NotePropertyValue ([math]::Max($column.Name.Length, $longest))
+    }
+    $formatCell = {
+        param ([PSCustomObject]$column, [string]$text, [string]$style)
+        $padding = " " * ($column.Width - $text.Length)
+        if ($column.Alignment -eq "Right") {
+            "$padding$style$text$reset"
+        } else {
+            "$style$text$reset$padding"
+        }
+    }
+    $ruleWidth = ($columns | Measure-Object Width -Sum).Sum + 2 * ($columns.Count - 1)
+
+    # sections: one per type, labels only on columns with data
+    foreach ($type in $rows.Type | Select-Object -Unique) {
+        $sectionRows = @($rows | Where-Object Type -eq $type)
+        $header = ($columns | ForEach-Object {
+            $label = if ($sectionRows.($_.Name) -join "") { $_.Name } else { "" }
+            & $formatCell $_ $label $headerStyle
+        }) -join "  "
+        $noun = if ($sectionRows.Count -eq 1) { "model" } else { "models" }
+        $sectionSize = & $formatSize ($sectionRows | Measure-Object Bytes -Sum).Sum
+
+        Write-Host ""
+        Write-Host "  $titleStyle$($type.ToUpper())$reset$frameStyle · $($sectionRows.Count) $noun · $sectionSize$reset"
+        Write-Host "  $frameStyle$("─" * $ruleWidth)$reset"
+        Write-Host "  $($header.TrimEnd())"
+
+        for ($i = 0; $i -lt $sectionRows.Count; $i++) {
+            $row = $sectionRows[$i]
+            $cells = foreach ($column in $columns) {
+                $text = "$($row.($column.Name))"
+                if ($column.Name -eq "Family" -and $i -gt 0 -and $row.Family -eq $sectionRows[$i - 1].Family) {
+                    $text = ""
+                }
+                $style = if ($column.Name -eq "Size") {
+                    $row.SizeStyle
+                } else {
+                    $column.Style
+                }
+                & $formatCell $column $text $style
+            }
+            Write-Host "  $(($cells -join "  ").TrimEnd())"
+        }
+    }
+
+    # totals
+    $total = & $formatSize ($models | Measure-Object Size -Sum).Sum
+    $count = @($models | Where-Object Format -ne "incomplete").Count
+    Write-Host ""
+    Write-Host ([string]::Format($culture, "  {0}{1} models · {2} · {3:0.0} GB VRAM{4}", $frameStyle, $count, $total, $vramGB, $reset))
+}
+
 # Prints total, used, reserved and free GPU memory and the dedicated memory each process holds.
 function Show-GpuUsage {
     $memory = Get-GpuMemory

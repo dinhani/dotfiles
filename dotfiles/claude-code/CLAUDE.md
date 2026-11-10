@@ -54,6 +54,7 @@ Before you send any message, check it: if a point exists only to be technically 
   No copy-paste shell blocks in the README: every required step is a `just` recipe.
 - **HARD GATE — Python projects: uv, never pip.** The justfile exports `UV_PROJECT_ENVIRONMENT := data_local_directory() / "_dev" / "uv" / "envs" / "<project>"` so the venv lives outside the project.
 - **Conventional Commits** in every repo.
+- **Git push: SSH first, HTTPS fallback.** If SSH fails (no key, auth error, port blocked), push over HTTPS without asking.
 
 ## Code (applies to everything)
 
