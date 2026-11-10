@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from enum import Enum, StrEnum
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent / "_vendor"))
+sys.path.insert(0, str(Path(__file__).parent / "_lib" / "vendor"))
 
 from tqdm import tqdm
 
