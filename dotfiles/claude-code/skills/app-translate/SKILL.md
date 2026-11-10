@@ -17,6 +17,7 @@ Translate every entry yourself, reading it in its scene. No script, regex, find-
 
 - **Already translated**: when the video already has a canonical `pob` subtitle, do not translate it.
 - **English source**: the canonical English `.srt` of the video. When there are several, find the canonical one. An SDH track is translated only when there is no other source.
+- **Video info**: the `.nfo` next to the video and, for an episode, also `tvshow.nfo` in the show folder. Read their plot and cast before translating, to know who the characters are and their gender.
 - **References**: the other-language `.srt` files of the same video. Work from the English source; loading a reference is optional, when you want one.
 - **Output**: `<name>.pob.claude.translated.srt` next to the video, with the English numbers and timestamps.
 
