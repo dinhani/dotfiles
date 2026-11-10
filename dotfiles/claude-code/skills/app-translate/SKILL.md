@@ -15,6 +15,8 @@ When the video already has a canonical `pob` subtitle, in any format (`.srt`, `.
 
 Before translating, read the whole `.nfo` of the video and, for an episode, the whole `tvshow.nfo` of the show, from the first line to the last. A search, or reading only part of the file such as the plot or the cast, does not count. This gate has no exceptions: translating without having read them whole is a failed task.
 
+The `.nfo` describes the movie, not the video file: ignore its stream and subtitle details. Only the files in `_subs` and next to the video show which subtitles exist.
+
 ## Hard rule: you are the translator
 
 Translate every entry yourself, reading it in its scene. No script, regex, find-and-replace or other translator writes Portuguese text. A script may copy the English numbers and timestamps into the output around the lines you wrote.
@@ -86,6 +88,8 @@ The English subtitle is not perfect. It can have OCR errors, broken characters (
 
 Another English track of the same video, such as the SDH one, is the best way to repair a broken line: it shows the same dialogue word for word. When it shows that a garbled entry is really two speakers on two lines, translate it as two lines, and log it in Source problems.
 
+When an SDH track names speakers (`IDO:`) or the characters in sound descriptions (`(ROMO LAUGHING)`), use it to know who says a line, their gender and who they address. Not every SDH track has these names.
+
 ## References
 
 People translated the references from the same dialogue, so they show what the English means in a scene: the sense of an idiom or of a word with several meanings, whether "you" is one person or several, the gender of who speaks or is spoken about, and tense. Use them to understand the English, and translate the English:
@@ -125,3 +129,19 @@ After the review, write `<name>.pob.claude.report.md` next to the video, every t
 - **Source problems**: OCR errors, broken lines, ads and other errors of the English, and what the translation did with each. Leave the section out when there are none.
 
 In the message to the user, give the report path, the number of concerns, and any decision that departs from this skill.
+
+## Scripts
+
+The translation is your work. `scripts/subtitle.py`, in this skill folder, handles the mechanical work around it, so you don't have to write your own script each time. Use it when it helps:
+
+- to assemble a translation written in parts into the output `.srt`, with the English numbers and timestamps;
+- to read the English and the Portuguese side by side during the review gate;
+- to catch mechanical errors a review can miss: a missing or extra entry, a changed line count, a lost tag, CRLF line endings, a changed lyric, European Portuguese forms.
+
+It never writes Portuguese text, as the "you are the translator" rule says. Run it with `UV_PROJECT_ENVIRONMENT="$LOCALAPPDATA/_dev/uv/envs/app-translate" uv run <skill folder>/scripts/subtitle.py <command>`:
+
+- `UV_PROJECT_ENVIRONMENT="$LOCALAPPDATA/_dev/uv/envs/app-translate" uv run <skill folder>/scripts/subtitle.py merge <english.srt> <output.srt> <part.txt>... [--allow-lines N...]`: writes the output from your part files. A part file has one block per entry, separated by a blank line: the entry number on the first line, then the Portuguese lines. Split the translation across as many part files as you need. It writes nothing when an entry is missing, extra or duplicated, when an entry has a different number of lines from the English, or when a line lost or gained a tag. To fix a line after the review, edit its part file and run `merge` again.
+- `UV_PROJECT_ENVIRONMENT="$LOCALAPPDATA/_dev/uv/envs/app-translate" uv run <skill folder>/scripts/subtitle.py review <english.srt> <output.srt> <review.txt> [--first N] [--last N]`: writes each entry's English lines with the Portuguese lines from the written file below them. Read the whole review file for the review gate.
+- `UV_PROJECT_ENVIRONMENT="$LOCALAPPDATA/_dev/uv/envs/app-translate" uv run <skill folder>/scripts/subtitle.py check <english.srt> <output.srt> [--allow-lines N...]`: checks a written output, also after hand edits: the same structure checks as `merge`, plus LF line endings. It also prints warnings for lyrics that changed, a lowercase start after a finished sentence, and European Portuguese forms. Warnings are hints: fix the real ones.
+
+`--allow-lines` lists the entries whose line count differs from the English on purpose, the broken entries of The English source section.
