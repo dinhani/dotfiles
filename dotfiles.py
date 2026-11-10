@@ -421,6 +421,14 @@ def backup_claude_code(app: str, dir: Dir):
     Dir(HOME / ".claude/hooks") >> dir / "hooks"
     Dir(HOME / ".claude/scripts") >> dir / "scripts"
 
+    skills = HOME / ".claude/skills"
+    if not skills.is_dir():
+        return
+    for skill in skills.iterdir():
+        if skill.name in ("synced", ".trash"):
+            continue
+        Dir(skill) >> dir / "skills" / skill.name
+
 @operation(Op.RESTORE, "Claude Code", "claude-code")
 def restore_claude_code(app: str, dir: Dir):
     for profile in (".claude", ".claude-2", ".claude-3"):
