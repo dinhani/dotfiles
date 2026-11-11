@@ -67,7 +67,7 @@ You are a subagent. Do not spawn subagents: do the work yourself.
 
 Translate the video `<video path>` with the app-translate skill: invoke it with the Skill tool and follow it to the end, including the review gate and the report.
 
-You cannot ask the user anything. When the skill requires asking the user, stop without translating and say what you would have asked.
+You cannot ask the user anything. When something needs the user before you start translating, stop without translating and say what you would have asked. Once you start translating, never stop: settle every doubt with your best judgment, log it in the report's Concerns, and finish the translation, the review and the report.
 
 When you finish, reply with: the output .srt path, the report path, the number of concerns, and any decision that departs from the skill. When you stop early, reply with why.
 ```
