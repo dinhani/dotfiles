@@ -83,11 +83,15 @@ class Video:
 
     @staticmethod
     def find_all(folder: Path) -> list[Video]:
-        return [Video(path=path) for path in folder.rglob("*") if path.suffix.lower() in VIDEO_EXTENSIONS and path.is_file()]
+        return [
+            Video(path=path)
+            for path in folder.rglob("*")
+            if path.suffix.lower() in VIDEO_EXTENSIONS and not path.stem.lower().endswith("-sample") and path.is_file()
+        ]
 
     @property
     def lock(self) -> Path:
-        return self.path.parent / f"{self.path.stem}.pob.claude.lock"
+        return self.path.parent / f"{self.path.stem}.pob.translated.claude.lock"
 
     def claim(self) -> bool:
         if self.locked():
@@ -109,7 +113,7 @@ class Video:
 
     def pending(self) -> bool:
         name = self.path.stem
-        subtitles = [
+        files = [
             path
             for folder in (self.path.parent, self.path.parent / "_subs")
             if folder.is_dir()
@@ -117,9 +121,9 @@ class Video:
             if path.name.startswith(f"{name}.")
         ]
 
-        english = any(path.parent.name == "_subs" and path.name.endswith((".eng.srt", ".eng.sdh.srt")) for path in subtitles)
-        pob = any("pob" in tags and "claude" not in tags for tags in (path.name[len(name) :].split(".") for path in subtitles))
-        report = (self.path.parent / f"{name}.pob.claude.report.md").exists()
+        english = any(path.parent.name == "_subs" and path.name.endswith((".eng.srt", ".eng.sdh.srt")) for path in files)
+        pob = any("pob" in tags and "claude" not in tags for tags in (path.name[len(name) :].split(".") for path in files))
+        report = any(path.parent == self.path.parent and path.name.endswith(".claude.report.md") for path in files)
 
         return english and not pob and not report
 

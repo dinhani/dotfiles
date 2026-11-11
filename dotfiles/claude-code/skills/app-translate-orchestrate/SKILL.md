@@ -17,11 +17,11 @@ The folder is the path the user gives, or the current working directory when non
 
 ## Pending videos
 
-A video is a `.mkv`, `.mp4`, `.avi` or `.m4v` file. It is pending when all of these hold:
+A video is a `.mkv`, `.mp4`, `.avi` or `.m4v` file whose name does not end in `-sample`. It is pending when all of these hold:
 
 - its `_subs` folder has an English `.srt`: a file `<name>.*.eng.srt` or `<name>.*.eng.sdh.srt`;
-- it has no `pob` subtitle, in any format, in `_subs` or next to the video, other than the `pob.claude` files;
-- it has no `<name>.pob.claude.report.md` next to the video. The report is the last step of `app-translate`, so a video with the `.srt` but no report was interrupted and is pending again.
+- it has no `pob` subtitle, in any format, in `_subs` or next to the video, other than the `claude` files;
+- it has no report `<name>.*.claude.report.md` next to the video. The report is the last step of `app-translate`, so a video with the `.srt` but no report was interrupted and is pending again.
 
 `<name>` is the video file name without its extension.
 
@@ -42,7 +42,7 @@ When several orchestrators work on the same folder at the same time, give each o
 
 ## Lock
 
-`claim` creates `<name>.pob.claude.lock` next to the video, with the claim time and your config directory. Only one orchestrator can create it, and both commands leave out a locked video, so two orchestrators never translate the same video. A lock older than 60 minutes counts as abandoned, so a video whose orchestrator died is picked again. Delete the lock as soon as the subagent finishes, whatever its result.
+`claim` creates `<name>.pob.translated.claude.lock` next to the video, with the claim time and your config directory. Only one orchestrator can create it, and both commands leave out a locked video, so two orchestrators never translate the same video. A lock older than 60 minutes counts as abandoned, so a video whose orchestrator died is picked again. Delete the lock as soon as the subagent finishes, whatever its result.
 
 ## Usage limit
 
@@ -54,7 +54,7 @@ The status line saves the usage limits to `state/rate-limits.json` in your Claud
 2. Run `pending.py claim` with the order and, in `--skip`, the videos already handled in this run. With no video printed, report and stop.
 3. Start one subagent for that video, with the prompt below.
 4. Wait for it to finish. Do not poll it and do not start anything else meanwhile.
-5. Delete the video's lock, then check that `<name>.pob.claude.report.md` now exists next to the video.
+5. Delete the video's lock, then check that a report `<name>.*.claude.report.md` now exists next to the video.
 6. When the subagent stopped on a question, reported concerns or left no report, record its question or concerns for the final report and go on to the next video. Stop the loop only when the subagent itself failed (an error or a cut-off run), since that usually means the usage ran out.
 7. Go back to step 1.
 

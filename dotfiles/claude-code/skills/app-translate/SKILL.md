@@ -1,6 +1,6 @@
 ---
 name: app-translate
-description: Translate the English subtitle of a movie or episode to Brazilian Portuguese, into `<name>.pob.claude.translated.srt` in the movie folder. Use when asked to translate a video, movie, episode or series with Claude.
+description: Translate the English subtitle of a movie or episode to Brazilian Portuguese, into `<name>.<index>.pob[.sdh].translated.claude.srt` in the movie folder, keeping the index and SDH markers of the English source. Use when asked to translate a video, movie, episode or series with Claude.
 ---
 
 # app-translate
@@ -26,7 +26,7 @@ Translate every entry yourself, reading it in its scene. No script, regex, find-
 - **English source**: the canonical English `.srt` of the video. When there are several, find the canonical one. An SDH track is translated only when there is no other source.
 - **Video info**: the `.nfo` next to the video and, for an episode, also `tvshow.nfo` in the show folder. Read them through `subtitle.py context`, as the hard gate says; they tell who the characters are, and the actor names help to work out their gender.
 - **References**: the other-language `.srt` files of the same video. Work from the English source; loading a reference is optional, when you want one.
-- **Output**: `<name>.pob.claude.translated.srt` next to the video, with the English numbers and timestamps.
+- **Output**: the English source name with `eng` changed to `pob` and `.translated.claude` before `.srt`, next to the video, with the English numbers and timestamps. The index marker (`embed.2`) and the SDH marker (`sdh`) stay: `_subs/<name>.embed.2.eng.sdh.srt` gives `<name>.embed.2.pob.sdh.translated.claude.srt`, and `_subs/<name>.embed.3.eng.srt` gives `<name>.embed.3.pob.translated.claude.srt`.
 
 ## Entries
 
@@ -119,7 +119,7 @@ Read each entry next to its English, in its scene, and fix every line you would 
 
 ## Report
 
-After the review, write `<name>.pob.claude.report.md` next to the video, every time. It has these sections:
+After the review, write the report next to the video, every time, named as the output with `.report.md` in place of `.srt`: `<name>.embed.2.pob.sdh.translated.claude.srt` gives `<name>.embed.2.pob.sdh.translated.claude.report.md`. It has these sections:
 
 - **Source**: the English file used and why it is the canonical one, and the references loaded, if any.
 - **Concerns**: what you could not settle without watching the video, such as who a line is addressed to, one entry per concern: the entry number and timestamp, the English line, your translation, the alternative, and what to check in the scene. Never log lines you could have fixed. With no concern, write "None".
