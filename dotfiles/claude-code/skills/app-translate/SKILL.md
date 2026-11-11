@@ -11,11 +11,9 @@ You translate a movie or TV subtitle from English to Brazilian Portuguese so tha
 
 When the video already has a canonical `pob` subtitle, in any format (`.srt`, `.sup` or other), stop before reading anything else and ask whether to translate anyway, naming the file found. Naming the video in the request is not a confirmation, and neither are earlier translation files in `_traces`. Translate only after an explicit yes. This gate has no exceptions: translating without that yes is a failed task.
 
-## Hard gate: read the whole NFO
+## Hard gate: read the video context
 
-Before translating, read the whole `.nfo` of the video and, for an episode, the whole `tvshow.nfo` of the show, from the first line to the last. A search, or reading only part of the file such as the plot or the cast, does not count. This gate has no exceptions: translating without having read them whole is a failed task.
-
-The `.nfo` describes the movie, not the video file: ignore its stream and subtitle details. Only the files in `_subs` and next to the video show which subtitles exist.
+Before translating, run `subtitle.py context <video>` and read its whole output. It prints what the `.nfo` of the video and, for an episode, the `tvshow.nfo` of the show say about the story: title, collection, genres, plot, and the cast as character and actor. Reading only part of the output does not count. This gate has no exceptions: translating without having read the whole output is a failed task.
 
 ## Hard rule: you are the translator
 
@@ -26,7 +24,7 @@ Translate every entry yourself, reading it in its scene. No script, regex, find-
 `<name>` is the video file name without its extension. The subtitles are in the `_subs` folder next to the video.
 
 - **English source**: the canonical English `.srt` of the video. When there are several, find the canonical one. An SDH track is translated only when there is no other source.
-- **Video info**: the `.nfo` next to the video and, for an episode, also `tvshow.nfo` in the show folder. Read them whole before translating, as the hard gate says; they tell who the characters are and their gender.
+- **Video info**: the `.nfo` next to the video and, for an episode, also `tvshow.nfo` in the show folder. Read them through `subtitle.py context`, as the hard gate says; they tell who the characters are, and the actor names help to work out their gender.
 - **References**: the other-language `.srt` files of the same video. Work from the English source; loading a reference is optional, when you want one.
 - **Output**: `<name>.pob.claude.translated.srt` next to the video, with the English numbers and timestamps.
 
@@ -103,7 +101,7 @@ People translated the references from the same dialogue, so they show what the E
 
 The translation is consistent across the whole subtitle, and across the episodes of a series: a character keeps their gender, two characters keep the same form of address between them, a term keeps its translation. A line repeated later, such as in a flashback, a replayed message or an echo, gets the same translation as the first time.
 
-For a TV show, keep these decisions in `translation-decisions.md` in the show folder: each recurring term with its translation, each character's gender, and the form of address between characters. Always read it before translating an episode, and add the new decisions after.
+For a TV show, keep these decisions in `translation-decisions.md` in the show folder: each recurring term with its translation, each character's gender, and the form of address between characters. `subtitle.py context` prints its path. Always read it before translating an episode, and add the new decisions after.
 
 For a movie in a collection (the `<set>` of the nfo), read the reports of the other movies of the collection that were already translated, and keep their names, terms, genders and forms of address.
 
@@ -134,11 +132,14 @@ In the message to the user, give the report path, the number of concerns, and an
 
 The translation is your work. `subtitle.py`, in this skill folder, handles the mechanical work around it, so you don't have to write your own script each time. Use it when it helps:
 
+- to print the video context from the `.nfo` files, for the video context gate;
 - to assemble a translation written in parts into the output `.srt`, with the English numbers and timestamps;
 - to read the English and the Portuguese side by side during the review gate;
 - to catch mechanical errors a review can miss: a missing or extra entry, a changed line count, a lost tag, CRLF line endings, a changed lyric, European Portuguese forms.
 
 It never writes Portuguese text, as the "you are the translator" rule says. Run it with `UV_PROJECT_ENVIRONMENT="$LOCALAPPDATA/_dev/uv/envs/app-translate" uv run <skill folder>/subtitle.py <command>`:
+
+- `UV_PROJECT_ENVIRONMENT="$LOCALAPPDATA/_dev/uv/envs/app-translate" uv run <skill folder>/subtitle.py context <video>`: prints the title, collection, genres, tags, rating, tagline and plot of the movie, or of the show, season and episode, then the cast as character and actor. For an episode, it also prints the path of `translation-decisions.md`.
 
 - `UV_PROJECT_ENVIRONMENT="$LOCALAPPDATA/_dev/uv/envs/app-translate" uv run <skill folder>/subtitle.py merge <english.srt> <output.srt> <part.txt>... [--allow-lines N...]`: writes the output from your part files. A part file has one block per entry, separated by a blank line: the entry number on the first line, then the Portuguese lines. Split the translation across as many part files as you need. It writes nothing when an entry is missing, extra or duplicated, when an entry has a different number of lines from the English, or when a line lost or gained a tag. To fix a line after the review, edit its part file and run `merge` again.
 - `UV_PROJECT_ENVIRONMENT="$LOCALAPPDATA/_dev/uv/envs/app-translate" uv run <skill folder>/subtitle.py review <english.srt> <output.srt> <review.txt> [--first N] [--last N]`: writes each entry's English lines with the Portuguese lines from the written file below them. Read the whole review file for the review gate.
