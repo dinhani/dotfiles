@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import sys
 from collections.abc import Callable, Generator, Iterable
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import Enum, StrEnum
@@ -80,6 +81,8 @@ class Transfer(Enum):
     COPY    = "copy"
     COMPARE = "compare"
 
+NAS_WORKERS = 8
+
 HINT_COLOR_GREEN  = "ansigreen"
 HINT_COLOR_ORANGE = "#d75f00"
 HINT_COLOR_YELLOW = "#af8700"
@@ -95,8 +98,9 @@ class Sync(StrEnum):
 
     @classmethod
     def from_files(cls, files: set["Sync"]) -> "Sync":
-        files_changed = files - {cls.IN_SYNC}
-        if not files:
+        files_present = files - {cls.NO_FILES}
+        files_changed = files_present - {cls.IN_SYNC}
+        if not files_present:
             return cls.NO_FILES
         if not files_changed:
             return cls.IN_SYNC
@@ -124,11 +128,16 @@ class BackupHistory:
     paths_uncommitted: frozenset[Path]
 
     @classmethod
-    def from_git(cls, dotfiles: Path) -> "BackupHistory":
+    def from_git(cls, dotfiles: Path, backups: list[Path]) -> "BackupHistory":
+        if not backups:
+            return cls(commit_times={}, paths_uncommitted=frozenset())
+
         repo = dotfiles.parent
+        paths = [backup.relative_to(repo).as_posix() for backup in backups]
         git = ["git", "-c", "core.quotePath=false"]
-        git_log = subprocess.run([*git, "log", "--format=@%ct", "--name-only", "--", dotfiles.name], cwd=repo, capture_output=True, encoding="utf-8", check=True).stdout
-        git_status = subprocess.run([*git, "status", "--porcelain", "--untracked-files=all", "--", dotfiles.name], cwd=repo, capture_output=True, encoding="utf-8", check=True).stdout
+        commands = [["log", "--format=@%ct", "--name-only"], ["status", "--porcelain", "--untracked-files=all"]]
+        with ThreadPoolExecutor() as executor:
+            git_log, git_status = executor.map(lambda command: subprocess.run([*git, *command, "--", *paths], cwd=repo, capture_output=True, encoding="utf-8", check=True).stdout, commands)
 
         commit_times: dict[Path, float] = {}
         commit_time = 0.0
@@ -228,17 +237,18 @@ class File(Path):
         except Exception as e:
             log_error("Failed to append missing newline", e)
 
-    def compare_to_backup(self, backup: "File", history: BackupHistory) -> Sync | None:
+    def compare_content_to_backup(self, backup: "File") -> Sync | None:
         if not self.is_file() and not backup.is_file():
-            return None
+            return Sync.NO_FILES
         if not backup.is_file():
             return Sync.MACHINE_NEWER
         if not self.is_file():
             return Sync.BACKUP_NEWER
-
         if self.read_comparable() == backup.read_comparable():
             return Sync.IN_SYNC
+        return None
 
+    def compare_time_to_backup(self, backup: "File", history: BackupHistory) -> Sync:
         if self.stat().st_mtime > history.get_time(backup):
             return Sync.MACHINE_NEWER
         return Sync.BACKUP_NEWER
@@ -765,16 +775,21 @@ class Comparison:
         handlers_backup: dict[str, Handler],
         track: Callable[[list[tuple[str, File, File]]], Iterable[tuple[str, File, File]]] = lambda transfers: transfers,
     ) -> "Comparison":
-        history = BackupHistory.from_git(DOTFILES)
         transfers = [(app, machine, backup) for app, handler in handlers_backup.items() for machine, backup in handler.collect_transfers()]
 
-        transfers_by_app: dict[str, list[tuple[File, File]]] = {app: [] for app in handlers_backup}
-        files_by_app: dict[str, set[Sync | None]] = {app: set() for app in handlers_backup}
-        for app, machine, backup in track(transfers):
-            transfers_by_app[app].append((machine, backup))
-            files_by_app[app].add(machine.compare_to_backup(backup, history))
+        with ThreadPoolExecutor(max_workers=NAS_WORKERS) as executor:
+            syncs_content = executor.map(lambda transfer: transfer[1].compare_content_to_backup(transfer[2]), transfers)
+            transfers_synced = [(app, machine, backup, sync) for (app, machine, backup), sync in zip(track(transfers), syncs_content)]
 
-        syncs = {app: Sync.from_files(files - {None}) for app, files in files_by_app.items()}
+        history = BackupHistory.from_git(DOTFILES, [backup for _, _, backup, sync in transfers_synced if sync is None])
+
+        transfers_by_app: dict[str, list[tuple[File, File]]] = {app: [] for app in handlers_backup}
+        files_by_app: dict[str, set[Sync]] = {app: set() for app in handlers_backup}
+        for app, machine, backup, sync in transfers_synced:
+            transfers_by_app[app].append((machine, backup))
+            files_by_app[app].add(sync or machine.compare_time_to_backup(backup, history))
+
+        syncs = {app: Sync.from_files(files) for app, files in files_by_app.items()}
         return cls(handlers_backup=handlers_backup, transfers_by_app=transfers_by_app, syncs=syncs)
 
     def refresh(self, track: Callable[[list[tuple[str, File, File]]], Iterable[tuple[str, File, File]]]) -> None:
