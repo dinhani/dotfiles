@@ -132,16 +132,16 @@ In the message to the user, give the report path, the number of concerns, and an
 
 ## Scripts
 
-The translation is your work. `scripts/subtitle.py`, in this skill folder, handles the mechanical work around it, so you don't have to write your own script each time. Use it when it helps:
+The translation is your work. `subtitle.py`, in this skill folder, handles the mechanical work around it, so you don't have to write your own script each time. Use it when it helps:
 
 - to assemble a translation written in parts into the output `.srt`, with the English numbers and timestamps;
 - to read the English and the Portuguese side by side during the review gate;
 - to catch mechanical errors a review can miss: a missing or extra entry, a changed line count, a lost tag, CRLF line endings, a changed lyric, European Portuguese forms.
 
-It never writes Portuguese text, as the "you are the translator" rule says. Run it with `UV_PROJECT_ENVIRONMENT="$LOCALAPPDATA/_dev/uv/envs/app-translate" uv run <skill folder>/scripts/subtitle.py <command>`:
+It never writes Portuguese text, as the "you are the translator" rule says. Run it with `UV_PROJECT_ENVIRONMENT="$LOCALAPPDATA/_dev/uv/envs/app-translate" uv run <skill folder>/subtitle.py <command>`:
 
-- `UV_PROJECT_ENVIRONMENT="$LOCALAPPDATA/_dev/uv/envs/app-translate" uv run <skill folder>/scripts/subtitle.py merge <english.srt> <output.srt> <part.txt>... [--allow-lines N...]`: writes the output from your part files. A part file has one block per entry, separated by a blank line: the entry number on the first line, then the Portuguese lines. Split the translation across as many part files as you need. It writes nothing when an entry is missing, extra or duplicated, when an entry has a different number of lines from the English, or when a line lost or gained a tag. To fix a line after the review, edit its part file and run `merge` again.
-- `UV_PROJECT_ENVIRONMENT="$LOCALAPPDATA/_dev/uv/envs/app-translate" uv run <skill folder>/scripts/subtitle.py review <english.srt> <output.srt> <review.txt> [--first N] [--last N]`: writes each entry's English lines with the Portuguese lines from the written file below them. Read the whole review file for the review gate.
-- `UV_PROJECT_ENVIRONMENT="$LOCALAPPDATA/_dev/uv/envs/app-translate" uv run <skill folder>/scripts/subtitle.py check <english.srt> <output.srt> [--allow-lines N...]`: checks a written output, also after hand edits: the same structure checks as `merge`, plus LF line endings. It also prints warnings for lyrics that changed, a lowercase start after a finished sentence, and European Portuguese forms. Warnings are hints: fix the real ones.
+- `UV_PROJECT_ENVIRONMENT="$LOCALAPPDATA/_dev/uv/envs/app-translate" uv run <skill folder>/subtitle.py merge <english.srt> <output.srt> <part.txt>... [--allow-lines N...]`: writes the output from your part files. A part file has one block per entry, separated by a blank line: the entry number on the first line, then the Portuguese lines. Split the translation across as many part files as you need. It writes nothing when an entry is missing, extra or duplicated, when an entry has a different number of lines from the English, or when a line lost or gained a tag. To fix a line after the review, edit its part file and run `merge` again.
+- `UV_PROJECT_ENVIRONMENT="$LOCALAPPDATA/_dev/uv/envs/app-translate" uv run <skill folder>/subtitle.py review <english.srt> <output.srt> <review.txt> [--first N] [--last N]`: writes each entry's English lines with the Portuguese lines from the written file below them. Read the whole review file for the review gate.
+- `UV_PROJECT_ENVIRONMENT="$LOCALAPPDATA/_dev/uv/envs/app-translate" uv run <skill folder>/subtitle.py check <english.srt> <output.srt> [--allow-lines N...]`: checks a written output, also after hand edits: the same structure checks as `merge`, plus LF line endings. It also prints warnings for lyrics that changed, a lowercase start after a finished sentence, and European Portuguese forms. Warnings are hints: fix the real ones.
 
 `--allow-lines` lists the entries whose line count differs from the English on purpose, the broken entries of The English source section.
