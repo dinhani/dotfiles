@@ -1,3 +1,8 @@
+function just {
+    Clear-Host
+    just.exe @args
+}
+
 Register-ArgumentCompleter -Native -CommandName just -ScriptBlock {
     param($wordToComplete, $commandAst, $cursorPosition)
 
@@ -12,7 +17,7 @@ Register-ArgumentCompleter -Native -CommandName just -ScriptBlock {
         $completePrevious = $env:JUST_COMPLETE
         $env:JUST_COMPLETE = 'powershell'
         try {
-            $results = @(just -- just @words $wordToComplete)
+            $results = @(just.exe -- just @words $wordToComplete)
         }
         finally {
             $env:JUST_COMPLETE = $completePrevious
@@ -34,7 +39,7 @@ Register-ArgumentCompleter -Native -CommandName just -ScriptBlock {
         RedirectStandardError = $true
         UseShellExecute = $false
     })
-    $dump = just --dump --dump-format json 2>$null | Out-String | ConvertFrom-Json
+    $dump = just.exe --dump --dump-format json 2>$null | Out-String | ConvertFrom-Json
     $fullNames = -split $summary.StandardOutput.ReadToEnd()
     $summary.WaitForExit()
     if (-not $dump) { return }

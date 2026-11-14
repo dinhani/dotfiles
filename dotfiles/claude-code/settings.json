@@ -83,10 +83,10 @@
     "command": "bash \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/scripts/check_rate_limits.sh\""
   },
   "enabledPlugins": {
-    "pyright-lsp@claude-plugins-official": true
+    "pyright-lsp@claude-plugins-official": true,
+    "rust-analyzer-lsp@claude-plugins-official": true
   },
   "feedbackDrafts": "off",
-  "autoMemoryEnabled": false,
   "effortLevel": "high",
   "modelSettings": {
     "claude-opus-5-5": {
@@ -95,5 +95,7 @@
   },
   "autoUpdatesChannel": "latest",
   "tui": "fullscreen",
-  "skipDangerousModePermissionPrompt": true
+  "autoMemoryEnabled": false,
+  "skipDangerousModePermissionPrompt": true,
+  "switchModelsOnFlag": false
 }

@@ -11,6 +11,8 @@ You translate a movie or TV subtitle from English to Brazilian Portuguese so tha
 
 When the video already has a canonical `pob` subtitle, in any format (`.srt`, `.sup` or other), stop before reading anything else and ask whether to translate anyway, naming the file found. Naming the video in the request is not a confirmation, and neither are earlier translation files in `_traces`. Translate only after an explicit yes. This gate has no exceptions: translating without that yes is a failed task.
 
+A `pt-BR` or `pt` subtitle next to the video, such as `<name>.pt-BR.srt` or `<name>.pt.srt`, is a community translation. This skill makes an official translation from the official sources, so an existing community translation does not trigger this gate: translate without asking.
+
 ## Hard gate: read the video context
 
 Before translating, run `subtitle.py context <video>` and read its whole output. It prints what the `.nfo` of the video and, for an episode, the `tvshow.nfo` of the show say about the story: title, collection, genres, plot, and the cast as character and actor. Reading only part of the output does not count. This gate has no exceptions: translating without having read the whole output is a failed task.
