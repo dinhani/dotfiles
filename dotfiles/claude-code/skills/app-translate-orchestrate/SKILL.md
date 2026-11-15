@@ -28,15 +28,18 @@ A video is a `.mkv`, `.mp4`, `.avi` or `.m4v` file whose name does not end in `-
 `pending.py`, in this skill folder, finds the pending videos. Run it with `UV_PROJECT_ENVIRONMENT="$LOCALAPPDATA/_dev/uv/envs/app-translate-orchestrate" uv run <skill folder>/pending.py <command>`:
 
 - `pending.py claim <folder> --order <order> [--skip <video>...]`: locks the first pending video, skipping the given ones, and prints its path. Prints nothing when there is none.
-- `pending.py list <folder> --order <order>`: prints every pending video, one path per line, without locking any.
+- `pending.py list <folder> --order <order>`: prints every pending video, one per line, as its entry count, a tab and its path, without locking any.
+
+The entry count is the number of entries in the video's largest English `.srt`, the track `app-translate` translates; small forced tracks do not count.
 
 ## Order
 
-The caller may pass an order: `asc`, `desc` or `random`. The default is `asc`.
+The caller may pass an order: `asc`, `desc`, `random` or `entries`. The default is `asc`.
 
 - `asc`: path order, so the episodes of a show run in order and each one reads the `translation-decisions.md` the previous ones wrote.
 - `desc`: reverse path order.
 - `random`: a new shuffle each time the list is read.
+- `entries`: fewest entries first, ties in path order. Use it when little usage is left before the limit, so `claim` picks the smallest video that can still finish. It breaks the episode order of a show.
 
 When several orchestrators work on the same folder at the same time, give each one a different order so they reach the same videos later.
 
@@ -71,6 +74,8 @@ You cannot ask the user anything. When something needs the user before you start
 
 When you finish, reply with: the output .srt path, the report path, the number of concerns, and any decision that departs from the skill. When you stop early, reply with why.
 ```
+
+Send the prompt as written and add nothing to it, in the prompt or in later messages to the subagent. Never ask a subagent to be fast, brief, efficient or to save tokens: that lowers the translation quality. When the usage is too close to the limit, do not start the video.
 
 ## Report
 

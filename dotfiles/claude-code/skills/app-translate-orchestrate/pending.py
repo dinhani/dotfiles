@@ -33,6 +33,7 @@ class Order(StrEnum):
     ASC = "asc"
     DESC = "desc"
     RANDOM = "random"
+    ENTRIES = "entries"
 
 # ------------------------------------------------------------------------------
 # Args
@@ -45,7 +46,7 @@ def create_parser() -> argparse.ArgumentParser:
     claim_parser = commands.add_parser("claim", help="lock the first pending video and print its path; print nothing when there is none")
     for command_parser in (list_parser, claim_parser):
         command_parser.add_argument("folder", type=Path, nargs="?", default=Path.cwd())
-        command_parser.add_argument("--order", type=Order, choices=list(Order), default=Order.ASC, help="asc and desc sort by path; random shuffles")
+        command_parser.add_argument("--order", type=Order, choices=list(Order), default=Order.ASC, help="asc and desc sort by path; random shuffles; entries puts the fewest English subtitle entries first")
     claim_parser.add_argument("--skip", type=Path, nargs="+", default=[], metavar="VIDEO", help="videos already handled in this run")
 
     return parser
@@ -65,11 +66,13 @@ def main() -> None:
             videos.reverse()
         case Order.RANDOM:
             random.shuffle(videos)
+        case Order.ENTRIES:
+            videos.sort(key=lambda video: video.entries())
 
     match arguments.command:
         case "list":
             for video in videos:
-                print(video.path)
+                print(f"{video.entries()}\t{video.path}")
         case "claim":
             skipped = {path.resolve() for path in arguments.skip}
             claimed = next((video for video in videos if video.path.resolve() not in skipped and video.claim()), None)
@@ -113,19 +116,28 @@ class Video:
 
     def pending(self) -> bool:
         name = self.path.stem
-        files = [
-            path
-            for folder in (self.path.parent, self.path.parent / "_subs")
-            if folder.is_dir()
-            for path in folder.iterdir()
-            if path.name.startswith(f"{name}.")
-        ]
+        files = self.find_files()
 
-        english = any(path.parent.name == "_subs" and path.name.endswith((".eng.srt", ".eng.sdh.srt")) for path in files)
+        english = any(self.english_subtitles())
         pob = any("pob" in tags and "claude" not in tags for tags in (path.name[len(name) :].split(".") for path in files))
         report = any(path.parent == self.path.parent and path.name.endswith(".claude.report.md") for path in files)
 
         return english and not pob and not report
+
+    def entries(self) -> int:
+        return max((path.read_bytes().count(b"-->") for path in self.english_subtitles()), default=0)
+
+    def english_subtitles(self) -> list[Path]:
+        return [path for path in self.find_files() if path.parent.name == "_subs" and path.name.endswith((".eng.srt", ".eng.sdh.srt"))]
+
+    def find_files(self) -> list[Path]:
+        return [
+            path
+            for folder in (self.path.parent, self.path.parent / "_subs")
+            if folder.is_dir()
+            for path in folder.iterdir()
+            if path.name.startswith(f"{self.path.stem}.")
+        ]
 
     def locked(self) -> bool:
         try:
