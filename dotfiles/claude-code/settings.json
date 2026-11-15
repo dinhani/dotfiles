@@ -45,6 +45,16 @@
         ]
       },
       {
+        "matcher": "Bash|PowerShell|Grep|Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/check-nas-search.sh\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
         "matcher": "Write|Edit",
         "hooks": [
           {

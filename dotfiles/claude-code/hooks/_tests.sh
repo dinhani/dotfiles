@@ -68,6 +68,10 @@ python_file_case() {
   local expected=$1 file=$2 content=$3
   run_case "$expected" check-crlf.sh "$(jq -nc --arg f "$file" --arg c "$content" '{tool_name:"Write",tool_input:{file_path:$f,content:$c}}')" "$file: $content"
 }
+search_tool_case() {
+  local expected=$1 tool=$2 directory=$3 tool_input=$4
+  run_case "$expected" check-nas-search.sh "$(jq -nc --arg t "$tool" --arg d "$directory" --argjson i "$tool_input" '{tool_name:$t,tool_input:$i,cwd:$d}')" "$tool @ $directory: $tool_input"
+}
 parse_json_case() {
   local expected=$1 key=$2 json=$3
   parse_json "$json" "$key"
@@ -365,6 +369,56 @@ command_case pass check-jq.sh "$project" "command -v jq"
 command_case pass check-jq.sh "$project" "echo 'use jq here'"
 command_case pass check-jq.sh "$project" "git status"
 command_case pass check-jq.sh "$project" "BYPASS_JQ=1 jq . x.json"
+
+# ------------------------------------------------------------------------------
+# check-nas-search
+# ------------------------------------------------------------------------------
+echo "== check-nas-search"
+command_case deny check-nas-search.sh "$project" "rg -j 8 -l foo Z:/codigos"
+command_case deny check-nas-search.sh "$project" "rg -j 8 -l \"hass.lan\" Z:/codigos --glob '!_archive'"
+command_case deny check-nas-search.sh "$project" "fd -j 8 bar Z:/"
+command_case deny check-nas-search.sh "$project" "fd -j 8 bar Z:"
+command_case deny check-nas-search.sh "$project" 'grep -rn foo Z:\codigos\'
+command_case deny check-nas-search.sh "$project" "find /z/apps -name x"
+command_case deny check-nas-search.sh "$project" "ls -lR //192.168.100.3/dinhani/jogos/"
+command_case deny check-nas-search.sh "$project" 'rg foo \\192.168.100.3\Dinhani\codigos'
+command_case deny check-nas-search.sh "$project" "tree z:/codigos/*"
+command_case deny check-nas-search.sh "$project" "fd --search-path=Z:/codigos x"
+command_case deny check-nas-search.sh "$project" "cd Z:/codigos && fd x"
+command_case deny check-nas-search.sh "$project" 'out=$(rg -l foo Z:/codigos)'
+command_case deny check-nas-search.sh 'Z:\codigos\automacao-nas' "rg foo .."
+command_case deny check-nas-search.sh 'Z:\codigos' "rg foo"
+command_case deny check-nas-search.sh 'Z:\codigos' "grep -r foo ."
+DIR_NAS_GAMES='Z:\jogos\' command_case deny check-nas-search.sh "$project" 'fd -j 8 x "$DIR_NAS_GAMES"'
+search_tool_case deny Grep "$project" '{"pattern":"x","path":"Z:\\codigos"}'
+search_tool_case deny Grep 'Z:\codigos' '{"pattern":"x"}'
+search_tool_case deny Glob "$project" '{"pattern":"Z:/codigos/**/*.py"}'
+search_tool_case deny Glob 'Z:\codigos\automacao-nas' '{"pattern":"**/*.py","path":".."}'
+search_tool_case deny PowerShell "$project" '{"command":"Get-ChildItem Z:\\codigos -Recurse -Filter *.ps1"}'
+search_tool_case deny PowerShell "$project" '{"command":"gci -r -Path \"Z:\\jogos\\\" | Select-String foo"}'
+search_tool_case deny PowerShell "$project" '{"command":"ls -Depth 2 -LiteralPath:Z:\\apps"}'
+search_tool_case deny PowerShell "$project" '{"command":"dir Z:\\ -REC"}'
+search_tool_case deny PowerShell "$project" '{"command":"Set-Location Z:\\codigos; gci -Recurse"}'
+search_tool_case deny PowerShell "$project" '{"command":"rg -j 8 foo Z:\\codigos"}'
+DIR_NAS_MEDIA='Z:\midias\' search_tool_case deny PowerShell "$project" '{"command":"Get-ChildItem $env:DIR_NAS_MEDIA -Recurse"}'
+command_case pass check-nas-search.sh "$project" "rg -j 8 foo Z:/codigos/automacao-nas"
+command_case pass check-nas-search.sh "$project" "fd -j 8 x Z:/codigos/_lib/"
+command_case pass check-nas-search.sh 'Z:\codigos' "fd . Z:/codigos/automacao-nas"
+command_case pass check-nas-search.sh 'Z:\codigos\automacao-nas' "rg foo ."
+command_case pass check-nas-search.sh 'Z:\codigos\automacao-nas' "rg -j 8 foo"
+command_case pass check-nas-search.sh "$project" "ls Z:/codigos"
+command_case pass check-nas-search.sh "$project" "ls -r Z:/codigos"
+command_case pass check-nas-search.sh "$project" "grep foo Z:/codigos/notes.txt"
+command_case pass check-nas-search.sh "$project" "rg foo C:/Users"
+command_case pass check-nas-search.sh 'Z:\codigos' "git status"
+search_tool_case pass Grep 'Z:\codigos\automacao-nas' '{"pattern":"x"}'
+search_tool_case pass Glob "$project" '{"pattern":"Z:/codigos/automacao-nas/**/*.py"}'
+search_tool_case pass Glob "$project" '{"pattern":"automacao-nas/**/*.py","path":"Z:/codigos"}'
+search_tool_case pass PowerShell "$project" '{"command":"Get-ChildItem Z:\\codigos"}'
+search_tool_case pass PowerShell "$project" '{"command":"ls -Directory Z:\\codigos"}'
+search_tool_case pass PowerShell "$project" '{"command":"Get-ChildItem Z:\\codigos\\automacao-nas -Recurse"}'
+search_tool_case pass PowerShell "$project" '{"command":"$env:BYPASS_NAS_SEARCH=1; gci Z:\\codigos -Recurse"}'
+command_case pass check-nas-search.sh "$project" "BYPASS_NAS_SEARCH=1 rg foo Z:/codigos"
 
 # ------------------------------------------------------------------------------
 # check-memory
